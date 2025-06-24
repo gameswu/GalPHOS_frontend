@@ -1,0 +1,271 @@
+/* ===== 全局重置样式 ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ===== 基础样式 ===== */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f2f5;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* ===== 链接样式 ===== */
+a {
+  color: #1890ff;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* ===== App 组件样式 ===== */
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== 通用布局样式 ===== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.header {
+  background-color: #001529;
+  color: white;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.footer {
+  background-color: #001529;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  position: relative;
+  bottom: 0;
+  width: 100%;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== 通用按钮样式 ===== */
+.button {
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.button:hover {
+  background-color: #40a9ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+/* ===== Ant Design 自定义样式 ===== */
+.ant-layout {
+  background: #f0f2f5;
+}
+
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s ease;
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.ant-table {
+  background: white;
+  border-radius: 8px;
+}
+
+.ant-btn {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.ant-input {
+  border-radius: 6px;
+  transition: border-color 0.3s ease;
+}
+
+.ant-select-selector {
+  border-radius: 6px !important;
+  transition: border-color 0.3s ease !important;
+}
+
+.ant-menu {
+  border-radius: 8px;
+}
+
+.ant-menu-item {
+  border-radius: 6px !important;
+  margin: 4px 8px !important;
+}
+
+.ant-menu-item-selected {
+  background-color: #e6f7ff !important;
+}
+
+/* ===== 响应式设计 ===== */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .header {
+    padding: 15px 10px;
+  }
+  
+  .footer {
+    padding: 8px 10px;
+  }
+}
+
+/* ===== 工具类样式 ===== */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.p-16 {
+  padding: 16px;
+}
+
+/* ===== 滚动条样式 ===== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* ===== 动画效果 ===== */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
