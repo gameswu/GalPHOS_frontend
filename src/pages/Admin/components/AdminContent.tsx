@@ -29,6 +29,8 @@ import {
 import type { PendingUser, ApprovedUser } from '../hooks/useAdminLogic';
 import type { Province } from '../types/regionTypes';
 import RegionManagement from './RegionManagement';
+import RegionChangeRequestManagement from './RegionChangeRequestManagement';
+import StudentRegistrationManagement from './StudentRegistrationManagement';
 import ExamManagement from './ExamManagement';
 import GradingManagement from './GradingManagement';
 import SystemSettings from './SystemSettings';
@@ -686,6 +688,12 @@ const AdminContent: React.FC<AdminContentProps> = ({
           onDeleteProvince={onDeleteProvince}
         />
       );
+    
+    case 'region-change-requests':
+      return <RegionChangeRequestManagement />;
+    
+    case 'student-registration-requests':
+      return <StudentRegistrationManagement />;
     
     case 'exam-management':
       return (

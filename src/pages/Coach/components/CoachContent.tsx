@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { Card, Typography, Table, Button, Space, Tag, Statistic, Row, Col, Modal, Form, Input, Select } from 'antd';
+import { Card, Typography, Statistic, Row, Col, Button, Table, Modal, Form, Input, Select, Space, Tag, message } from 'antd';
 import { 
   UserOutlined, 
   TeamOutlined,
   FileTextOutlined,
+  TrophyOutlined,
   PlusOutlined,
   EditOutlined,
-  DeleteOutlined,
-  EyeOutlined
+  DeleteOutlined
 } from '@ant-design/icons';
-import type { Student, Exam } from '../hooks/useCoachLogic';
+import type { Student, Exam, ExamSubmission, ExamAnswer } from '../hooks/useCoachLogic';
+import UserSettings from '../../../components/UserSettings';
+import CurrentExamPage from '../../../components/CurrentExamPage';
+import HistoryExamPage from '../../../components/HistoryExamPage';
 
 const { Title, Text } = Typography;
 
@@ -20,97 +23,223 @@ interface CoachContentProps {
     role: 'coach';
     province?: string;
     school?: string;
+    avatar?: string;
   };
   loading: boolean;
   students: Student[];
   exams: Exam[];
   onAccountSettings: () => void;
-  onAddStudent: (studentData: Omit<Student, 'id' | 'createdAt'>) => void;
+  onAddStudent: (studentData: Omit<Student, 'id' | 'createdAt' | 'status'>) => void;
   onUpdateStudent: (studentId: string, studentData: Partial<Student>) => void;
   onDeleteStudent: (studentId: string) => void;
+  updateProfile: (data: { username: string; avatar?: string }) => Promise<void>;
+  changePassword: (data: { oldPassword: string; newPassword: string }) => Promise<void>;
+  requestRegionChange: (data: { province: string; school: string; reason: string }) => Promise<void>;
+  onLogout: () => void;
+  submitExamAnswers: (examId: string, answers: ExamAnswer[], studentUsername: string) => Promise<void>;
+  getExamSubmission: (examId: string, studentUsername?: string) => ExamSubmission | null;
+  downloadFile: (fileUrl: string, fileName: string) => void;
 }
 
 // 账户设置页面
-const AccountSettingsPage: React.FC<{ userInfo: any }> = ({ userInfo }) => (
-  <Card>
-    <Title level={4}>
-      <UserOutlined style={{ marginRight: 8 }} />
-      账户信息
-    </Title>
-    <Row gutter={[16, 16]}>
-      <Col span={12}>
-        <Card size="small">
-          <Statistic title="用户名" value={userInfo.username} />
-        </Card>
-      </Col>
-      <Col span={12}>
-        <Card size="small">
-          <Statistic title="角色" value="教练" />
-        </Card>
-      </Col>
-      {userInfo.province && (
-        <>
-          <Col span={12}>
-            <Card size="small">
-              <Statistic title="省份" value={userInfo.province} />
-            </Card>
-          </Col>
-          <Col span={12}>
-            <Card size="small">
-              <Statistic title="学校" value={userInfo.school} />
-            </Card>
-          </Col>
-        </>
-      )}
-    </Row>
-  </Card>
+const AccountSettingsPage: React.FC<{ 
+  userInfo: any;
+  updateProfile: (data: { username: string; avatar?: string }) => Promise<void>;
+  changePassword: (data: { oldPassword: string; newPassword: string }) => Promise<void>;
+  requestRegionChange: (data: { province: string; school: string; reason: string }) => Promise<void>;
+  onLogout: () => void;
+}> = ({ userInfo, updateProfile, changePassword, requestRegionChange, onLogout }) => (
+  <UserSettings
+    userInfo={userInfo}
+    onUpdateProfile={updateProfile}
+    onChangePassword={changePassword}
+    onRequestRegionChange={requestRegionChange}
+    onLogout={onLogout}
+  />
 );
 
+// 仪表板页面
+const DashboardPage: React.FC<{ 
+  students: Student[];
+  exams: Exam[];
+  getExamSubmission: (examId: string, studentUsername?: string) => ExamSubmission | null;
+}> = ({ students, exams, getExamSubmission }) => {
+  const currentTime = new Date();
+  
+  // 统计数据
+  const activeStudents = students.filter(s => s.status === 'active').length;
+  const currentExams = exams.filter(exam => 
+    (exam.status === 'published' || exam.status === 'ongoing') && new Date(exam.endTime) > currentTime
+  );
+  
+  const completedExams = exams.filter(exam => 
+    exam.status === 'completed' || new Date(exam.endTime) < currentTime
+  );
+
+  // 计算学生参与度
+  const totalParticipations = completedExams.reduce((sum, exam) => {
+    const participatedCount = students.filter(student => 
+      getExamSubmission(exam.id, student.username)
+    ).length;
+    return sum + participatedCount;
+  }, 0);
+
+  const averageParticipation = completedExams.length > 0 
+    ? (totalParticipations / (completedExams.length * students.length)) * 100 
+    : 0;
+
+  return (
+    <div>
+      <Title level={4}>
+        <UserOutlined style={{ marginRight: 8 }} />
+        教练仪表板
+      </Title>
+      
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="管理学生"
+              value={activeStudents}
+              suffix="人"
+              valueStyle={{ color: '#1890ff' }}
+              prefix={<TeamOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="当前考试"
+              value={currentExams.length}
+              suffix="场"
+              valueStyle={{ color: '#52c41a' }}
+              prefix={<FileTextOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="学生参与度"
+              value={averageParticipation.toFixed(1)}
+              suffix="%"
+              valueStyle={{ color: '#faad14' }}
+              prefix={<TrophyOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="历史考试"
+              value={completedExams.length}
+              suffix="场"
+              valueStyle={{ color: '#722ed1' }}
+              prefix={<FileTextOutlined />}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* 学生概览 */}
+      <Card title="学生概览" style={{ marginBottom: 16 }}>
+        {students.length > 0 ? (
+          <div>
+            {students.slice(0, 5).map(student => (
+              <div key={student.id} style={{ marginBottom: 12, padding: 12, background: '#f6f8fa', borderRadius: 6 }}>
+                <div style={{ fontWeight: 'bold' }}>{student.name} ({student.username})</div>
+                <div style={{ color: '#666', fontSize: 12 }}>
+                  {student.grade} - {student.province} {student.school}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Text type="secondary">暂无学生</Text>
+        )}
+      </Card>
+
+      {/* 最近考试 */}
+      <Card title="最近考试" style={{ marginBottom: 16 }}>
+        {currentExams.length > 0 ? (
+          <div>
+            {currentExams.slice(0, 3).map(exam => (
+              <div key={exam.id} style={{ marginBottom: 12, padding: 12, background: '#f6f8fa', borderRadius: 6 }}>
+                <div style={{ fontWeight: 'bold' }}>{exam.title}</div>
+                <div style={{ color: '#666', fontSize: 12 }}>
+                  {new Date(exam.startTime).toLocaleString()} - {new Date(exam.endTime).toLocaleString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Text type="secondary">暂无进行中的考试</Text>
+        )}
+      </Card>
+    </div>
+  );
+};
+
 // 学生管理页面
-const StudentsPage: React.FC<{ 
-  students: Student[]; 
-  loading: boolean;
-  onAddStudent: (studentData: Omit<Student, 'id' | 'createdAt'>) => void;
+const StudentManagementPage: React.FC<{
+  students: Student[];
+  onAddStudent: (studentData: Omit<Student, 'id' | 'createdAt' | 'status'>) => void;
   onUpdateStudent: (studentId: string, studentData: Partial<Student>) => void;
   onDeleteStudent: (studentId: string) => void;
-}> = ({ students, loading, onAddStudent, onUpdateStudent, onDeleteStudent }) => {
-  const [modalVisible, setModalVisible] = useState(false);
+}> = ({ students, onAddStudent, onUpdateStudent, onDeleteStudent }) => {
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [form] = Form.useForm();
 
-  const handleAdd = () => {
-    setEditingStudent(null);
-    setModalVisible(true);
-    form.resetFields();
+  // 处理添加学生
+  const handleAddStudent = async (values: any) => {
+    try {
+      await onAddStudent(values);
+      form.resetFields();
+      setIsAddModalVisible(false);
+      message.success('学生添加成功');
+    } catch (error) {
+      message.error('添加失败');
+    }
   };
 
-  const handleEdit = (student: Student) => {
-    setEditingStudent(student);
-    setModalVisible(true);
-    form.setFieldsValue(student);
+  // 处理编辑学生
+  const handleEditStudent = async (values: any) => {
+    if (!editingStudent) return;
+    try {
+      await onUpdateStudent(editingStudent.id, values);
+      setIsEditModalVisible(false);
+      setEditingStudent(null);
+      form.resetFields();
+      message.success('学生信息更新成功');
+    } catch (error) {
+      message.error('更新失败');
+    }
   };
 
-  const handleDelete = (studentId: string) => {
+  // 处理删除学生
+  const handleDeleteStudent = (studentId: string) => {
     Modal.confirm({
       title: '确认删除',
-      content: '确定要删除这个学生吗？',
-      onOk: () => onDeleteStudent(studentId),
+      content: '确定要删除这个学生吗？此操作不可恢复。',
+      onOk: async () => {
+        try {
+          await onDeleteStudent(studentId);
+          message.success('学生删除成功');
+        } catch (error) {
+          message.error('删除失败');
+        }
+      },
     });
   };
 
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      if (editingStudent) {
-        onUpdateStudent(editingStudent.id, values);
-      } else {
-        onAddStudent(values);
-      }
-      setModalVisible(false);
-      setEditingStudent(null);
-    } catch (error) {
-      console.error('表单验证失败:', error);
-    }
+  // 打开编辑对话框
+  const openEditModal = (student: Student) => {
+    setEditingStudent(student);
+    form.setFieldsValue(student);
+    setIsEditModalVisible(true);
   };
 
   const columns = [
@@ -125,14 +254,19 @@ const StudentsPage: React.FC<{
       key: 'username',
     },
     {
-      title: '邮箱',
-      dataIndex: 'email',
-      key: 'email',
+      title: '年级',
+      dataIndex: 'grade',
+      key: 'grade',
     },
     {
-      title: '电话',
-      dataIndex: 'phone',
-      key: 'phone',
+      title: '省份',
+      dataIndex: 'province',
+      key: 'province',
+    },
+    {
+      title: '学校',
+      dataIndex: 'school',
+      key: 'school',
     },
     {
       title: '状态',
@@ -145,28 +279,28 @@ const StudentsPage: React.FC<{
       ),
     },
     {
-      title: '创建时间',
+      title: '注册时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (time: string) => new Date(time).toLocaleDateString(),
+      render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
       title: '操作',
       key: 'action',
       render: (_: any, record: Student) => (
-        <Space size="small">
-          <Button 
-            size="small" 
+        <Space size="middle">
+          <Button
+            type="link"
             icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
+            onClick={() => openEditModal(record)}
           >
             编辑
           </Button>
-          <Button 
-            size="small" 
-            icon={<DeleteOutlined />}
+          <Button
+            type="link"
             danger
-            onClick={() => handleDelete(record.id)}
+            icon={<DeleteOutlined />}
+            onClick={() => handleDeleteStudent(record.id)}
           >
             删除
           </Button>
@@ -176,44 +310,56 @@ const StudentsPage: React.FC<{
   ];
 
   return (
-    <>
-      <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <Title level={4}>
-            <TeamOutlined style={{ marginRight: 8 }} />
-            学生管理
-          </Title>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-            添加学生
-          </Button>
-        </div>
+    <div>
+      <Card
+        title={
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>学生管理</span>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setIsAddModalVisible(true)}
+            >
+              添加学生
+            </Button>
+          </div>
+        }
+      >
         <Table
           columns={columns}
           dataSource={students}
-          loading={loading}
           rowKey="id"
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            total: students.length,
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+          }}
         />
       </Card>
 
+      {/* 添加学生对话框 */}
       <Modal
-        title={editingStudent ? '编辑学生' : '添加学生'}
-        open={modalVisible}
-        onOk={handleSubmit}
+        title="添加学生"
+        open={isAddModalVisible}
         onCancel={() => {
-          setModalVisible(false);
-          setEditingStudent(null);
+          setIsAddModalVisible(false);
+          form.resetFields();
         }}
-        okText="确定"
-        cancelText="取消"
+        footer={null}
       >
-        <Form form={form} layout="vertical">
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleAddStudent}
+        >
           <Form.Item
             name="name"
             label="姓名"
-            rules={[{ required: true, message: '请输入姓名' }]}
+            rules={[{ required: true, message: '请输入学生姓名' }]}
           >
-            <Input placeholder="请输入姓名" />
+            <Input placeholder="请输入学生姓名" />
           </Form.Item>
           <Form.Item
             name="username"
@@ -223,199 +369,111 @@ const StudentsPage: React.FC<{
             <Input placeholder="请输入用户名" />
           </Form.Item>
           <Form.Item
-            name="email"
-            label="邮箱"
-            rules={[
-              { required: true, message: '请输入邮箱' },
-              { type: 'email', message: '请输入有效的邮箱地址' }
-            ]}
+            name="grade"
+            label="年级"
+            rules={[{ required: true, message: '请选择年级' }]}
           >
-            <Input placeholder="请输入邮箱" />
-          </Form.Item>
-          <Form.Item
-            name="phone"
-            label="电话"
-            rules={[{ required: true, message: '请输入电话' }]}
-          >
-            <Input placeholder="请输入电话" />
-          </Form.Item>
-          <Form.Item
-            name="status"
-            label="状态"
-            rules={[{ required: true, message: '请选择状态' }]}
-          >
-            <Select placeholder="请选择状态">
-              <Select.Option value="active">活跃</Select.Option>
-              <Select.Option value="inactive">非活跃</Select.Option>
+            <Select placeholder="请选择年级">
+              <Select.Option value="高一">高一</Select.Option>
+              <Select.Option value="高二">高二</Select.Option>
+              <Select.Option value="高三">高三</Select.Option>
             </Select>
+          </Form.Item>
+          <Form.Item
+            name="province"
+            label="省份"
+            rules={[{ required: true, message: '请输入省份' }]}
+          >
+            <Input placeholder="请输入省份" />
+          </Form.Item>
+          <Form.Item
+            name="school"
+            label="学校"
+            rules={[{ required: true, message: '请输入学校' }]}
+          >
+            <Input placeholder="请输入学校" />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit">
+                添加
+              </Button>
+              <Button onClick={() => {
+                setIsAddModalVisible(false);
+                form.resetFields();
+              }}>
+                取消
+              </Button>
+            </Space>
           </Form.Item>
         </Form>
       </Modal>
-    </>
-  );
-};
 
-// 当前考试页面
-const CurrentExamPage: React.FC<{ 
-  exams: Exam[]; 
-  loading: boolean;
-}> = ({ exams, loading }) => {
-  const currentExams = exams.filter(exam => exam.status === 'upcoming' || exam.status === 'ongoing');
-  
-  const columns = [
-    {
-      title: '考试名称',
-      dataIndex: 'title',
-      key: 'title',
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
-    },
-    {
-      title: '开始时间',
-      dataIndex: 'startTime',
-      key: 'startTime',
-      render: (time: string) => new Date(time).toLocaleString(),
-    },
-    {
-      title: '结束时间',
-      dataIndex: 'endTime',
-      key: 'endTime',
-      render: (time: string) => new Date(time).toLocaleString(),
-    },
-    {
-      title: '时长',
-      dataIndex: 'duration',
-      key: 'duration',
-      render: (duration: number) => `${duration}分钟`,
-    },
-    {
-      title: '题目数',
-      dataIndex: 'questions',
-      key: 'questions',
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => {
-        const statusConfig = {
-          upcoming: { color: 'blue', text: '即将开始' },
-          ongoing: { color: 'green', text: '进行中' },
-          completed: { color: 'gray', text: '已结束' },
-        };
-        const config = statusConfig[status as keyof typeof statusConfig];
-        return <Tag color={config.color}>{config.text}</Tag>;
-      },
-    },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: any, record: Exam) => (
-        <Space size="small">
-          <Button 
-            size="small" 
-            icon={<EyeOutlined />}
-            onClick={() => console.log('查看详情', record.id)}
+      {/* 编辑学生对话框 */}
+      <Modal
+        title="编辑学生信息"
+        open={isEditModalVisible}
+        onCancel={() => {
+          setIsEditModalVisible(false);
+          setEditingStudent(null);
+          form.resetFields();
+        }}
+        footer={null}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleEditStudent}
+        >
+          <Form.Item
+            name="name"
+            label="姓名"
+            rules={[{ required: true, message: '请输入学生姓名' }]}
           >
-            查看详情
-          </Button>
-        </Space>
-      ),
-    },
-  ];
-
-  return (
-    <Card>
-      <Title level={4}>
-        <FileTextOutlined style={{ marginRight: 8 }} />
-        当前考试
-      </Title>
-      <Table
-        columns={columns}
-        dataSource={currentExams}
-        loading={loading}
-        rowKey="id"
-        pagination={{ pageSize: 10 }}
-      />
-    </Card>
-  );
-};
-
-// 历史考试页面
-const HistoryExamsPage: React.FC<{ 
-  exams: Exam[]; 
-  loading: boolean;
-}> = ({ exams, loading }) => {
-  const historyExams = exams.filter(exam => exam.status === 'completed');
-  
-  const columns = [
-    {
-      title: '考试名称',
-      dataIndex: 'title',
-      key: 'title',
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
-    },
-    {
-      title: '考试时间',
-      dataIndex: 'startTime',
-      key: 'startTime',
-      render: (time: string) => new Date(time).toLocaleDateString(),
-    },
-    {
-      title: '时长',
-      dataIndex: 'duration',
-      key: 'duration',
-      render: (duration: number) => `${duration}分钟`,
-    },
-    {
-      title: '题目数',
-      dataIndex: 'questions',
-      key: 'questions',
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: () => <Tag color="gray">已完成</Tag>,
-    },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: any, record: Exam) => (
-        <Space size="small">
-          <Button 
-            size="small" 
-            icon={<EyeOutlined />}
-            onClick={() => console.log('查看详情', record.id)}
+            <Input placeholder="请输入学生姓名" />
+          </Form.Item>
+          <Form.Item
+            name="grade"
+            label="年级"
+            rules={[{ required: true, message: '请选择年级' }]}
           >
-            查看详情
-          </Button>
-        </Space>
-      ),
-    },
-  ];
-
-  return (
-    <Card>
-      <Title level={4}>
-        <FileTextOutlined style={{ marginRight: 8 }} />
-        历史考试
-      </Title>
-      <Table
-        columns={columns}
-        dataSource={historyExams}
-        loading={loading}
-        rowKey="id"
-        pagination={{ pageSize: 10 }}
-      />
-    </Card>
+            <Select placeholder="请选择年级">
+              <Select.Option value="高一">高一</Select.Option>
+              <Select.Option value="高二">高二</Select.Option>
+              <Select.Option value="高三">高三</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="province"
+            label="省份"
+            rules={[{ required: true, message: '请输入省份' }]}
+          >
+            <Input placeholder="请输入省份" />
+          </Form.Item>
+          <Form.Item
+            name="school"
+            label="学校"
+            rules={[{ required: true, message: '请输入学校' }]}
+          >
+            <Input placeholder="请输入学校" />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit">
+                保存
+              </Button>
+              <Button onClick={() => {
+                setIsEditModalVisible(false);
+                setEditingStudent(null);
+                form.resetFields();
+              }}>
+                取消
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
   );
 };
 
@@ -428,32 +486,82 @@ const CoachContent: React.FC<CoachContentProps> = ({
   onAccountSettings,
   onAddStudent,
   onUpdateStudent,
-  onDeleteStudent
+  onDeleteStudent,
+  updateProfile,
+  changePassword,
+  requestRegionChange,
+  onLogout,
+  submitExamAnswers,
+  getExamSubmission,
+  downloadFile
 }) => {
-  const renderContent = () => {
-    switch (selectedKey) {
-      case 'account':
-        return <AccountSettingsPage userInfo={userInfo} />;
-      case 'students':
-        return (
-          <StudentsPage 
-            students={students} 
-            loading={loading}
-            onAddStudent={onAddStudent}
-            onUpdateStudent={onUpdateStudent}
-            onDeleteStudent={onDeleteStudent}
-          />
-        );
-      case 'current-exam':
-        return <CurrentExamPage exams={exams} loading={loading} />;
-      case 'history-exams':
-        return <HistoryExamsPage exams={exams} loading={loading} />;
-      default:
-        return <div>页面未找到</div>;
-    }
-  };
-
-  return <>{renderContent()}</>;
+  switch (selectedKey) {
+    case 'dashboard':
+      return (
+        <DashboardPage 
+          students={students}
+          exams={exams}
+          getExamSubmission={getExamSubmission}
+        />
+      );
+    
+    case 'students':
+      return (
+        <StudentManagementPage
+          students={students}
+          onAddStudent={onAddStudent}
+          onUpdateStudent={onUpdateStudent}
+          onDeleteStudent={onDeleteStudent}
+        />
+      );
+    
+    case 'current-exam':
+      return (
+        <CurrentExamPage
+          exams={exams}
+          loading={loading}
+          submitExamAnswers={(examId, answers, studentUsername) => 
+            submitExamAnswers(examId, answers, studentUsername!)
+          }
+          getExamSubmission={getExamSubmission}
+          downloadFile={downloadFile}
+          userRole="coach"
+          students={students}
+        />
+      );
+    
+    case 'history-exam':
+      return (
+        <HistoryExamPage
+          exams={exams}
+          loading={loading}
+          downloadFile={downloadFile}
+          getExamSubmission={getExamSubmission}
+          userRole="coach"
+          students={students}
+        />
+      );
+    
+    case 'account-settings':
+      return (
+        <AccountSettingsPage
+          userInfo={userInfo}
+          updateProfile={updateProfile}
+          changePassword={changePassword}
+          requestRegionChange={requestRegionChange}
+          onLogout={onLogout}
+        />
+      );
+    
+    default:
+      return (
+        <DashboardPage 
+          students={students}
+          exams={exams}
+          getExamSubmission={getExamSubmission}
+        />
+      );
+  }
 };
 
 export default CoachContent;

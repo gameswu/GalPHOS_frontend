@@ -1,5 +1,6 @@
 import React from 'react';
 import { 
+  DashboardOutlined,
   TeamOutlined,
   FileTextOutlined,
   HistoryOutlined,
@@ -9,9 +10,9 @@ import {
 // 教练菜单
 export const getCoachMenuItems = () => [
   {
-    key: 'account',
-    icon: <SettingOutlined />,
-    label: '账户设置',
+    key: 'dashboard',
+    icon: <DashboardOutlined />,
+    label: '仪表板',
   },
   {
     key: 'students',
@@ -24,19 +25,25 @@ export const getCoachMenuItems = () => [
     label: '当前考试',
   },
   {
-    key: 'history-exams',
+    key: 'history-exam',
     icon: <HistoryOutlined />,
-    label: '历史试题',
+    label: '历史考试',
+  },
+  {
+    key: 'account-settings',
+    icon: <SettingOutlined />,
+    label: '账户设置',
   },
 ];
 
 // 页面标题映射
 export const getTitleByKey = (key: string): string => {
   const titleMap = {
-    account: '账户设置',
+    dashboard: '仪表板',
     students: '学生管理',
     'current-exam': '当前考试',
-    'history-exams': '历史试题'
+    'history-exam': '历史考试',
+    'account-settings': '账户设置'
   };
-  return titleMap[key as keyof typeof titleMap] || '教练仪表板';
+  return titleMap[key as keyof typeof titleMap] || '教练面板';
 };

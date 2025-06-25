@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Typography, Button, message } from 'antd';
-import { LogoutOutlined } from '@ant-design/icons';
+import { Layout, Menu, Typography, Button, message, Avatar } from 'antd';
+import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useCoachLogic } from './hooks/useCoachLogic';
 import { getCoachMenuItems, getTitleByKey } from './config/menuConfig';
@@ -15,13 +15,14 @@ interface UserInfo {
   province?: string;
   school?: string;
   type: string;
+  avatar?: string;
 }
 
 const Coach: React.FC = () => {
   const navigate = useNavigate();
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [collapsed, setCollapsed] = useState(false);
-  const [selectedKey, setSelectedKey] = useState('students');
+  const [selectedKey, setSelectedKey] = useState('dashboard');
 
   const {
     loading,
@@ -33,7 +34,13 @@ const Coach: React.FC = () => {
     handleLogout: handleLogoutLogic,
     addStudent,
     updateStudent,
-    deleteStudent
+    deleteStudent,
+    updateProfile,
+    changePassword,
+    requestRegionChange,
+    submitExamAnswers,
+    getExamSubmission,
+    downloadFile
   } = useCoachLogic();
 
   // 检查登录状态和用户权限
@@ -126,17 +133,51 @@ const Coach: React.FC = () => {
             borderBottom: '1px solid #f0f0f0',
             marginBottom: '16px'
           }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
-              {userInfo.username}
-            </div>
-            <div style={{ fontSize: '12px', color: '#666' }}>
-              教练
-            </div>
-            {userInfo.province && (
-              <div style={{ fontSize: '12px', color: '#999' }}>
-                {userInfo.province} - {userInfo.school}
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-avatar">
+                <Avatar 
+                  src={userInfo.avatar} 
+                  size={48} 
+                  icon={<UserOutlined />}
+                  style={{ 
+                    border: '2px solid #1890ff',
+                    objectFit: 'cover'
+                  }}
+                />
               </div>
-            )}
+              <div className="user-name" style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
+                {userInfo.username}
+              </div>
+              <div className="user-role" style={{ fontSize: '12px', color: '#666' }}>
+                教练
+              </div>
+              {userInfo.province && (
+                <div className="user-location" style={{ fontSize: '12px', color: '#999' }}>
+                  {userInfo.province} - {userInfo.school}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 折叠时的用户头像 */}
+        {collapsed && (
+          <div style={{
+            padding: '8px',
+            display: 'flex',
+            justifyContent: 'center',
+            borderBottom: '1px solid #f0f0f0',
+            marginBottom: '16px'
+          }}>
+            <Avatar 
+              src={userInfo.avatar} 
+              size={32} 
+              icon={<UserOutlined />}
+              style={{ 
+                border: '1px solid #1890ff',
+                objectFit: 'cover'
+              }}
+            />
           </div>
         )}
 
@@ -189,6 +230,13 @@ const Coach: React.FC = () => {
             onAddStudent={addStudent}
             onUpdateStudent={updateStudent}
             onDeleteStudent={deleteStudent}
+            updateProfile={updateProfile}
+            changePassword={changePassword}
+            requestRegionChange={requestRegionChange}
+            onLogout={handleLogoutLogic}
+            submitExamAnswers={submitExamAnswers}
+            getExamSubmission={getExamSubmission}
+            downloadFile={downloadFile}
           />
         </Content>
       </Layout>

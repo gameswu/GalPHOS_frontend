@@ -1,0 +1,317 @@
+import React from 'react';
+import { 
+  Card, 
+  Typography, 
+  Statistic, 
+  Row, 
+  Col, 
+  List, 
+  Tag, 
+  Progress,
+  Space
+} from 'antd';
+import { 
+  EditOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  FileTextOutlined,
+  TrophyOutlined
+} from '@ant-design/icons';
+
+const { Title, Text } = Typography;
+
+interface ExamFile {
+  id: string;
+  name: string;
+  url: string;
+  size: number;
+  uploadTime: string;
+}
+
+interface Exam {
+  id: string;
+  title: string;
+  description: string;
+  questionFile?: ExamFile;
+  answerFile?: ExamFile;
+  answerSheetFile?: ExamFile;
+  startTime: string;
+  endTime: string;
+  status: 'draft' | 'published' | 'ongoing' | 'grading' | 'completed';
+  totalQuestions?: number;
+  duration?: number;
+}
+
+interface ExamAnswer {
+  questionNumber: number;
+  imageUrl: string;
+  uploadTime: string;
+}
+
+interface ExamSubmission {
+  id: string;
+  examId: string;
+  studentName: string;
+  studentUsername: string;
+  answers: ExamAnswer[];
+  submittedAt: string;
+  status: 'submitted' | 'grading' | 'graded';
+  score?: number;
+}
+
+interface GradingTask {
+  id: string;
+  examId: string;
+  examTitle: string;
+  studentName: string;
+  studentUsername: string;
+  submittedAt: string;
+  status: 'pending' | 'grading' | 'completed';
+  score?: number;
+  submission: ExamSubmission;
+}
+
+interface GraderDashboardProps {
+  loading: boolean;
+  exams: Exam[];
+  gradingTasks: GradingTask[];
+  loadAllGradingTasks: () => void;
+}
+
+const GraderDashboard: React.FC<GraderDashboardProps> = ({
+  loading,
+  exams,
+  gradingTasks,
+  loadAllGradingTasks
+}) => {
+  React.useEffect(() => {
+    loadAllGradingTasks();
+  }, [loadAllGradingTasks]);
+
+  // 统计数据计算
+  const totalTasks = gradingTasks.length;
+  const completedTasks = gradingTasks.filter(task => task.status === 'completed').length;
+  const pendingTasks = gradingTasks.filter(task => task.status === 'pending').length;
+  const gradingTasks_ = gradingTasks.filter(task => task.status === 'grading').length;
+  const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+  // 考试统计
+  const gradingExams = exams.filter(exam => exam.status === 'grading');
+  const completedExams = exams.filter(exam => exam.status === 'completed');
+
+  // 平均分计算
+  const completedTasksWithScore = gradingTasks.filter(task => task.status === 'completed' && task.score !== undefined);
+  const averageScore = completedTasksWithScore.length > 0 
+    ? completedTasksWithScore.reduce((sum, task) => sum + (task.score || 0), 0) / completedTasksWithScore.length 
+    : 0;
+
+  // 最近的阅卷任务
+  const recentTasks = gradingTasks
+    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+    .slice(0, 5);
+
+  return (
+    <div>
+      {/* 统计卡片 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="总阅卷任务"
+              value={totalTasks}
+              suffix="份"
+              valueStyle={{ color: '#1890ff' }}
+              prefix={<FileTextOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="待阅卷"
+              value={pendingTasks}
+              suffix="份"
+              valueStyle={{ color: '#faad14' }}
+              prefix={<ClockCircleOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="已完成"
+              value={completedTasks}
+              suffix="份"
+              valueStyle={{ color: '#52c41a' }}
+              prefix={<CheckCircleOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="平均分"
+              value={averageScore.toFixed(1)}
+              suffix="分"
+              valueStyle={{ color: '#722ed1' }}
+              prefix={<TrophyOutlined />}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
+        {/* 阅卷进度 */}
+        <Col xs={24} lg={12}>
+          <Card
+            title={
+              <Space>
+                <EditOutlined />
+                <span>阅卷进度</span>
+              </Space>
+            }
+          >
+            <div style={{ marginBottom: 16 }}>
+              <Text strong>总体完成率</Text>
+              <Progress 
+                percent={Math.round(completionRate)} 
+                status={completionRate === 100 ? 'success' : 'active'}
+                style={{ marginBottom: 8 }}
+              />
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Text type="secondary">待阅卷: {pendingTasks}</Text>
+                </Col>
+                <Col span={8}>
+                  <Text type="secondary">进行中: {gradingTasks_}</Text>
+                </Col>
+                <Col span={8}>
+                  <Text type="secondary">已完成: {completedTasks}</Text>
+                </Col>
+              </Row>
+            </div>
+
+            {/* 考试分类统计 */}
+            <div>
+              <Text strong>考试状态分布</Text>
+              <Row gutter={16} style={{ marginTop: 8 }}>
+                <Col span={12}>
+                  <Card size="small">
+                    <Statistic
+                      title="阅卷中考试"
+                      value={gradingExams.length}
+                      suffix="场"
+                      valueStyle={{ color: '#1890ff', fontSize: '16px' }}
+                    />
+                  </Card>
+                </Col>
+                <Col span={12}>
+                  <Card size="small">
+                    <Statistic
+                      title="已完成考试"
+                      value={completedExams.length}
+                      suffix="场"
+                      valueStyle={{ color: '#52c41a', fontSize: '16px' }}
+                    />
+                  </Card>
+                </Col>
+              </Row>
+            </div>
+          </Card>
+        </Col>
+
+        {/* 最近任务 */}
+        <Col xs={24} lg={12}>
+          <Card
+            title={
+              <Space>
+                <ClockCircleOutlined />
+                <span>最近阅卷任务</span>
+              </Space>
+            }
+          >
+            {recentTasks.length > 0 ? (
+              <List
+                dataSource={recentTasks}
+                renderItem={(task) => (
+                  <List.Item>
+                    <List.Item.Meta
+                      title={
+                        <Space>
+                          <Text strong>{task.studentName}</Text>
+                          <Tag color={task.status === 'completed' ? 'green' : task.status === 'grading' ? 'blue' : 'orange'}>
+                            {task.status === 'completed' ? '已完成' : task.status === 'grading' ? '阅卷中' : '待阅卷'}
+                          </Tag>
+                          {task.score !== undefined && (
+                            <Tag color="purple">{task.score}分</Tag>
+                          )}
+                        </Space>
+                      }
+                      description={
+                        <Space direction="vertical" size={2}>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            {task.examTitle}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            提交时间: {new Date(task.submittedAt).toLocaleString()}
+                          </Text>
+                        </Space>
+                      }
+                    />
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '50px 0' }}>
+                <Text type="secondary">暂无阅卷任务</Text>
+              </div>
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* 快速统计 */}
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col span={24}>
+          <Card
+            title={
+              <Space>
+                <FileTextOutlined />
+                <span>今日阅卷概览</span>
+              </Space>
+            }
+          >
+            <Row gutter={16}>
+              <Col xs={24} sm={8}>
+                <div style={{ textAlign: 'center', padding: '16px' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
+                    {pendingTasks}
+                  </div>
+                  <div style={{ color: '#666', fontSize: '14px' }}>待处理任务</div>
+                </div>
+              </Col>
+              <Col xs={24} sm={8}>
+                <div style={{ textAlign: 'center', padding: '16px' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }}>
+                    {completedTasks}
+                  </div>
+                  <div style={{ color: '#666', fontSize: '14px' }}>今日已完成</div>
+                </div>
+              </Col>
+              <Col xs={24} sm={8}>
+                <div style={{ textAlign: 'center', padding: '16px' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#722ed1' }}>
+                    {Math.round(completionRate)}%
+                  </div>
+                  <div style={{ color: '#666', fontSize: '14px' }}>完成率</div>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
+};
+
+export default GraderDashboard;
