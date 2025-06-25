@@ -2,40 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Typography, Button, message } from 'antd';
 import { LogoutOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useDashboardLogic } from './hooks/useDashboardLogic';
-import { getMenuItemsByRole, getTitleByKey } from './config/menuConfig';
-import DashboardContent from './components/DashboardContent';
+import { useGraderLogic } from './hooks/useGraderLogic';
+import { getGraderMenuItems, getTitleByKey } from './config/menuConfig';
+import GraderContent from './components/GraderContent';
 
 const { Title } = Typography;
 const { Header, Content, Sider } = Layout;
 
 interface UserInfo {
   username: string;
-  role: 'coach' | 'student' | 'grader';
+  role: 'grader';
   province?: string;
   school?: string;
   type: string;
 }
 
-const Dashboard: React.FC = () => {
+const Grader: React.FC = () => {
   const navigate = useNavigate();
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [collapsed, setCollapsed] = useState(false);
-  const [selectedKey, setSelectedKey] = useState('');
+  const [selectedKey, setSelectedKey] = useState('grading-tasks');
 
   const {
-    // 状态
     loading,
-    students,
-    exams,
     gradingTasks,
-    // 方法
-    loadStudents,
-    loadExams,
     loadGradingTasks,
     handleAccountSettings,
-    handleLogout: handleLogoutLogic
-  } = useDashboardLogic();
+    handleLogout: handleLogoutLogic,
+    completeGrading
+  } = useGraderLogic();
 
   // 检查登录状态和用户权限
   useEffect(() => {
@@ -55,37 +50,15 @@ const Dashboard: React.FC = () => {
       return;
     }
     
-    setUserInfo(user);
-    
-    // 根据角色设置默认选中的菜单项 - 修复类型错误
-    const defaultKeys: Record<'coach' | 'student' | 'grader', string> = {
-      coach: 'students',
-      student: 'current-exam',
-      grader: 'grading-tasks'
-    };
-    
-    // 使用类型断言确保 user.role 是正确的类型
-    const userRole = user.role as 'coach' | 'student' | 'grader';
-    setSelectedKey(defaultKeys[userRole] || 'account');
-    
-    // 根据角色加载相应数据
-    switch (userRole) {
-      case 'coach':
-        loadStudents();
-        loadExams();
-        break;
-      case 'student':
-        loadExams();
-        break;
-      case 'grader':
-        loadGradingTasks();
-        break;
-      default:
-        // 处理未知角色的情况
-        console.warn('Unknown user role:', userRole);
-        break;
+    if (user.role !== 'grader') {
+      message.error('当前用户不是阅卷者角色');
+      navigate('/login');
+      return;
     }
-  }, [navigate, loadStudents, loadExams, loadGradingTasks]);
+    
+    setUserInfo(user);
+    loadGradingTasks();
+  }, [navigate, loadGradingTasks]);
 
   // 菜单点击处理
   const handleMenuClick = ({ key }: { key: string }) => {
@@ -112,7 +85,7 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  const menuItems = getMenuItemsByRole(userInfo.role);
+  const menuItems = getGraderMenuItems();
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -152,8 +125,7 @@ const Dashboard: React.FC = () => {
               {userInfo.username}
             </div>
             <div style={{ fontSize: '12px', color: '#666' }}>
-              {userInfo.role === 'coach' ? '教练' : 
-               userInfo.role === 'student' ? '学生' : '阅卷者'}
+              阅卷者
             </div>
             {userInfo.province && (
               <div style={{ fontSize: '12px', color: '#999' }}>
@@ -202,14 +174,13 @@ const Dashboard: React.FC = () => {
           background: '#f0f2f5',
           minHeight: 'calc(100vh - 64px)'
         }}>
-          <DashboardContent
+          <GraderContent
             selectedKey={selectedKey}
             userInfo={userInfo}
             loading={loading}
-            students={students}
-            exams={exams}
             gradingTasks={gradingTasks}
             onAccountSettings={handleAccountSettings}
+            onCompleteGrading={completeGrading}
           />
         </Content>
       </Layout>
@@ -217,4 +188,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard;
+export default Grader;

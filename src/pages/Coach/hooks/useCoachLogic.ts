@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
 
-// 类型定义
 export interface Student {
   id: string;
   name: string;
@@ -23,16 +22,6 @@ export interface Exam {
   questions: number;
 }
 
-export interface GradingTask {
-  id: string;
-  examId: string;
-  examTitle: string;
-  studentName: string;
-  submittedAt: string;
-  status: 'pending' | 'completed';
-  score?: number;
-}
-
 // 模拟数据
 const mockStudents: Student[] = [
   {
@@ -52,6 +41,15 @@ const mockStudents: Student[] = [
     phone: '13800138002',
     status: 'active',
     createdAt: '2024-01-02T00:00:00.000Z'
+  },
+  {
+    id: '3',
+    name: '王五',
+    username: 'student003',
+    email: 'wangwu@example.com',
+    phone: '13800138003',
+    status: 'inactive',
+    createdAt: '2024-01-03T00:00:00.000Z'
   }
 ];
 
@@ -78,40 +76,22 @@ const mockExams: Exam[] = [
   }
 ];
 
-const mockGradingTasks: GradingTask[] = [
-  {
-    id: '1',
-    examId: '1',
-    examTitle: '2024年春季物理竞赛预赛',
-    studentName: '张三',
-    submittedAt: '2024-03-15T12:00:00.000Z',
-    status: 'pending'
-  },
-  {
-    id: '2',
-    examId: '1',
-    examTitle: '2024年春季物理竞赛预赛',
-    studentName: '李四',
-    submittedAt: '2024-03-15T11:58:00.000Z',
-    status: 'completed',
-    score: 85
-  }
-];
-
-export const useDashboardLogic = () => {
+export const useCoachLogic = () => {
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
-  const [gradingTasks, setGradingTasks] = useState<GradingTask[]>([]);
 
   // 加载学生数据
   const loadStudents = useCallback(async () => {
     setLoading(true);
     try {
+      // 模拟API调用
       await new Promise(resolve => setTimeout(resolve, 500));
       setStudents(mockStudents);
+      message.success('学生数据加载成功');
     } catch (error) {
       message.error('加载学生数据失败');
+      console.error('加载学生数据失败:', error);
     } finally {
       setLoading(false);
     }
@@ -121,25 +101,68 @@ export const useDashboardLogic = () => {
   const loadExams = useCallback(async () => {
     setLoading(true);
     try {
+      // 模拟API调用
       await new Promise(resolve => setTimeout(resolve, 500));
       setExams(mockExams);
+      message.success('考试数据加载成功');
     } catch (error) {
       message.error('加载考试数据失败');
+      console.error('加载考试数据失败:', error);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // 加载阅卷任务数据
-  const loadGradingTasks = useCallback(async () => {
-    setLoading(true);
+  // 添加学生
+  const addStudent = useCallback(async (studentData: Omit<Student, 'id' | 'createdAt'>) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setGradingTasks(mockGradingTasks);
+      // 模拟API调用
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const newStudent: Student = {
+        ...studentData,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString()
+      };
+      
+      setStudents(prev => [...prev, newStudent]);
+      message.success('学生添加成功');
     } catch (error) {
-      message.error('加载阅卷任务失败');
-    } finally {
-      setLoading(false);
+      message.error('添加学生失败');
+      console.error('添加学生失败:', error);
+    }
+  }, []);
+
+  // 更新学生
+  const updateStudent = useCallback(async (studentId: string, studentData: Partial<Student>) => {
+    try {
+      // 模拟API调用
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setStudents(prev => prev.map(student => 
+        student.id === studentId 
+          ? { ...student, ...studentData }
+          : student
+      ));
+      
+      message.success('学生信息更新成功');
+    } catch (error) {
+      message.error('更新学生信息失败');
+      console.error('更新学生信息失败:', error);
+    }
+  }, []);
+
+  // 删除学生
+  const deleteStudent = useCallback(async (studentId: string) => {
+    try {
+      // 模拟API调用
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setStudents(prev => prev.filter(student => student.id !== studentId));
+      message.success('学生删除成功');
+    } catch (error) {
+      message.error('删除学生失败');
+      console.error('删除学生失败:', error);
     }
   }, []);
 
@@ -152,61 +175,19 @@ export const useDashboardLogic = () => {
   const handleLogout = useCallback(() => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userInfo');
-    message.success('退出登录成功');
-  }, []);
-
-  // 添加学生
-  const addStudent = useCallback(async (studentData: Omit<Student, 'id' | 'createdAt'>) => {
-    setLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const newStudent: Student = {
-        ...studentData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      };
-      setStudents(prev => [...prev, newStudent]);
-      message.success('添加学生成功');
-    } catch (error) {
-      message.error('添加学生失败');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 删除学生
-  const deleteStudent = useCallback(async (studentId: string) => {
-    setLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setStudents(prev => prev.filter(s => s.id !== studentId));
-      message.success('删除学生成功');
-    } catch (error) {
-      message.error('删除学生失败');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 开始阅卷
-  const startGrading = useCallback(async (taskId: string) => {
-    message.info('跳转到阅卷界面...');
+    message.success('已退出登录');
   }, []);
 
   return {
-    // 状态
     loading,
     students,
     exams,
-    gradingTasks,
-    // 方法
     loadStudents,
     loadExams,
-    loadGradingTasks,
-    handleAccountSettings,
-    handleLogout,
     addStudent,
+    updateStudent,
     deleteStudent,
-    startGrading
+    handleAccountSettings,
+    handleLogout
   };
 };

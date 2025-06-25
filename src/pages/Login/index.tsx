@@ -184,7 +184,17 @@ const useLogin = () => {
     
     if (isLoggedIn && userInfo) {
       const user = JSON.parse(userInfo);
-      navigate(user.type === 'admin' ? '/admin' : '/dashboard', { replace: true });
+      if (user.type === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        // 根据角色跳转到对应页面
+        const roleRoutes: Record<string, string> = {
+          student: '/student',
+          grader: '/grader',
+          coach: '/coach'
+        };
+        navigate(roleRoutes[user.role] || '/login', { replace: true });
+      }
     }
   }, [navigate]);
 
@@ -237,7 +247,14 @@ const useLogin = () => {
           type: 'user'
         }));
         message.success('登录成功！');
-        navigate('/dashboard', { replace: true });
+        
+        // 根据角色跳转到对应页面
+        const roleRoutes: Record<string, string> = {
+          student: '/student',
+          grader: '/grader',
+          coach: '/coach'
+        };
+        navigate(roleRoutes[values.role], { replace: true });
       } else {
         const pendingUsers: PendingUser[] = JSON.parse(localStorage.getItem('pendingUsers') || '[]');
         const pendingUser = pendingUsers.find(u => 
