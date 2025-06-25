@@ -1,35 +1,56 @@
 import React from 'react';
 import { 
-  UserOutlined, 
-  BookOutlined, 
-  GlobalOutlined 
+  UserAddOutlined, 
+  DashboardOutlined,
+  EnvironmentOutlined,
+  SettingOutlined,
+  FileTextOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 
 // 菜单项配置
 export const menuItems = [
   {
-    key: 'region',
-    icon: <GlobalOutlined />,
+    key: 'dashboard',
+    icon: <DashboardOutlined />,
+    label: '仪表盘',
+  },
+  {
+    key: 'user-management',
+    icon: <UserAddOutlined />,
+    label: '用户管理',
+  },
+  {
+    key: 'region-management', // 新增赛区管理
+    icon: <EnvironmentOutlined />,
     label: '赛区管理',
   },
   {
-    key: 'exam',
-    icon: <BookOutlined />,
+    key: 'exam-management',
+    icon: <FileTextOutlined />,
     label: '考试管理',
   },
   {
-    key: 'user',
-    icon: <UserOutlined />,
-    label: '用户管理',
+    key: 'grading-management',
+    icon: <EditOutlined />,
+    label: '阅卷管理',
+  },
+  {
+    key: 'system-settings',
+    icon: <SettingOutlined />,
+    label: '系统设置',
   },
 ];
 
 // 页面标题映射
 export const getTitleByKey = (key: string): string => {
   const titleMap = {
-    region: '赛区管理',
-    exam: '考试管理',
-    user: '用户管理'
+    dashboard: '仪表盘',
+    'user-management': '用户管理',
+    'region-management': '赛区管理',
+    'exam-management': '考试管理',
+    'grading-management': '阅卷管理',
+    'system-settings': '系统设置'
   };
-  return titleMap[key as keyof typeof titleMap] || '用户管理';
+  return titleMap[key as keyof typeof titleMap] || '管理后台';
 };

@@ -1,0 +1,15 @@
+.avatar-uploader .ant-upload {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+}
+
+.avatar-uploader .ant-upload-select-picture-card {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+}
+
+.ant-upload-select-picture-card > .ant-upload {
+  padding: 0;
+}
