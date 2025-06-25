@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, message } from 'antd';
+import AuthAPI from '../../api/auth';
 
 interface AdminLoginForm {
   username: string;
@@ -33,23 +34,21 @@ export const useAdminLogin = () => {
     try {
       console.log('管理员登录信息:', values);
       
-      // 模拟API请求延迟
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // 验证管理员账号
-      if (values.username === 'admin' && values.password === 'admin123') {
+      const response = await AuthAPI.adminLogin(values);
+      if (response.success) {
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userInfo', JSON.stringify({
-          username: values.username,
+          ...response.data,
           type: 'admin'
         }));
+        localStorage.setItem('token', response.token || '');
         message.success('管理员登录成功！');
         navigate('/admin', { replace: true });
       } else {
-        message.error('管理员用户名或密码错误！');
+        message.error(response.message || '管理员登录失败');
       }
     } catch (error) {
-      message.error('登录失败，请稍后重试');
+      message.error('登录失败，请检查网络连接或稍后重试');
       console.error('管理员登录错误:', error);
     } finally {
       setLoading(false);

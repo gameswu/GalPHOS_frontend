@@ -155,21 +155,6 @@ const AdminLoginUI: React.FC<AdminLoginUIProps> = ({
             </Form.Item>
           </Form>
 
-          {/* 测试信息 */}
-          <div style={{ 
-            textAlign: 'center', 
-            color: '#999', 
-            fontSize: '12px',
-            marginBottom: '16px',
-            padding: '12px',
-            backgroundColor: '#f5f5f5',
-            borderRadius: '6px'
-          }}>
-            <Text type="secondary">
-              管理员测试账号: admin / admin123
-            </Text>
-          </div>
-
           {/* 返回普通登录 */}
           <div style={{ textAlign: 'center' }}>
             <Space direction="vertical" size={8}>

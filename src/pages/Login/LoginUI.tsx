@@ -135,27 +135,6 @@ const LoginUI: React.FC<LoginUIProps> = ({
     );
   };
 
-  // 测试账户信息组件
-  const TestAccountsInfo: React.FC = () => (
-    <div style={{ 
-      marginTop: '16px',
-      padding: '12px',
-      background: '#f6ffed',
-      border: '1px solid #b7eb8f',
-      borderRadius: '6px'
-    }}>
-      <Text strong style={{ color: '#52c41a', fontSize: '12px' }}>
-        💡 测试账户信息：
-      </Text>
-      <div style={{ marginTop: '8px', fontSize: '11px', color: '#666' }}>
-        <div><Text code>教练</Text> 用户名: coach001, 密码: 123456</div>
-        <div><Text code>学生</Text> 用户名: student001, 密码: 123456</div>
-        <div><Text code>学生</Text> 用户名: student002, 密码: 123456</div>
-        <div><Text code>阅卷</Text> 用户名: grader001, 密码: 123456</div>
-      </div>
-    </div>
-  );
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -299,9 +278,6 @@ const LoginUI: React.FC<LoginUIProps> = ({
                   </Button>
                 </Form.Item>
               </Form>
-
-              {/* 添加测试账户信息 */}
-              <TestAccountsInfo />
 
               <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '12px' }}>
                 <Text type="secondary">
