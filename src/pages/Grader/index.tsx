@@ -28,12 +28,16 @@ const Grader: React.FC = () => {
     loading,
     exams,
     gradingTasks,
+    statistics,
     loadExams,
     loadAllGradingTasks,
     loadGradingTasksByExam,
     handleAccountSettings,
     handleLogout: handleLogoutLogic,
     completeGrading,
+    startGrading,
+    saveGradingProgress,
+    abandonGradingTask,
     updateProfile,
     changePassword
   } = useGraderLogic();
@@ -220,11 +224,15 @@ const Grader: React.FC = () => {
             loading={loading}
             exams={exams}
             gradingTasks={gradingTasks}
+            statistics={statistics || undefined}
             loadExams={loadExams}
             loadAllGradingTasks={loadAllGradingTasks}
             loadGradingTasksByExam={loadGradingTasksByExam}
             onAccountSettings={handleAccountSettings}
             onCompleteGrading={completeGrading}
+            onStartGrading={startGrading}
+            onSaveProgress={saveGradingProgress}
+            onAbandonTask={abandonGradingTask}
             updateProfile={updateProfile}
             changePassword={changePassword}
             onLogout={handleLogoutLogic}

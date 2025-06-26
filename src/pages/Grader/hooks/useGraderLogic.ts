@@ -1,81 +1,47 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
+import GraderAPI, { 
+  Exam, 
+  GradingTask, 
+  GradingStatistics,
+  ExamSubmission,
+  ExamFile,
+  ExamAnswer
+} from '../../../api/grader';
 
-export interface ExamFile {
-  id: string;
-  name: string;
-  url: string;
-  size: number;
-  uploadTime: string;
-}
-
-export interface Exam {
-  id: string;
-  title: string;
-  description: string;
-  questionFile?: ExamFile;
-  answerFile?: ExamFile;
-  answerSheetFile?: ExamFile;
-  startTime: string;
-  endTime: string;
-  status: 'draft' | 'published' | 'ongoing' | 'grading' | 'completed';
-  totalQuestions?: number;
-  duration?: number;
-}
-
-export interface ExamAnswer {
-  questionNumber: number;
-  imageUrl: string;
-  uploadTime: string;
-}
-
-export interface ExamSubmission {
-  id: string;
-  examId: string;
-  studentName: string;
-  studentUsername: string;
-  answers: ExamAnswer[];
-  submittedAt: string;
-  status: 'submitted' | 'grading' | 'graded';
-  score?: number;
-}
-
-export interface GradingTask {
-  id: string;
-  examId: string;
-  examTitle: string;
-  studentName: string;
-  studentUsername: string;
-  submittedAt: string;
-  status: 'pending' | 'grading' | 'completed';
-  score?: number;
-  submission: ExamSubmission;
-}
-
-// 模拟数据
-const mockGradingTasks: GradingTask[] = [
-  // 这里可以添加模拟数据用于开发调试
-  // 实际使用时应该通过API获取数据
-];
-
-const mockExams: Exam[] = [
-  // 这里可以添加模拟数据用于开发调试
-  // 实际使用时应该通过API获取数据
-];
+// 移除重复的接口定义，现在从API文件导入
+// 重新导出类型以保持向后兼容性
+export type { 
+  Exam, 
+  GradingTask, 
+  GradingStatistics,
+  ExamSubmission,
+  ExamFile,
+  ExamAnswer
+} from '../../../api/grader';
 
 export const useGraderLogic = () => {
   const [loading, setLoading] = useState(false);
   const [gradingTasks, setGradingTasks] = useState<GradingTask[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
+  const [statistics, setStatistics] = useState<GradingStatistics | null>(null);
 
   // 加载考试数据
   const loadExams = useCallback(async () => {
     setLoading(true);
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setExams(mockExams);
-      message.success('考试数据加载成功');
+      const response = await GraderAPI.getAvailableExams({
+        status: 'grading',
+        page: 1,
+        limit: 50
+      });
+      
+      if (response.success && response.data) {
+        setExams(response.data.exams);
+        message.success('考试数据加载成功');
+      } else {
+        message.error(response.message || '加载考试数据失败');
+      }
     } catch (error) {
       message.error('加载考试数据失败');
       console.error('加载考试数据失败:', error);
@@ -88,14 +54,19 @@ export const useGraderLogic = () => {
   const loadAllGradingTasks = useCallback(async () => {
     setLoading(true);
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const [tasksResponse, statsResponse] = await Promise.all([
+        GraderAPI.getGradingTasks({ page: 1, limit: 100 }),
+        GraderAPI.getGradingStatistics()
+      ]);
       
-      // 这里应该调用API获取所有阅卷任务
-      // const response = await api.getAllGradingTasks();
-      // setGradingTasks(response.data);
+      if (tasksResponse.success && tasksResponse.data) {
+        setGradingTasks(tasksResponse.data.tasks);
+      }
       
-      setGradingTasks(mockGradingTasks);
+      if (statsResponse.success && statsResponse.data) {
+        setStatistics(statsResponse.data);
+      }
+      
       message.success('阅卷任务统计加载成功');
     } catch (error) {
       message.error('加载阅卷任务统计失败');
@@ -104,18 +75,23 @@ export const useGraderLogic = () => {
       setLoading(false);
     }
   }, []);
+
+  // 根据考试ID加载阅卷任务
   const loadGradingTasksByExam = useCallback(async (examId: string) => {
     setLoading(true);
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const response = await GraderAPI.getGradingTasks({
+        examId,
+        page: 1,
+        limit: 100
+      });
       
-      // 这里应该调用API获取指定考试的阅卷任务
-      // const response = await api.getGradingTasksByExam(examId);
-      // setGradingTasks(response.data);
-      
-      setGradingTasks(mockGradingTasks.filter(task => task.examId === examId));
-      message.success('阅卷任务加载成功');
+      if (response.success && response.data) {
+        setGradingTasks(response.data.tasks);
+        message.success('阅卷任务加载成功');
+      } else {
+        message.error(response.message || '加载阅卷任务失败');
+      }
     } catch (error) {
       message.error('加载阅卷任务失败');
       console.error('加载阅卷任务失败:', error);
@@ -125,52 +101,159 @@ export const useGraderLogic = () => {
   }, []);
 
   // 完成阅卷
-  const completeGrading = useCallback(async (taskId: string, score: number) => {
+  const completeGrading = useCallback(async (taskId: string, score: number, feedback?: string) => {
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setLoading(true);
       
-      setGradingTasks(prev => prev.map(task => 
-        task.id === taskId 
-          ? { ...task, status: 'completed' as const, score }
-          : task
-      ));
+      // 获取任务详情以获取最大分数
+      const taskResponse = await GraderAPI.getGradingTask(taskId);
+      if (!taskResponse.success || !taskResponse.data) {
+        throw new Error('获取任务详情失败');
+      }
       
-      message.success('阅卷完成');
+      const maxScore = taskResponse.data.maxScore || 100;
+      
+      const response = await GraderAPI.submitGrading(taskId, {
+        score,
+        maxScore,
+        feedback
+      });
+      
+      if (response.success) {
+        // 更新本地状态
+        setGradingTasks(prev => prev.map(task => 
+          task.id === taskId 
+            ? { ...task, status: 'completed' as const, score, feedback }
+            : task
+        ));
+        
+        message.success('阅卷完成');
+      } else {
+        message.error(response.message || '提交评分失败');
+      }
     } catch (error) {
       message.error('提交评分失败');
       console.error('提交评分失败:', error);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   // 开始阅卷
-  const startGrading = useCallback((taskId: string) => {
-    message.info(`开始阅卷任务 ${taskId}`);
-    // 这里可以添加开始阅卷的逻辑，比如跳转到阅卷页面
+  const startGrading = useCallback(async (taskId: string) => {
+    try {
+      const response = await GraderAPI.startGradingTask(taskId);
+      
+      if (response.success) {
+        // 更新本地状态
+        setGradingTasks(prev => prev.map(task => 
+          task.id === taskId 
+            ? { ...task, status: 'grading' as const }
+            : task
+        ));
+        
+        message.success('开始阅卷');
+        return true;
+      } else {
+        message.error(response.message || '开始阅卷失败');
+        return false;
+      }
+    } catch (error) {
+      message.error('开始阅卷失败');
+      console.error('开始阅卷失败:', error);
+      return false;
+    }
   }, []);
 
   // 查看试卷
-  const viewPaper = useCallback((taskId: string) => {
-    message.info(`查看试卷 ${taskId}`);
-    // 这里可以添加查看试卷的逻辑
+  const viewPaper = useCallback(async (taskId: string) => {
+    try {
+      const response = await GraderAPI.getGradingTask(taskId);
+      
+      if (response.success && response.data) {
+        // 这里可以打开模态框显示试卷详情
+        // 或者跳转到专门的试卷查看页面
+        message.info(`查看试卷: ${response.data.examTitle}`);
+        return response.data;
+      } else {
+        message.error(response.message || '获取试卷详情失败');
+        return null;
+      }
+    } catch (error) {
+      message.error('获取试卷详情失败');
+      console.error('获取试卷详情失败:', error);
+      return null;
+    }
+  }, []);
+
+  // 保存阅卷进度
+  const saveGradingProgress = useCallback(async (taskId: string, progressData: {
+    score?: number;
+    feedback?: string;
+  }) => {
+    try {
+      const response = await GraderAPI.saveGradingProgress(taskId, progressData);
+      
+      if (response.success) {
+        message.success('进度已保存');
+        return true;
+      } else {
+        message.error(response.message || '保存进度失败');
+        return false;
+      }
+    } catch (error) {
+      message.error('保存进度失败');
+      console.error('保存进度失败:', error);
+      return false;
+    }
+  }, []);
+
+  // 放弃阅卷任务
+  const abandonGradingTask = useCallback(async (taskId: string, reason?: string) => {
+    try {
+      const response = await GraderAPI.abandonGradingTask(taskId, reason);
+      
+      if (response.success) {
+        // 更新本地状态
+        setGradingTasks(prev => prev.map(task => 
+          task.id === taskId 
+            ? { ...task, status: 'pending' as const }
+            : task
+        ));
+        
+        message.success('已放弃阅卷任务');
+        return true;
+      } else {
+        message.error(response.message || '放弃任务失败');
+        return false;
+      }
+    } catch (error) {
+      message.error('放弃任务失败');
+      console.error('放弃任务失败:', error);
+      return false;
+    }
   }, []);
 
   // 更新个人资料
   const updateProfile = useCallback(async (data: { username: string; avatar?: string }) => {
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await GraderAPI.updateProfile(data);
       
-      // 更新本地存储的用户信息
-      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-      const updatedUserInfo = {
-        ...userInfo,
-        username: data.username,
-        avatar: data.avatar
-      };
-      localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
-      
-      message.success('个人资料更新成功');
+      if (response.success) {
+        // 更新本地存储的用户信息
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        const updatedUserInfo = {
+          ...userInfo,
+          username: data.username,
+          avatar: data.avatar
+        };
+        localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
+        
+        message.success('个人资料更新成功');
+      } else {
+        message.error(response.message || '更新个人资料失败');
+        throw new Error(response.message);
+      }
     } catch (error) {
       message.error('更新个人资料失败');
       throw error;
@@ -180,12 +263,14 @@ export const useGraderLogic = () => {
   // 修改密码
   const changePassword = useCallback(async (data: { oldPassword: string; newPassword: string }) => {
     try {
-      // 模拟API调用验证旧密码
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await GraderAPI.changePassword(data);
       
-      // 这里应该调用后端API验证旧密码并更新新密码
-      // 暂时模拟成功
-      message.success('密码修改成功');
+      if (response.success) {
+        message.success('密码修改成功');
+      } else {
+        message.error(response.message || '密码修改失败');
+        throw new Error(response.message);
+      }
     } catch (error) {
       message.error('密码修改失败');
       throw error;
@@ -209,12 +294,15 @@ export const useGraderLogic = () => {
     loading,
     exams,
     gradingTasks,
+    statistics,
     loadExams,
     loadAllGradingTasks,
     loadGradingTasksByExam,
     completeGrading,
     startGrading,
     viewPaper,
+    saveGradingProgress,
+    abandonGradingTask,
     handleAccountSettings,
     handleLogout,
     updateProfile,

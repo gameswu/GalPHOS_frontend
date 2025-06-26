@@ -17,64 +17,15 @@ import {
   FileTextOutlined,
   TrophyOutlined
 } from '@ant-design/icons';
+import type { Exam, GradingTask, GradingStatistics } from '../hooks/useGraderLogic';
 
 const { Title, Text } = Typography;
-
-interface ExamFile {
-  id: string;
-  name: string;
-  url: string;
-  size: number;
-  uploadTime: string;
-}
-
-interface Exam {
-  id: string;
-  title: string;
-  description: string;
-  questionFile?: ExamFile;
-  answerFile?: ExamFile;
-  answerSheetFile?: ExamFile;
-  startTime: string;
-  endTime: string;
-  status: 'draft' | 'published' | 'ongoing' | 'grading' | 'completed';
-  totalQuestions?: number;
-  duration?: number;
-}
-
-interface ExamAnswer {
-  questionNumber: number;
-  imageUrl: string;
-  uploadTime: string;
-}
-
-interface ExamSubmission {
-  id: string;
-  examId: string;
-  studentName: string;
-  studentUsername: string;
-  answers: ExamAnswer[];
-  submittedAt: string;
-  status: 'submitted' | 'grading' | 'graded';
-  score?: number;
-}
-
-interface GradingTask {
-  id: string;
-  examId: string;
-  examTitle: string;
-  studentName: string;
-  studentUsername: string;
-  submittedAt: string;
-  status: 'pending' | 'grading' | 'completed';
-  score?: number;
-  submission: ExamSubmission;
-}
 
 interface GraderDashboardProps {
   loading: boolean;
   exams: Exam[];
   gradingTasks: GradingTask[];
+  statistics?: GradingStatistics;
   loadAllGradingTasks: () => void;
 }
 
@@ -82,28 +33,34 @@ const GraderDashboard: React.FC<GraderDashboardProps> = ({
   loading,
   exams,
   gradingTasks,
+  statistics,
   loadAllGradingTasks
 }) => {
   React.useEffect(() => {
     loadAllGradingTasks();
   }, [loadAllGradingTasks]);
 
-  // 统计数据计算
-  const totalTasks = gradingTasks.length;
-  const completedTasks = gradingTasks.filter(task => task.status === 'completed').length;
-  const pendingTasks = gradingTasks.filter(task => task.status === 'pending').length;
-  const gradingTasks_ = gradingTasks.filter(task => task.status === 'grading').length;
+  // 优先使用API返回的统计数据，如果没有则计算本地数据
+  const totalTasks = statistics?.totalTasks ?? gradingTasks.length;
+  const completedTasks = statistics?.completedTasks ?? gradingTasks.filter(task => task.status === 'completed').length;
+  const pendingTasks = statistics?.pendingTasks ?? gradingTasks.filter(task => task.status === 'pending').length;
+  const gradingTasks_ = statistics?.gradingTasks ?? gradingTasks.filter(task => task.status === 'grading').length;
+  const todayCompleted = statistics?.todayCompleted ?? 0;
+  const efficiency = statistics?.efficiency;
+  
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   // 考试统计
   const gradingExams = exams.filter(exam => exam.status === 'grading');
   const completedExams = exams.filter(exam => exam.status === 'completed');
 
-  // 平均分计算
-  const completedTasksWithScore = gradingTasks.filter(task => task.status === 'completed' && task.score !== undefined);
-  const averageScore = completedTasksWithScore.length > 0 
-    ? completedTasksWithScore.reduce((sum, task) => sum + (task.score || 0), 0) / completedTasksWithScore.length 
-    : 0;
+  // 如果没有统计数据中的平均分，则计算本地平均分
+  const localAverageScore = statistics?.averageScore ?? (() => {
+    const completedTasksWithScore = gradingTasks.filter(task => task.status === 'completed' && task.score !== undefined);
+    return completedTasksWithScore.length > 0 
+      ? completedTasksWithScore.reduce((sum, task) => sum + (task.score || 0), 0) / completedTasksWithScore.length 
+      : 0;
+  })();
 
   // 最近的阅卷任务
   const recentTasks = gradingTasks
@@ -151,7 +108,7 @@ const GraderDashboard: React.FC<GraderDashboardProps> = ({
           <Card>
             <Statistic
               title="平均分"
-              value={averageScore.toFixed(1)}
+              value={localAverageScore.toFixed(1)}
               suffix="分"
               valueStyle={{ color: '#722ed1' }}
               prefix={<TrophyOutlined />}

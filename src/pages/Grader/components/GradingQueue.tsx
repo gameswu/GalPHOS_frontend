@@ -15,7 +15,8 @@ import {
   Modal,
   Form,
   InputNumber,
-  message
+  message,
+  Input
 } from 'antd';
 import { 
   LeftOutlined,
@@ -24,62 +25,15 @@ import {
   EditOutlined,
   CheckCircleOutlined,
   AppstoreOutlined,
-  UnorderedListOutlined
+  UnorderedListOutlined,
+  SaveOutlined,
+  StopOutlined
 } from '@ant-design/icons';
+import type { Exam, GradingTask } from '../hooks/useGraderLogic';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
-
-interface ExamFile {
-  id: string;
-  name: string;
-  url: string;
-  size: number;
-  uploadTime: string;
-}
-
-interface Exam {
-  id: string;
-  title: string;
-  description: string;
-  questionFile?: ExamFile;
-  answerFile?: ExamFile;
-  answerSheetFile?: ExamFile;
-  startTime: string;
-  endTime: string;
-  status: 'draft' | 'published' | 'ongoing' | 'grading' | 'completed';
-  totalQuestions?: number;
-  duration?: number;
-}
-
-interface ExamAnswer {
-  questionNumber: number;
-  imageUrl: string;
-  uploadTime: string;
-}
-
-interface ExamSubmission {
-  id: string;
-  examId: string;
-  studentName: string;
-  studentUsername: string;
-  answers: ExamAnswer[];
-  submittedAt: string;
-  status: 'submitted' | 'grading' | 'graded';
-  score?: number;
-}
-
-interface GradingTask {
-  id: string;
-  examId: string;
-  examTitle: string;
-  studentName: string;
-  studentUsername: string;
-  submittedAt: string;
-  status: 'pending' | 'grading' | 'completed';
-  score?: number;
-  submission: ExamSubmission;
-}
+const { TextArea } = Input;
 
 interface GradingQueueProps {
   loading: boolean;
@@ -87,7 +41,10 @@ interface GradingQueueProps {
   gradingTasks: GradingTask[];
   loadExams: () => void;
   loadGradingTasksByExam: (examId: string) => void;
-  completeGrading: (taskId: string, score: number) => void;
+  completeGrading: (taskId: string, score: number, feedback?: string) => void;
+  startGrading?: (taskId: string) => Promise<boolean>;
+  saveProgress?: (taskId: string, progressData: { score?: number; feedback?: string }) => Promise<boolean>;
+  abandonTask?: (taskId: string, reason?: string) => Promise<boolean>;
 }
 
 const GradingQueue: React.FC<GradingQueueProps> = ({
@@ -96,7 +53,10 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
   gradingTasks,
   loadExams,
   loadGradingTasksByExam,
-  completeGrading
+  completeGrading,
+  startGrading,
+  saveProgress,
+  abandonTask
 }) => {
   const [selectedExamId, setSelectedExamId] = useState<string | undefined>();
   const [viewMode, setViewMode] = useState<'list' | 'thumbnail'>('list');
@@ -142,23 +102,62 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
     }
   };
 
-  // 开始阅卷
-  const handleStartGrading = (taskId: string) => {
+  // 打开阅卷评分对话框
+  const handleOpenGradingModal = (taskId: string) => {
     setSelectedTaskId(taskId);
     setGradingModalVisible(true);
   };
 
   // 提交评分
-  const handleSubmitGrading = async (values: { score: number }) => {
+  const handleSubmitGrading = async (values: { score: number; feedback?: string }) => {
     if (!selectedTaskId) return;
     
     try {
-      await completeGrading(selectedTaskId, values.score);
+      await completeGrading(selectedTaskId, values.score, values.feedback);
       setGradingModalVisible(false);
       setSelectedTaskId(undefined);
       form.resetFields();
     } catch (error) {
       message.error('提交评分失败');
+    }
+  };
+
+  // 开始阅卷任务
+  const handleStartGrading = async (taskId: string) => {
+    if (startGrading) {
+      const success = await startGrading(taskId);
+      if (success) {
+        // 刷新任务列表
+        if (selectedExamId) {
+          loadGradingTasksByExam(selectedExamId);
+        }
+      }
+    }
+  };
+
+  // 保存阅卷进度
+  const handleSaveProgress = async (taskId: string, score?: number, feedback?: string) => {
+    if (saveProgress) {
+      const success = await saveProgress(taskId, { score, feedback });
+      if (success) {
+        // 刷新任务列表
+        if (selectedExamId) {
+          loadGradingTasksByExam(selectedExamId);
+        }
+      }
+    }
+  };
+
+  // 放弃阅卷任务
+  const handleAbandonTask = async (taskId: string, reason?: string) => {
+    if (abandonTask) {
+      const success = await abandonTask(taskId, reason);
+      if (success) {
+        // 刷新任务列表
+        if (selectedExamId) {
+          loadGradingTasksByExam(selectedExamId);
+        }
+      }
     }
   };
 
@@ -180,7 +179,7 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
             <Button
               type="link"
               icon={<EditOutlined />}
-              onClick={() => handleStartGrading(task.id)}
+              onClick={() => handleOpenGradingModal(task.id)}
               disabled={task.status === 'completed'}
             >
               {task.status === 'completed' ? '已完成' : '开始阅卷'}
@@ -272,7 +271,7 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
                 <Button
                   type="primary"
                   icon={<EditOutlined />}
-                  onClick={() => handleStartGrading(currentTask.id)}
+                  onClick={() => handleOpenGradingModal(currentTask.id)}
                   disabled={currentTask.status === 'completed'}
                 >
                   {currentTask.status === 'completed' ? '已完成' : '开始阅卷'}
@@ -410,10 +409,44 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
               precision={1}
             />
           </Form.Item>
+          
+          <Form.Item
+            name="feedback"
+            label="评语（可选）"
+          >
+            <TextArea
+              placeholder="请输入评语或建议"
+              rows={4}
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
                 提交评分
+              </Button>
+              <Button onClick={() => {
+                const values = form.getFieldsValue();
+                if (selectedTaskId && (values.score || values.feedback)) {
+                  handleSaveProgress(selectedTaskId, values.score, values.feedback);
+                }
+              }}>
+                <SaveOutlined />
+                暂存
+              </Button>
+              <Button onClick={() => {
+                if (selectedTaskId) {
+                  Modal.confirm({
+                    title: '确认放弃阅卷？',
+                    content: '放弃后该任务将重新分配给其他阅卷员',
+                    onOk: () => handleAbandonTask(selectedTaskId, '阅卷员主动放弃'),
+                  });
+                }
+              }}>
+                <StopOutlined />
+                放弃
               </Button>
               <Button onClick={() => {
                 setGradingModalVisible(false);

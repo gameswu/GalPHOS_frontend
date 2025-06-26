@@ -6,7 +6,7 @@ import {
   EyeOutlined,
   CheckCircleOutlined
 } from '@ant-design/icons';
-import type { GradingTask, Exam } from '../hooks/useGraderLogic';
+import type { GradingTask, Exam, GradingStatistics } from '../hooks/useGraderLogic';
 import UserSettings from '../../../components/UserSettings';
 import GradingQueue from './GradingQueue';
 import GraderDashboard from './GraderDashboard';
@@ -24,11 +24,15 @@ interface GraderContentProps {
   loading: boolean;
   exams: Exam[];
   gradingTasks: GradingTask[];
+  statistics?: GradingStatistics;
   loadExams: () => void;
   loadAllGradingTasks: () => void;
   loadGradingTasksByExam: (examId: string) => void;
   onAccountSettings: () => void;
-  onCompleteGrading: (taskId: string, score: number) => void;
+  onCompleteGrading: (taskId: string, score: number, feedback?: string) => void;
+  onStartGrading?: (taskId: string) => Promise<boolean>;
+  onSaveProgress?: (taskId: string, progressData: { score?: number; feedback?: string }) => Promise<boolean>;
+  onAbandonTask?: (taskId: string, reason?: string) => Promise<boolean>;
   updateProfile: (data: { username: string; avatar?: string }) => Promise<void>;
   changePassword: (data: { oldPassword: string; newPassword: string }) => Promise<void>;
   onLogout: () => void;
@@ -56,11 +60,15 @@ const GraderContent: React.FC<GraderContentProps> = ({
   loading,
   exams,
   gradingTasks,
+  statistics,
   loadExams,
   loadAllGradingTasks,
   loadGradingTasksByExam,
   onAccountSettings,
   onCompleteGrading,
+  onStartGrading,
+  onSaveProgress,
+  onAbandonTask,
   updateProfile,
   changePassword,
   onLogout
@@ -73,6 +81,7 @@ const GraderContent: React.FC<GraderContentProps> = ({
             loading={loading}
             exams={exams}
             gradingTasks={gradingTasks}
+            statistics={statistics}
             loadAllGradingTasks={loadAllGradingTasks}
           />
         );
@@ -94,6 +103,9 @@ const GraderContent: React.FC<GraderContentProps> = ({
             loadExams={loadExams}
             loadGradingTasksByExam={loadGradingTasksByExam}
             completeGrading={onCompleteGrading}
+            startGrading={onStartGrading}
+            saveProgress={onSaveProgress}
+            abandonTask={onAbandonTask}
           />
         );
       default:

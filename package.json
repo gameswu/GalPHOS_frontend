@@ -4,7 +4,7 @@
   "description": "A template for a multi-page React application using Ant Design.",
   "main": "index.js",
   "scripts": {
-    "start": "react-scripts start",
+    "start": "PORT=3000 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
