@@ -39,9 +39,15 @@ GalPHOS_frontend/
 │   │   ├── Coach/              # 教练模块
 │   │   ├── Grader/             # 阅卷者模块
 │   │   └── Student/            # 学生模块
+│   ├── types/                  # 类型定义
+│   │   └── common.ts           # 统一类型定义文件
 │   └── utils/                  # 工具函数
 │       ├── apiClient.ts        # API 客户端
 │       └── passwordHasher.ts   # 密码哈希工具
+├── docs/                       # 项目文档
+│   ├── API_TYPES_REFERENCE.md  # API 类型参考
+│   ├── TYPE_MIGRATION_GUIDE.md # 类型迁移指南
+│   └── *.md                    # 其他文档文件
 ├── build/                      # 构建输出目录
 ├── deploy.sh                   # Linux/macOS 部署脚本
 ├── deploy.bat                  # Windows 部署脚本
@@ -117,23 +123,6 @@ chmod +x deploy.sh
 deploy.bat
 ```
 
-## 🧪 测试账户
-
-系统预置了以下测试账户供开发和演示使用：
-
-### 管理员账户
-- **用户名**: `admin`
-- **密码**: `admin123`
-- **访问地址**: `/admin-login`
-
-### 普通用户账户
-| 角色 | 用户名 | 密码 | 所属机构 |
-|------|--------|------|----------|
-| 教练 | `coach001` | `123456` | 北京市 - 清华大学 |
-| 学生 | `student001` | `123456` | 上海市 - 复旦大学 |
-| 学生 | `student002` | `123456` | 广东省 - 中山大学 |
-| 阅卷者 | `grader001` | `123456` | 无地区限制 |
-
 ## 🛠️ 开发指南
 
 ### 技术栈
@@ -144,8 +133,21 @@ deploy.bat
 - **构建工具**: Create React App 5.0
 - **样式方案**: CSS + Ant Design 主题系统
 - **加密工具**: crypto-js 4.2
+- **类型系统**: 统一类型定义 (`src/types/common.ts`)
 
 ### 项目架构设计
+
+#### 统一类型系统
+```
+src/types/common.ts             # 统一类型定义文件
+├── 考试相关类型                 # Exam, StudentExam, GraderExam
+├── 题目和答案类型               # Question, ExamAnswer, ExamSubmission
+├── 成绩和排名类型               # ExamScore, RankingInfo, QuestionScore
+├── 阅卷相关类型                 # GradingTask, AdminGradingTask
+├── 用户相关类型                 # IndependentStudent, CoachManagedStudent
+├── 区域管理类型                 # Province, School, RegionChangeRequest
+└── 系统管理类型                 # SystemSettings, AdminUser
+```
 
 #### 页面组织结构
 ```
@@ -158,8 +160,7 @@ src/pages/
 │   ├── index.tsx       # 主界面容器
 │   ├── components/     # 业务组件
 │   ├── config/         # 配置文件
-│   ├── hooks/          # 业务逻辑钩子
-│   └── types/          # 类型定义
+│   └── hooks/          # 业务逻辑钩子
 ├── Coach/              # 教练模块
 ├── Grader/             # 阅卷者模块
 └── Student/            # 学生模块
@@ -170,11 +171,11 @@ src/pages/
 - **展示组件**: 负责 UI 渲染和用户交互 (`*UI.tsx`, `components/`)
 - **Hook 复用**: 抽取业务逻辑到自定义 Hook (`hooks/`)
 - **配置分离**: 菜单、路由等配置独立管理 (`config/`)
-- **类型安全**: 完整的 TypeScript 类型定义 (`types/`)
+- **类型安全**: 统一的 TypeScript 类型定义 (`src/types/common.ts`)
 
 #### 数据流设计
 ```
-LocalStorage ↔ Custom Hooks ↔ Container Components ↔ UI Components
+统一类型系统 ↔ API 层 ↔ Custom Hooks ↔ Container Components ↔ UI Components
 ```
 
 #### API 模块组织
@@ -182,10 +183,10 @@ LocalStorage ↔ Custom Hooks ↔ Container Components ↔ UI Components
 src/api/
 ├── apiClient.ts        # 统一的 HTTP 客户端
 ├── auth.ts             # 认证相关 API
-├── admin.ts            # 管理员 API
-├── coach.ts            # 教练 API
-├── student.ts          # 学生 API
-└── grader.ts           # 阅卷者 API
+├── admin.ts            # 管理员 API (引用统一类型)
+├── coach.ts            # 教练 API (引用统一类型)
+├── student.ts          # 学生 API (引用统一类型)
+└── grader.ts           # 阅卷者 API (引用统一类型)
 ```
 
 ### 开发规范
@@ -194,7 +195,7 @@ src/api/
 - **组件文件**: PascalCase (如 `LoginUI.tsx`, `AdminContent.tsx`)
 - **Hook 文件**: camelCase (如 `useAdminLogic.ts`, `useStudentLogic.ts`)
 - **配置文件**: camelCase (如 `menuConfig.tsx`, `tableConfig.tsx`)
-- **类型文件**: camelCase (如 `examTypes.ts`, `userTypes.ts`)
+- **统一类型**: `src/types/common.ts` (集中管理所有类型定义)
 - **工具文件**: camelCase (如 `apiClient.ts`, `passwordHasher.ts`)
 
 #### 代码风格规范
@@ -299,31 +300,6 @@ export const handleApiError = (error: any) => {
 };
 ```
 
-### 测试策略
-
-#### 单元测试
-```bash
-# 运行测试
-npm test
-
-# 覆盖率测试
-npm run test -- --coverage
-```
-
-#### 组件测试示例
-```typescript
-import { render, screen, fireEvent } from '@testing-library/react';
-import { LoginUI } from './LoginUI';
-
-describe('LoginUI Component', () => {
-  test('renders login form', () => {
-    render(<LoginUI onLogin={jest.fn()} />);
-    expect(screen.getByLabelText(/用户名/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/密码/i)).toBeInTheDocument();
-  });
-});
-```
-
 ## 📦 部署指南
 
 ### 智能一键部署
@@ -368,14 +344,6 @@ deploy.bat
   - 🗜️ Nginx 静态文件服务
   - 📦 生产环境优化
 - **访问**: http://localhost:3000
-
-#### 选项 4: IIS 部署 (Windows 专用)
-- **适用**: Windows Server 环境
-- **特性**: 
-  - 🏢 企业级部署
-  - 🔄 URL 重写支持
-  - 🗜️ 静态文件压缩
-  - 🔒 集成 Windows 认证
 
 ### 手动构建
 
@@ -422,128 +390,6 @@ REACT_APP_API_URL=https://api.galphos.com
 REACT_APP_VERSION=1.0.0
 REACT_APP_ENV=production
 ```
-
-### 服务器配置要求
-
-#### Nginx 配置示例
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    root /var/www/galphos/build;
-    index index.html;
-
-    # SPA 路由支持
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # 静态资源缓存
-    location /static/ {
-        expires 1y;
-        add_header Cache-Control "public, no-transform";
-    }
-
-    # Gzip 压缩
-    gzip on;
-    gzip_types text/css application/javascript application/json;
-}
-```
-
-#### Apache 配置示例
-```apache
-<VirtualHost *:80>
-    ServerName your-domain.com
-    DocumentRoot /var/www/galphos/build
-    
-    # SPA 路由支持
-    <Directory /var/www/galphos/build>
-        Options -Indexes
-        AllowOverride All
-        Require all granted
-        
-        RewriteEngine On
-        RewriteBase /
-        RewriteRule ^index\.html$ - [L]
-        RewriteCond %{REQUEST_FILENAME} !-f
-        RewriteCond %{REQUEST_FILENAME} !-d
-        RewriteRule . /index.html [L]
-    </Directory>
-</VirtualHost>
-```
-
-### 常见问题解决
-
-#### Q1: 构建失败 "npm run build"
-
-**可能原因**:
-- Node.js 版本过低
-- 依赖安装不完整
-- 内存不足
-
-**解决方案**:
-```bash
-# 清理缓存
-npm cache clean --force
-
-# 删除 node_modules 重新安装
-rm -rf node_modules package-lock.json
-npm install
-
-# 增加内存限制 (Windows)
-set NODE_OPTIONS=--max_old_space_size=4096 && npm run build
-
-# 增加内存限制 (Linux/macOS)
-NODE_OPTIONS=--max_old_space_size=4096 npm run build
-```
-
-#### Q2: Docker 构建失败
-
-**解决方案**:
-```bash
-# 检查 Docker 状态
-docker --version
-docker ps
-
-# 清理 Docker 缓存
-docker system prune -f
-
-# 重新构建
-docker build --no-cache -t galphos-frontend .
-```
-
-#### Q3: 页面显示空白
-
-**可能原因**:
-- 路由配置错误
-- 静态资源路径问题
-- 服务器不支持 SPA 路由
-
-**解决方案**:
-1. 检查服务器是否配置了 SPA 路由重写
-2. 确认 `package.json` 中的 `homepage` 配置
-3. 检查浏览器控制台错误信息
-
-#### Q4: 端口被占用
-
-**解决方案**:
-```bash
-# 查看端口占用 (Linux/macOS)
-lsof -i :3000
-sudo kill -9 <PID>
-
-# 查看端口占用 (Windows)
-netstat -ano | findstr :3000
-taskkill /PID <PID> /F
-```
-
-### 性能优化建议
-
-1. **启用 Gzip 压缩**
-2. **配置静态资源缓存**
-3. **使用 CDN 加速**
-4. **启用 HTTP/2**
-5. **配置 Service Worker (PWA)**
 
 ## 🤝 贡献指南
 
@@ -609,85 +455,26 @@ npm install
 npm start
 ```
 
-#### 3. 开发工具配置
-
-**VS Code 推荐扩展**:
-- ES7+ React/Redux/React-Native snippets
-- TypeScript Importer
-- Prettier - Code formatter
-- ESLint
-- Auto Rename Tag
-- Bracket Pair Colorizer
-
-**VS Code 配置** (`.vscode/settings.json`):
-```json
-{
-  "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
-  },
-  "typescript.preferences.importModuleSpecifier": "relative"
-}
-```
-
-## ❓ 常见问题
-
-### Q1: 无法登录测试账户？
-**A**: 请检查浏览器控制台错误信息，确认：
-1. API 服务是否正常运行
-2. 网络连接是否正常
-3. 浏览器是否支持 LocalStorage
-4. 清除浏览器缓存后重试
-
-### Q2: 页面样式异常？
-**A**: 确认以下几点：
-1. Ant Design 样式是否正确加载
-2. 检查 CSS 文件是否有冲突
-3. 确认浏览器兼容性
-4. 尝试强制刷新页面 (Ctrl+F5)
-
-### Q3: 路由跳转失败？
-**A**: 检查以下内容：
-1. 路由配置是否正确
-2. 权限验证逻辑是否有误
-3. 浏览器是否支持 History API
-4. 服务器是否配置了 SPA 路由重写
-
-### Q4: 构建速度很慢？
-**A**: 尝试以下优化方案：
-```bash
-# 清理缓存
-npm cache clean --force
-
-# 增加内存限制
-export NODE_OPTIONS=--max_old_space_size=4096
-
-# 使用 npm ci 代替 npm install (CI 环境)
-npm ci
-```
-
-### Q5: 开发环境热重载不工作？
-**A**: 检查以下配置：
-1. 确认 `react-scripts` 版本
-2. 检查文件监听限制 (Linux 系统)
-3. 关闭防病毒软件的实时扫描
-4. 重启开发服务器
-
-### Q6: TypeScript 编译错误？
-**A**: 常见解决方案：
-```bash
-# 检查 TypeScript 版本兼容性
-npm ls typescript
-
-# 重新生成类型声明
-npm run build
-
-# 清理类型缓存
-rm -rf node_modules/@types
-npm install
-```
-
 ## 📈 更新日志
+
+### v1.1.0 (2025-06-26)
+#### 🏗️ 架构重构
+- **统一类型系统**: 完成全项目类型定义重构，建立 `src/types/common.ts` 统一类型管理
+- **数据模型简化**: 删除年级、邮件和题目类型等冗余字段，专注核心业务功能
+- **API 层优化**: 所有 API 接口统一使用集中类型定义，提升类型安全性
+- **组件架构优化**: hooks、组件、页面全部切换为统一类型系统
+
+#### 📚 文档完善
+- 新增 `docs/API_TYPES_REFERENCE.md` 统一类型定义参考文档
+- 新增 `docs/TYPE_MIGRATION_GUIDE.md` 类型迁移指南
+- 完善 API 文档，所有接口引用统一类型定义
+- 更新开发指南，反映最新架构设计
+
+#### 🔧 技术改进
+- 消除重复类型定义，删除各模块独立类型文件
+- 优化项目结构，增强代码可维护性
+- 完善 TypeScript 严格类型检查
+- 提升开发体验和代码质量
 
 ### v1.0.0 (2024-06-25)
 #### ✨ 新功能
@@ -725,21 +512,13 @@ npm install
 
 本项目采用 **MIT 许可证** - 查看 [LICENSE](LICENSE) 文件了解详情。
 
-## 🔗 相关链接
-
-- **项目仓库**: [GitHub Repository](<repository-url>)
-- **在线演示**: [Demo Site](<demo-url>)
-- **API 文档**: [API Documentation](docs/)
-- **问题反馈**: [Issues](<issues-url>)
-- **更新通知**: [Releases](<releases-url>)
-
 ---
 
 <div align="center">
 
-**GalPHOS Frontend** © 2024
+**GalPHOS Frontend** © 2025
 
-Made with ❤️ by [Development Team]
+Made with ❤️ by [gameswu](https://github.com/gameswu)
 
 [⬆ 回到顶部](#galphos-前端系统)
 

@@ -278,12 +278,6 @@ const LoginUI: React.FC<LoginUIProps> = ({
                   </Button>
                 </Form.Item>
               </Form>
-
-              <div style={{ textAlign: 'center', color: '#999', fontSize: '12px', marginTop: '12px' }}>
-                <Text type="secondary">
-                  需要先注册并等待管理员审核
-                </Text>
-              </div>
             </TabPane>
 
             {/* 注册标签页 */}
