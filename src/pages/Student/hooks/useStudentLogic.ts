@@ -146,6 +146,7 @@ export const useStudentLogic = () => {
   const handleLogout = useCallback(() => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userInfo');
+    localStorage.removeItem('token');
     message.success('已退出登录');
   }, []);
 

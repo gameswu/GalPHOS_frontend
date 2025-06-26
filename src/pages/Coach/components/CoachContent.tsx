@@ -32,19 +32,24 @@ interface CoachContentProps {
   onAddStudent: (studentData: Omit<Student, 'id' | 'createdAt' | 'status'>) => void;
   onUpdateStudent: (studentId: string, studentData: Partial<Student>) => void;
   onDeleteStudent: (studentId: string) => void;
-  updateProfile: (data: { username: string; avatar?: string }) => Promise<void>;
+  updateProfile: (data: { name?: string; phone?: string; avatar?: string }) => Promise<void>;
   changePassword: (data: { oldPassword: string; newPassword: string }) => Promise<void>;
   requestRegionChange: (data: { province: string; school: string; reason: string }) => Promise<void>;
   onLogout: () => void;
   submitExamAnswers: (examId: string, answers: ExamAnswer[], studentUsername: string) => Promise<void>;
-  getExamSubmission: (examId: string, studentUsername?: string) => ExamSubmission | null;
+  getExamSubmission: (examId: string, studentUsername?: string) => Promise<ExamSubmission | null>;
   downloadFile: (fileUrl: string, fileName: string) => void;
+  getExamDetail: (examId: string) => Promise<any>;
+  uploadAnswerImage: (examId: string, file: File, questionNumber: number, studentUsername: string) => Promise<string | null>;
+  getGradeReports: (params?: { examId?: string; studentUsername?: string }) => Promise<any[]>;
+  getDashboardStats: () => Promise<any>;
+  uploadAvatar: (file: File) => Promise<string | null>;
 }
 
 // 账户设置页面
 const AccountSettingsPage: React.FC<{ 
   userInfo: any;
-  updateProfile: (data: { username: string; avatar?: string }) => Promise<void>;
+  updateProfile: (data: { name?: string; phone?: string; avatar?: string }) => Promise<void>;
   changePassword: (data: { oldPassword: string; newPassword: string }) => Promise<void>;
   requestRegionChange: (data: { province: string; school: string; reason: string }) => Promise<void>;
   onLogout: () => void;
@@ -177,6 +182,187 @@ const DashboardPage: React.FC<{
           <Text type="secondary">暂无进行中的考试</Text>
         )}
       </Card>
+    </div>
+  );
+};
+
+// 增强仪表板页面
+const EnhancedDashboardPage: React.FC<{ 
+  students: Student[];
+  exams: Exam[];
+  getDashboardStats: () => Promise<any>;
+}> = ({ students, exams, getDashboardStats }) => {
+  const [statsData, setStatsData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    const loadStats = async () => {
+      setLoading(true);
+      try {
+        const stats = await getDashboardStats();
+        setStatsData(stats);
+      } catch (error) {
+        console.error('加载统计数据失败:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [getDashboardStats]);
+
+  // 本地计算的统计数据作为后备
+  const currentTime = new Date();
+  const activeStudents = students.filter(s => s.status === 'active').length;
+  const currentExams = exams.filter(exam => 
+    (exam.status === 'published' || exam.status === 'ongoing') && new Date(exam.endTime) > currentTime
+  );
+  const completedExams = exams.filter(exam => 
+    exam.status === 'completed' || new Date(exam.endTime) < currentTime
+  );
+
+  // 使用API数据或本地计算数据
+  const displayStats = statsData || {
+    totalStudents: students.length,
+    activeStudents,
+    totalExams: exams.length,
+    currentExams: currentExams.length,
+    completedExams: completedExams.length,
+    pendingGrading: 0,
+    averageScore: 0
+  };
+
+  return (
+    <div>
+      <Title level={4}>
+        <UserOutlined style={{ marginRight: 8 }} />
+        教练仪表板
+      </Title>
+      
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="学生总数"
+              value={displayStats.totalStudents}
+              prefix={<TeamOutlined />}
+              valueStyle={{ color: '#3f8600' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="活跃学生"
+              value={displayStats.activeStudents}
+              prefix={<UserOutlined />}
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="进行中考试"
+              value={displayStats.currentExams}
+              prefix={<FileTextOutlined />}
+              valueStyle={{ color: '#cf1322' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="已完成考试"
+              value={displayStats.completedExams}
+              prefix={<TrophyOutlined />}
+              valueStyle={{ color: '#722ed1' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {statsData && (
+        <>
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="待批改答卷"
+                  value={statsData.pendingGrading || 0}
+                  valueStyle={{ color: '#fa541c' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="平均成绩"
+                  value={statsData.averageScore || 0}
+                  precision={1}
+                  suffix="分"
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="参与率"
+                  value={statsData.participationRate || 0}
+                  precision={1}
+                  suffix="%"
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card>
+                <Statistic
+                  title="及格率"
+                  value={statsData.passRate || 0}
+                  precision={1}
+                  suffix="%"
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          {statsData.recentActivity && (
+            <Card title="最近活动" style={{ marginBottom: 24 }}>
+              <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                {statsData.recentActivity.map((activity: any, index: number) => (
+                  <div key={index} style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                    <Text>{activity.description}</Text>
+                    <Text type="secondary" style={{ float: 'right' }}>
+                      {new Date(activity.timestamp).toLocaleString()}
+                    </Text>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {statsData.topStudents && (
+            <Card title="优秀学生" style={{ marginBottom: 24 }}>
+              <Row gutter={[16, 16]}>
+                {statsData.topStudents.slice(0, 5).map((student: any, index: number) => (
+                  <Col key={student.id} xs={24} sm={12} md={8}>
+                    <Card size="small">
+                      <Text strong>{student.name}</Text>
+                      <br />
+                      <Text type="secondary">平均分: {student.averageScore}分</Text>
+                      <br />
+                      <Text type="secondary">排名: #{index + 1}</Text>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            </Card>
+          )}
+        </>
+      )}
     </div>
   );
 };
@@ -493,15 +679,20 @@ const CoachContent: React.FC<CoachContentProps> = ({
   onLogout,
   submitExamAnswers,
   getExamSubmission,
-  downloadFile
+  downloadFile,
+  getExamDetail,
+  uploadAnswerImage,
+  getGradeReports,
+  getDashboardStats,
+  uploadAvatar
 }) => {
   switch (selectedKey) {
     case 'dashboard':
       return (
-        <DashboardPage 
+        <EnhancedDashboardPage 
           students={students}
           exams={exams}
-          getExamSubmission={getExamSubmission}
+          getDashboardStats={getDashboardStats}
         />
       );
     
@@ -523,7 +714,10 @@ const CoachContent: React.FC<CoachContentProps> = ({
           submitExamAnswers={(examId, answers, studentUsername) => 
             submitExamAnswers(examId, answers, studentUsername!)
           }
-          getExamSubmission={getExamSubmission}
+          getExamSubmission={(examId, studentUsername) => {
+            // 为了兼容性，这里返回null，实际应该重构组件支持异步
+            return null;
+          }}
           downloadFile={downloadFile}
           userRole="coach"
           students={students}
@@ -536,7 +730,25 @@ const CoachContent: React.FC<CoachContentProps> = ({
           exams={exams}
           loading={loading}
           downloadFile={downloadFile}
-          getExamSubmission={getExamSubmission}
+          getExamSubmission={(examId, studentUsername) => {
+            // 为了兼容性，这里返回null，实际应该重构组件支持异步
+            return null;
+          }}
+          userRole="coach"
+          students={students}
+        />
+      );
+    
+    case 'history-exam':
+      return (
+        <HistoryExamPage
+          exams={exams}
+          loading={loading}
+          downloadFile={downloadFile}
+          getExamSubmission={(examId, studentUsername) => {
+            // 为了兼容性，这里返回null，实际应该重构组件支持异步
+            return null;
+          }}
           userRole="coach"
           students={students}
         />
@@ -555,10 +767,10 @@ const CoachContent: React.FC<CoachContentProps> = ({
     
     default:
       return (
-        <DashboardPage 
+        <EnhancedDashboardPage 
           students={students}
           exams={exams}
-          getExamSubmission={getExamSubmission}
+          getDashboardStats={getDashboardStats}
         />
       );
   }

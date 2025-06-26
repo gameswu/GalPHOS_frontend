@@ -40,7 +40,12 @@ const Coach: React.FC = () => {
     requestRegionChange,
     submitExamAnswers,
     getExamSubmission,
-    downloadFile
+    downloadFile,
+    getExamDetail,
+    uploadAnswerImage,
+    getGradeReports,
+    getDashboardStats,
+    uploadAvatar
   } = useCoachLogic();
 
   // 检查登录状态和用户权限
@@ -237,6 +242,11 @@ const Coach: React.FC = () => {
             submitExamAnswers={submitExamAnswers}
             getExamSubmission={getExamSubmission}
             downloadFile={downloadFile}
+            getExamDetail={getExamDetail}
+            uploadAnswerImage={uploadAnswerImage}
+            getGradeReports={getGradeReports}
+            getDashboardStats={getDashboardStats}
+            uploadAvatar={uploadAvatar}
           />
         </Content>
       </Layout>

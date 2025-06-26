@@ -3,38 +3,77 @@
 ## 概述
 GalPHOS系统的认证API接口，提供用户登录、注册、管理员登录、Token验证等功能。所有密码在前端使用SHA-256+盐值进行哈希化处理后发送。
 
----
+## 基础信息
 
-## API接口列表
-> [!NOTE]
-> 所有接口路径均为 `/api` 前缀。
+### API基础URL
+```
+http://localhost:3001/api/auth
+```
 
-### 1. 用户登录
+### Token说明
+- **Token类型**: JWT (JSON Web Token)  
+- **生成时机**: 用户/管理员登录成功后生成
+- **有效期**: 24小时（可配置）
+- **存储位置**: 前端localStorage中存储
+- **使用方式**: 在需要认证的接口请求头中携带
+- **刷新机制**: Token过期后需要重新登录获取新Token
 
-**接口路径：** `POST /auth/login`
-
-**请求参数：**
+### 统一请求头（需要认证的接口）
 ```typescript
 {
-  role: 'coach' | 'student' | 'grader',  // 用户角色
-  username: string,                      // 用户名
-  password: string                       // 哈希化密码
+  "Authorization": "Bearer <token>",
+  "Content-Type": "application/json"
 }
 ```
 
-**响应格式：**
+### 统一响应格式
+```typescript
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  token?: string; // 登录接口会返回token
+}
+```
+
+---
+
+## 1. 用户登录
+
+### 1.1 普通用户登录
+**接口**: `POST /login`
+
+**描述**: 教练、学生、阅卷员登录接口
+
+**请求头**:
 ```typescript
 {
-  success: boolean,                      // 请求是否成功
-  data?: {                              // 用户信息
-    username: string,
-    role: string,
-    province?: string,
-    school?: string,
-    // ... 其他用户信息
+  "Content-Type": "application/json"
+}
+```
+
+**请求体**:
+```typescript
+{
+  role: "coach" | "student" | "grader",
+  username: "user001",
+  password: "hashed_password_string"  // 前端SHA-256+盐值哈希后的密码
+}
+```
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    username: "user001",
+    role: "coach",
+    province: "北京市",
+    school: "北京第一中学",
+    avatar?: "https://example.com/avatar.jpg"
   },
-  message?: string,                      // 响应消息
-  token?: string                         // JWT令牌
+  message: "登录成功",
+  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 

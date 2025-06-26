@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
+import CoachAPI from '../../../api/coach';
 
 export interface Student {
   id: string;
   name: string;
   username: string;
-  email: string;
   phone: string;
   grade: string;
   province: string;
@@ -76,10 +76,13 @@ export const useCoachLogic = () => {
   const loadStudents = useCallback(async () => {
     setLoading(true);
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setStudents(mockStudents);
-      message.success('学生数据加载成功');
+      const response = await CoachAPI.getStudents();
+      if (response.success && response.data) {
+        setStudents(Array.isArray(response.data) ? response.data : (response.data as any).students || []);
+        message.success('学生数据加载成功');
+      } else {
+        message.error(response.message || '加载学生数据失败');
+      }
     } catch (error) {
       message.error('加载学生数据失败');
       console.error('加载学生数据失败:', error);
@@ -92,10 +95,13 @@ export const useCoachLogic = () => {
   const loadExams = useCallback(async () => {
     setLoading(true);
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setExams(mockExams);
-      message.success('考试数据加载成功');
+      const response = await CoachAPI.getExams();
+      if (response.success && response.data) {
+        setExams(Array.isArray(response.data) ? response.data : (response.data as any).exams || []);
+        message.success('考试数据加载成功');
+      } else {
+        message.error(response.message || '加载考试数据失败');
+      }
     } catch (error) {
       message.error('加载考试数据失败');
       console.error('加载考试数据失败:', error);
@@ -107,55 +113,39 @@ export const useCoachLogic = () => {
   // 提交学生注册申请
   const addStudent = useCallback(async (studentData: Omit<Student, 'id' | 'createdAt' | 'status'>) => {
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // 获取当前教练信息
-      const currentUserInfo = localStorage.getItem('userInfo');
-      if (!currentUserInfo) {
-        throw new Error('未找到教练信息');
-      }
-      
-      const coachInfo = JSON.parse(currentUserInfo);
-      
-      // 创建学生注册申请
-      const registrationRequest = {
-        id: `req_${Date.now()}`,
+      const response = await CoachAPI.addStudent({
         username: studentData.username,
-        password: 'default123', // 临时密码，审核通过后可以修改
-        province: studentData.province,
-        school: studentData.school,
-        grade: studentData.grade,
-        coachUsername: coachInfo.username,
-        status: 'pending' as const,
-        createdAt: new Date().toISOString()
-      };
+        grade: studentData.grade
+      });
       
-      // 保存到localStorage（实际应该发送到后端API）
-      const existingRequests = JSON.parse(localStorage.getItem('studentRegistrationRequests') || '[]');
-      existingRequests.push(registrationRequest);
-      localStorage.setItem('studentRegistrationRequests', JSON.stringify(existingRequests));
-      
-      message.success('学生注册申请已提交，等待管理员审核');
+      if (response.success) {
+        message.success('学生添加成功');
+        // 重新加载学生列表
+        loadStudents();
+      } else {
+        message.error(response.message || '添加学生失败');
+      }
     } catch (error) {
-      message.error('提交学生注册申请失败');
-      console.error('提交学生注册申请失败:', error);
+      message.error('添加学生失败');
+      console.error('添加学生失败:', error);
     }
-  }, []);
+  }, [loadStudents]);
 
   // 更新学生
   const updateStudent = useCallback(async (studentId: string, studentData: Partial<Student>) => {
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await CoachAPI.updateStudent(studentId, studentData);
       
-      setStudents(prev => prev.map(student => 
-        student.id === studentId 
-          ? { ...student, ...studentData }
-          : student
-      ));
-      
-      message.success('学生信息更新成功');
+      if (response.success) {
+        setStudents(prev => prev.map(student => 
+          student.id === studentId 
+            ? { ...student, ...studentData }
+            : student
+        ));
+        message.success('学生信息更新成功');
+      } else {
+        message.error(response.message || '更新学生信息失败');
+      }
     } catch (error) {
       message.error('更新学生信息失败');
       console.error('更新学生信息失败:', error);
@@ -165,11 +155,14 @@ export const useCoachLogic = () => {
   // 删除学生
   const deleteStudent = useCallback(async (studentId: string) => {
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await CoachAPI.removeStudent(studentId);
       
-      setStudents(prev => prev.filter(student => student.id !== studentId));
-      message.success('学生删除成功');
+      if (response.success) {
+        setStudents(prev => prev.filter(student => student.id !== studentId));
+        message.success('学生删除成功');
+      } else {
+        message.error(response.message || '删除学生失败');
+      }
     } catch (error) {
       message.error('删除学生失败');
       console.error('删除学生失败:', error);
@@ -177,21 +170,24 @@ export const useCoachLogic = () => {
   }, []);
 
   // 更新个人资料
-  const updateProfile = useCallback(async (data: { username: string; avatar?: string }) => {
+  const updateProfile = useCallback(async (data: { name?: string; phone?: string; avatar?: string }) => {
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await CoachAPI.updateProfile(data);
       
-      // 更新本地存储的用户信息
-      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-      const updatedUserInfo = {
-        ...userInfo,
-        username: data.username,
-        avatar: data.avatar
-      };
-      localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
-      
-      message.success('个人资料更新成功');
+      if (response.success) {
+        // 更新本地存储的用户信息
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        const updatedUserInfo = {
+          ...userInfo,
+          ...data
+        };
+        localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
+        
+        message.success('个人资料更新成功');
+      } else {
+        message.error(response.message || '更新个人资料失败');
+        throw new Error(response.message);
+      }
     } catch (error) {
       message.error('更新个人资料失败');
       throw error;
@@ -201,12 +197,17 @@ export const useCoachLogic = () => {
   // 修改密码
   const changePassword = useCallback(async (data: { oldPassword: string; newPassword: string }) => {
     try {
-      // 模拟API调用验证旧密码
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await CoachAPI.changePassword({
+        oldPassword: data.oldPassword,
+        newPassword: data.newPassword
+      });
       
-      // 这里应该调用后端API验证旧密码并更新新密码
-      // 暂时模拟成功
-      message.success('密码修改成功');
+      if (response.success) {
+        message.success('密码修改成功');
+      } else {
+        message.error(response.message || '密码修改失败');
+        throw new Error(response.message);
+      }
     } catch (error) {
       message.error('密码修改失败');
       throw error;
@@ -216,28 +217,18 @@ export const useCoachLogic = () => {
   // 申请变更赛区
   const requestRegionChange = useCallback(async (data: { province: string; school: string; reason: string }) => {
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await CoachAPI.requestRegionChange({
+        province: data.province,
+        school: data.school,
+        reason: data.reason
+      });
       
-      // 将申请保存到本地存储（实际应该发送到后端）
-      const requests = JSON.parse(localStorage.getItem('regionChangeRequests') || '[]');
-      const newRequest = {
-        id: Date.now().toString(),
-        username: JSON.parse(localStorage.getItem('userInfo') || '{}').username,
-        role: 'coach',
-        currentProvince: JSON.parse(localStorage.getItem('userInfo') || '{}').province,
-        currentSchool: JSON.parse(localStorage.getItem('userInfo') || '{}').school,
-        requestedProvince: data.province,
-        requestedSchool: data.school,
-        reason: data.reason,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      };
-      
-      requests.push(newRequest);
-      localStorage.setItem('regionChangeRequests', JSON.stringify(requests));
-      
-      message.success('赛区变更申请已提交，等待管理员审核');
+      if (response.success) {
+        message.success('赛区变更申请已提交，等待管理员审核');
+      } else {
+        message.error(response.message || '提交申请失败');
+        throw new Error(response.message);
+      }
     } catch (error) {
       message.error('提交申请失败');
       throw error;
@@ -253,41 +244,28 @@ export const useCoachLogic = () => {
   const handleLogout = useCallback(() => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userInfo');
+    localStorage.removeItem('token');
     message.success('已退出登录');
   }, []);
 
   // 为学生提交考试答案（教练代为提交）
   const submitExamAnswers = useCallback(async (examId: string, answers: ExamAnswer[], studentUsername: string) => {
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const submission: ExamSubmission = {
-        id: `submission_${Date.now()}`,
-        examId,
+      const response = await CoachAPI.submitAnswersForStudent(examId, {
         studentUsername,
-        answers,
-        submittedAt: new Date().toISOString(),
-        status: 'submitted'
-      };
+        answers: answers.map(answer => ({
+          questionNumber: answer.questionNumber,
+          imageUrl: answer.imageUrl,
+          uploadTime: answer.uploadTime
+        }))
+      });
       
-      // 保存到localStorage（实际应该发送到后端API）
-      const existingSubmissions = JSON.parse(localStorage.getItem('examSubmissions') || '[]');
-      // 检查是否已有提交记录，如果有则更新，没有则新增
-      const existingIndex = existingSubmissions.findIndex((sub: ExamSubmission) => 
-        sub.examId === examId && sub.studentUsername === studentUsername
-      );
-      
-      if (existingIndex >= 0) {
-        existingSubmissions[existingIndex] = submission;
-        message.success(`${studentUsername} 的答案提交更新成功`);
-      } else {
-        existingSubmissions.push(submission);
+      if (response.success) {
         message.success(`${studentUsername} 的答案提交成功`);
+      } else {
+        message.error(response.message || '答案提交失败');
+        throw new Error(response.message);
       }
-      
-      localStorage.setItem('examSubmissions', JSON.stringify(existingSubmissions));
-      
     } catch (error) {
       message.error('答案提交失败');
       throw error;
@@ -295,14 +273,15 @@ export const useCoachLogic = () => {
   }, []);
 
   // 获取考试提交记录
-  const getExamSubmission = useCallback((examId: string, studentUsername?: string): ExamSubmission | null => {
+  const getExamSubmission = useCallback(async (examId: string, studentUsername?: string): Promise<ExamSubmission | null> => {
     try {
-      const submissions = JSON.parse(localStorage.getItem('examSubmissions') || '[]');
-      
-      return submissions.find((sub: ExamSubmission) => 
-        sub.examId === examId && sub.studentUsername === studentUsername
-      ) || null;
+      const response = await CoachAPI.getSubmissions(examId, studentUsername);
+      if (response.success && response.data && Array.isArray(response.data) && response.data.length > 0) {
+        return response.data[0]; // 返回第一个匹配的提交记录
+      }
+      return null;
     } catch (error) {
+      console.error('获取考试提交记录失败:', error);
       return null;
     }
   }, []);
@@ -323,6 +302,93 @@ export const useCoachLogic = () => {
     }
   }, []);
 
+  // 获取考试详情
+  const getExamDetail = useCallback(async (examId: string) => {
+    try {
+      const response = await CoachAPI.getExamDetails(examId);
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        message.error(response.message || '获取考试详情失败');
+        return null;
+      }
+    } catch (error) {
+      message.error('获取考试详情失败');
+      console.error('获取考试详情失败:', error);
+      return null;
+    }
+  }, []);
+
+  // 上传答题图片
+  const uploadAnswerImage = useCallback(async (examId: string, file: File, questionNumber: number, studentUsername: string) => {
+    try {
+      const response = await CoachAPI.uploadAnswerImage(examId, file, questionNumber, studentUsername);
+      if (response.success && response.data) {
+        message.success('图片上传成功');
+        return response.data.imageUrl;
+      } else {
+        message.error(response.message || '图片上传失败');
+        return null;
+      }
+    } catch (error) {
+      message.error('图片上传失败');
+      console.error('图片上传失败:', error);
+      return null;
+    }
+  }, []);
+
+  // 获取成绩报告
+  const getGradeReports = useCallback(async (params?: { examId?: string; studentUsername?: string }) => {
+    try {
+      const response = await CoachAPI.getGradesDetails(params);
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        message.error(response.message || '获取成绩报告失败');
+        return [];
+      }
+    } catch (error) {
+      message.error('获取成绩报告失败');
+      console.error('获取成绩报告失败:', error);
+      return [];
+    }
+  }, []);
+
+  // 获取仪表板统计
+  const getDashboardStats = useCallback(async () => {
+    try {
+      const response = await CoachAPI.getDashboardStats();
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        message.error(response.message || '获取统计数据失败');
+        return null;
+      }
+    } catch (error) {
+      message.error('获取统计数据失败');
+      console.error('获取统计数据失败:', error);
+      return null;
+    }
+  }, []);
+
+  // 上传头像
+  const uploadAvatar = useCallback(async (file: File) => {
+    try {
+      const response = await CoachAPI.uploadAvatar(file);
+      if (response.success && response.data) {
+        message.success('头像上传成功');
+        return response.data.avatarUrl;
+      } else {
+        message.error(response.message || '头像上传失败');
+        return null;
+      }
+    } catch (error) {
+      message.error('头像上传失败');
+      console.error('头像上传失败:', error);
+      return null;
+    }
+  }, []);
+
   return {
     loading,
     students,
@@ -339,6 +405,11 @@ export const useCoachLogic = () => {
     requestRegionChange,
     submitExamAnswers,
     getExamSubmission,
-    downloadFile
+    downloadFile,
+    getExamDetail,
+    uploadAnswerImage,
+    getGradeReports,
+    getDashboardStats,
+    uploadAvatar
   };
 };
