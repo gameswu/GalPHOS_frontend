@@ -34,7 +34,7 @@ import {
   CameraOutlined,
   LoadingOutlined
 } from '@ant-design/icons';
-import type { AdminUser, SystemSettings as SystemSettingsType, PasswordChangeData, AdminCreateData } from '../types/systemTypes';
+import type { AdminUser, SystemSettings as SystemSettingsType, PasswordChangeData, AdminCreateData } from '../../../types/common';
 import type { UploadProps, RcFile } from 'antd/es/upload';
 import './SystemSettings.css'; // 导入样式文件
 

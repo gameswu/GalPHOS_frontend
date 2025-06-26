@@ -1,5 +1,36 @@
 # GalPHOS API文档统一格式说明
 
+> **重要更新**: 本文档已根据统一类型系统（`src/types/common.ts`）进行全面更新，确保所有API接口使用一致的数据类型定义。
+
+## 统一类型系统说明
+
+### 类型定义来源
+所有API接口中使用的数据类型均基于 `src/types/common.ts` 中定义的统一类型系统，这确保了前后端数据结构的一致性和类型安全。
+
+### 主要类型分类
+1. **考试相关类型**: `Exam`, `StudentExam`, `GraderExam`, `ExamWithQuestions`
+2. **题目相关类型**: `Question`, `QuestionScore`
+3. **答案相关类型**: `ExamAnswer`, `ExamSubmission`
+4. **阅卷相关类型**: `GradingTask`, `AdminGradingTask`
+5. **用户相关类型**: `PendingUser`, `ApprovedUser`, `AdminUser`
+6. **区域相关类型**: `Province`, `School`, `RegionChangeRequest`
+7. **系统相关类型**: `SystemSettings`, `StudentRegistrationRequest`
+
+### 类型引用格式
+在API文档中，所有类型引用都应遵循以下格式：
+```typescript
+// 引用统一类型定义
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+}
+
+// 使用统一类型
+type ExamListResponse = ApiResponse<Exam[]>;
+type StudentExamResponse = ApiResponse<StudentExam>;
+```
+
 ## Token认证机制详解
 
 ### 什么是Token？

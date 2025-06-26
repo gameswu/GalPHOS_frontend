@@ -4,6 +4,8 @@
 
 本文档描述了阅卷者面板的完整API接口设计，包括阅卷任务管理、考试管理、统计分析等功能模块。
 
+> **类型定义**: 本文档中的所有数据类型基于统一类型系统定义，详见 [API类型定义参考](./API_TYPES_REFERENCE.md)
+
 ## API 基础信息
 
 - **基础URL**: `http://localhost:3001/api/grader`
@@ -32,11 +34,12 @@ interface ApiResponse<T> {
 - `limit`: 每页数量（可选，默认20）
 - `examId`: 考试ID（可选）
 - `status`: 任务状态（可选：pending, grading, completed）
-- `priority`: 优先级（可选：low, normal, high, urgent）
+- `priority`: 优先级（可选：low, medium, high）
 - `search`: 搜索关键词（可选）
 
 **响应**:
 ```typescript
+// 使用统一类型：ApiResponse<{ tasks: GradingTask[], total: number, page: number, limit: number }>
 {
   success: true,
   data: {
@@ -54,6 +57,7 @@ interface ApiResponse<T> {
 
 **响应**:
 ```typescript
+// 使用统一类型：ApiResponse<GradingTask>
 {
   success: true,
   data: GradingTask
@@ -125,7 +129,6 @@ interface ApiResponse<T> {
 - `limit`: 每页数量（可选）
 - `status`: 考试状态（可选：grading, completed）
 - `province`: 省份（可选）
-- `grade`: 年级（可选）
 - `subject`: 科目（可选）
 
 ### 2.2 获取考试详情
@@ -230,7 +233,6 @@ interface ApiResponse<T> {
   data: {
     id: string,
     username: string,
-    email: string,
     avatar?: string,
     role: 'grader',
     province?: string,
@@ -259,7 +261,6 @@ interface ApiResponse<T> {
 ```typescript
 {
   username?: string,
-  email?: string,
   avatar?: string,
   school?: string
 }

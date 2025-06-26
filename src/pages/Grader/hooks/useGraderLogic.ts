@@ -1,24 +1,24 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
-import GraderAPI, { 
-  Exam, 
+import GraderAPI from '../../../api/grader';
+import type { 
+  GraderExam as Exam, 
   GradingTask, 
   GradingStatistics,
   ExamSubmission,
   ExamFile,
   ExamAnswer
-} from '../../../api/grader';
+} from '../../../types/common';
 
-// 移除重复的接口定义，现在从API文件导入
 // 重新导出类型以保持向后兼容性
 export type { 
-  Exam, 
+  GraderExam as Exam, 
   GradingTask, 
   GradingStatistics,
   ExamSubmission,
   ExamFile,
   ExamAnswer
-} from '../../../api/grader';
+} from '../../../types/common';
 
 export const useGraderLogic = () => {
   const [loading, setLoading] = useState(false);
@@ -37,7 +37,7 @@ export const useGraderLogic = () => {
       });
       
       if (response.success && response.data) {
-        setExams(response.data.exams);
+        setExams(response.data.items);
         message.success('考试数据加载成功');
       } else {
         message.error(response.message || '加载考试数据失败');
@@ -60,7 +60,7 @@ export const useGraderLogic = () => {
       ]);
       
       if (tasksResponse.success && tasksResponse.data) {
-        setGradingTasks(tasksResponse.data.tasks);
+        setGradingTasks(tasksResponse.data.items);
       }
       
       if (statsResponse.success && statsResponse.data) {
@@ -87,7 +87,7 @@ export const useGraderLogic = () => {
       });
       
       if (response.success && response.data) {
-        setGradingTasks(response.data.tasks);
+        setGradingTasks(response.data.items);
         message.success('阅卷任务加载成功');
       } else {
         message.error(response.message || '加载阅卷任务失败');
@@ -192,7 +192,17 @@ export const useGraderLogic = () => {
     feedback?: string;
   }) => {
     try {
-      const response = await GraderAPI.saveGradingProgress(taskId, progressData);
+      // 转换为API期望的格式
+      const apiProgressData = {
+        questionScores: progressData.score ? [{
+          questionId: 'default',
+          score: progressData.score,
+          comments: progressData.feedback
+        }] : undefined,
+        lastSaveTime: new Date().toISOString()
+      };
+
+      const response = await GraderAPI.saveGradingProgress(taskId, apiProgressData);
       
       if (response.success) {
         message.success('进度已保存');
@@ -263,7 +273,14 @@ export const useGraderLogic = () => {
   // 修改密码
   const changePassword = useCallback(async (data: { oldPassword: string; newPassword: string }) => {
     try {
-      const response = await GraderAPI.changePassword(data);
+      // 转换为API期望的格式
+      const passwordData = {
+        currentPassword: data.oldPassword,
+        newPassword: data.newPassword,
+        confirmPassword: data.newPassword
+      };
+
+      const response = await GraderAPI.changePassword(passwordData);
       
       if (response.success) {
         message.success('密码修改成功');

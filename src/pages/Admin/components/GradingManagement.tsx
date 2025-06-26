@@ -33,8 +33,7 @@ import {
   PauseCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import type { Exam } from '../types/examTypes';
-import type { GradingTask, GraderInfo, GradingProgress } from '../types/gradingTypes';
+import type { Exam, AdminGradingTask, GraderInfo, GradingProgress } from '../../../types/common';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -43,7 +42,7 @@ const { Option } = Select;
 interface GradingManagementProps {
   exams: Exam[];
   graders: GraderInfo[];
-  gradingTasks: GradingTask[];
+  gradingTasks: AdminGradingTask[];
   loading: boolean;
   onAssignGradingTask: (examId: string, questionNumber: number, graderIds: string[]) => Promise<void>;
   onGetGradingProgress: (examId: string) => GradingProgress | null;
@@ -167,7 +166,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
       title: '考试',
       dataIndex: 'examTitle',
       key: 'examTitle',
-      render: (text: string, record: GradingTask) => (
+      render: (text: string, record: AdminGradingTask) => (
         <Space direction="vertical" size={0}>
           <Text strong>{text}</Text>
           <Text type="secondary" style={{ fontSize: '12px' }}>
@@ -190,7 +189,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
     {
       title: '进度',
       key: 'progress',
-      render: (_: any, record: GradingTask) => {
+      render: (_: any, record: AdminGradingTask) => {
         const progress = (record.gradedPapers / record.totalPapers) * 100;
         return (
           <div style={{ width: 120 }}>
@@ -244,7 +243,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: GradingTask) => (
+      render: (_: any, record: AdminGradingTask) => (
         <Space size="small">
           {record.status === 'in_progress' && (
             <Button

@@ -19,7 +19,7 @@ import {
   CheckOutlined,
   CloseOutlined
 } from '@ant-design/icons';
-import type { RegionChangeRequest } from '../types/systemTypes';
+import type { RegionChangeRequest } from '../../../types/common';
 
 const { Title } = Typography;
 const { TextArea } = Input;

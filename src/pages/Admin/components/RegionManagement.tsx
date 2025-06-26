@@ -22,7 +22,7 @@ import {
   EnvironmentOutlined,
   BankOutlined
 } from '@ant-design/icons';
-import type { Province, School } from '../types/regionTypes';
+import type { Province, School } from '../../../types/common';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;

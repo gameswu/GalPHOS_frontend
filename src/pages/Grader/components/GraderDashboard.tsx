@@ -64,7 +64,8 @@ const GraderDashboard: React.FC<GraderDashboardProps> = ({
 
   // 最近的阅卷任务
   const recentTasks = gradingTasks
-    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+    .filter(task => task.submittedAt) // 过滤掉没有提交时间的任务
+    .sort((a, b) => new Date(b.submittedAt!).getTime() - new Date(a.submittedAt!).getTime())
     .slice(0, 5);
 
   return (
@@ -210,7 +211,7 @@ const GraderDashboard: React.FC<GraderDashboardProps> = ({
                             {task.examTitle}
                           </Text>
                           <Text type="secondary" style={{ fontSize: '12px' }}>
-                            提交时间: {new Date(task.submittedAt).toLocaleString()}
+                            提交时间: {task.submittedAt ? new Date(task.submittedAt).toLocaleString() : '未知'}
                           </Text>
                         </Space>
                       }

@@ -9,7 +9,7 @@ export class PasswordHasher {
 
   // 使用SHA-256 + 盐值进行密码哈希（更安全）
   static hashPasswordWithSalt(password: string, salt?: string): string {
-    const defaultSalt = 'GalPHOS_2024_SALT'; // 默认盐值
+    const defaultSalt = 'GalPHOS_2025_SALT'; // 默认盐值
     const actualSalt = salt || defaultSalt;
     return CryptoJS.SHA256(password + actualSalt).toString(CryptoJS.enc.Hex);
   }

@@ -1,0 +1,322 @@
+.grading-interface {
+  padding: 20px;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.grading-interface .header-card .ant-card-body {
+  padding: 16px 24px;
+}
+
+.grading-interface .question-card {
+  border-radius: 8px;
+  border: 2px solid #f0f0f0;
+  transition: border-color 0.3s ease;
+}
+
+.grading-interface .question-card:hover {
+  border-color: #1890ff;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+}
+
+.grading-interface .question-card .ant-card-head {
+  background: #fafafa;
+  border-bottom: 2px solid #f0f0f0;
+  border-radius: 8px 8px 0 0;
+}
+
+.grading-interface .question-card .ant-card-head-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.question-content,
+.answer-content,
+.scoring-section {
+  margin-bottom: 20px;
+}
+
+.question-content h4,
+.answer-content h4,
+.scoring-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #595959;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 6px;
+}
+
+.content-display {
+  padding: 12px;
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  min-height: 80px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #262626;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.question-image {
+  margin-top: 16px;
+}
+
+.question-image img {
+  border: 2px solid #e8e8e8;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.question-image img:hover {
+  transform: scale(1.02);
+  cursor: zoom-in;
+}
+
+.scoring-section {
+  padding: 16px;
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 8px;
+  border-left: 4px solid #fa8c16;
+}
+
+.scoring-section .score-input-container {
+  margin-bottom: 16px;
+}
+
+/* 分数总计显示 */
+.grading-interface .header-card strong {
+  font-size: 18px;
+  color: #1890ff;
+}
+
+/* 输入框样式 */
+.grading-interface .ant-input,
+.grading-interface .ant-input-number {
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.3s ease;
+}
+
+.grading-interface .ant-input:focus,
+.grading-interface .ant-input-focused,
+.grading-interface .ant-input-number:focus,
+.grading-interface .ant-input-number-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.grading-interface .ant-input::placeholder {
+  color: #bfbfbf;
+}
+
+/* 按钮样式 */
+.grading-interface .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.grading-interface .ant-btn-primary {
+  background: #1890ff;
+  border-color: #1890ff;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.3);
+}
+
+.grading-interface .ant-btn-primary:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.4);
+}
+
+.grading-interface .ant-btn-primary:disabled {
+  background: #f5f5f5;
+  border-color: #d9d9d9;
+  color: #bfbfbf;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 文本域样式 */
+.grading-interface .ant-input {
+  resize: vertical;
+}
+
+.grading-interface .ant-input[readonly] {
+  background: #f5f5f5;
+  color: #595959;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .grading-interface {
+    padding: 16px;
+  }
+
+  .grading-interface .question-card .ant-card-body {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .grading-interface {
+    padding: 12px;
+  }
+
+  .grading-interface .header-card .ant-card-body {
+    padding: 12px 16px;
+  }
+
+  .grading-interface .question-card {
+    margin-bottom: 12px;
+  }
+
+  .grading-interface .question-card .ant-card-head-title {
+    font-size: 14px;
+  }
+
+  .content-display {
+    padding: 8px;
+    font-size: 13px;
+    min-height: 60px;
+  }
+
+  .scoring-section {
+    padding: 12px;
+  }
+
+  .question-content h4,
+  .answer-content h4,
+  .scoring-section h4 {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 576px) {
+  .grading-interface {
+    padding: 8px;
+  }
+
+  .grading-interface .header-card .ant-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .grading-interface .header-card .ant-col {
+    width: 100%;
+  }
+
+  .grading-interface .header-card .ant-space {
+    flex-wrap: wrap;
+  }
+
+  .grading-interface .question-card .ant-row {
+    flex-direction: column;
+  }
+
+  .grading-interface .question-card .ant-col {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .grading-interface .question-card .ant-col:last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* 加载状态样式 */
+.grading-interface .ant-spin-container {
+  text-align: center;
+}
+
+.grading-interface .ant-spin-dot {
+  font-size: 24px;
+}
+
+/* 错误状态样式 */
+.grading-interface .has-error .ant-input,
+.grading-interface .has-error .ant-input-number {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+/* 成功状态样式 */
+.grading-interface .has-success .ant-input,
+.grading-interface .has-success .ant-input-number {
+  border-color: #52c41a;
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2);
+}
+
+/* 深色主题支持 */
+@media (prefers-color-scheme: dark) {
+  .grading-interface {
+    background: #141414;
+  }
+
+  .grading-interface .question-card {
+    background: #1f1f1f;
+    border-color: #434343;
+  }
+
+  .grading-interface .question-card .ant-card-head {
+    background: #262626;
+    border-bottom-color: #434343;
+  }
+
+  .grading-interface .question-card .ant-card-head-title {
+    color: #e8e8e8;
+  }
+
+  .content-display {
+    background: #262626;
+    border-color: #434343;
+    color: #e8e8e8;
+  }
+
+  .scoring-section {
+    background: #2a1f0c;
+    border-color: #d48806;
+  }
+
+  .question-content h4,
+  .answer-content h4,
+  .scoring-section h4 {
+    color: #b4b4b4;
+    border-bottom-color: #434343;
+  }
+}
+
+/* 打印样式 */
+@media print {
+  .grading-interface {
+    background: #fff !important;
+    padding: 0 !important;
+  }
+
+  .grading-interface .header-card,
+  .grading-interface .question-card {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+    margin-bottom: 20px !important;
+  }
+
+  .grading-interface .ant-btn {
+    display: none !important;
+  }
+
+  .content-display {
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+  }
+
+  .scoring-section {
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+  }
+}

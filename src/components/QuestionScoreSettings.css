@@ -1,0 +1,204 @@
+.question-score-settings {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.question-score-settings .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.question-score-settings .header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.question-score-settings .content {
+  margin-bottom: 20px;
+}
+
+.question-score-settings .summary {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #f6f8fa;
+  border-radius: 6px;
+  border: 1px solid #e1e4e8;
+}
+
+.question-score-settings .total-info {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.question-score-settings .total-info span {
+  color: #24292e;
+}
+
+.question-score-settings .total-info span:first-child {
+  color: #0366d6;
+}
+
+.question-score-settings .total-info span:last-child {
+  color: #28a745;
+}
+
+.question-score-settings .footer {
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  text-align: right;
+}
+
+.question-score-settings .tips {
+  margin-top: 20px;
+  padding: 16px;
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 6px;
+}
+
+.question-score-settings .tips h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fa8c16;
+}
+
+.question-score-settings .tips ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.question-score-settings .tips li {
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #595959;
+  line-height: 1.4;
+}
+
+.question-score-settings .tips li:last-child {
+  margin-bottom: 0;
+}
+
+/* 表格样式定制 */
+.question-score-settings .ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.question-score-settings .ant-table-tbody > tr:hover > td {
+  background: #f5f5f5;
+}
+
+/* 输入框样式 */
+.question-score-settings .ant-input-number {
+  width: 100%;
+}
+
+.question-score-settings .ant-input {
+  border-radius: 4px;
+}
+
+/* 按钮样式 */
+.question-score-settings .ant-btn {
+  border-radius: 4px;
+}
+
+.question-score-settings .ant-btn-primary {
+  background: #1890ff;
+  border-color: #1890ff;
+}
+
+.question-score-settings .ant-btn-primary:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .question-score-settings {
+    padding: 16px;
+  }
+  
+  .question-score-settings .header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .question-score-settings .header h3 {
+    font-size: 16px;
+  }
+  
+  .question-score-settings .total-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .question-score-settings .footer {
+    text-align: center;
+  }
+  
+  .question-score-settings .tips {
+    padding: 12px;
+  }
+  
+  .question-score-settings .tips h4 {
+    font-size: 13px;
+  }
+  
+  .question-score-settings .tips li {
+    font-size: 12px;
+  }
+}
+
+/* 深色主题支持 */
+@media (prefers-color-scheme: dark) {
+  .question-score-settings {
+    background: #1f1f1f;
+    border: 1px solid #434343;
+  }
+  
+  .question-score-settings .header {
+    border-bottom-color: #434343;
+  }
+  
+  .question-score-settings .header h3 {
+    color: #e8e8e8;
+  }
+  
+  .question-score-settings .summary {
+    background: #262626;
+    border-color: #434343;
+  }
+  
+  .question-score-settings .total-info span {
+    color: #e8e8e8;
+  }
+  
+  .question-score-settings .footer {
+    border-top-color: #434343;
+  }
+  
+  .question-score-settings .tips {
+    background: #2a1f0c;
+    border-color: #d48806;
+  }
+  
+  .question-score-settings .tips h4 {
+    color: #fa8c16;
+  }
+  
+  .question-score-settings .tips li {
+    color: #b4b4b4;
+  }
+}

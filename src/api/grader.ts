@@ -1,624 +1,542 @@
-// 阅卷者相关API接口
+// 阅卷员相关API接口
 import { PasswordHasher } from '../utils/passwordHasher';
+import { ApiResponse, BaseAPI, PaginatedResponse } from '../types/api';
+import { 
+  GraderExam as Exam,
+  GradingTask,
+  GradingStatistics,
+  ExamSubmission,
+  ExamAnswer,
+  ExamFile
+} from '../types/common';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001/api';
+class GraderAPI extends BaseAPI {
+  // ===================== 分值验证和题目分值模块 =====================
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
-}
+  // 获取考试题目分值配置
+  static async getExamQuestionScores(examId: string): Promise<ApiResponse<any>> {
+    this.validateRequired(examId, '考试ID');
 
-// 获取Token的辅助函数
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-};
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/exams/${examId}/questions/scores`,
+      { method: 'GET' },
+      '获取题目分值配置'
+    );
+  }
 
-// 考试文件接口
-export interface ExamFile {
-  id: string;
-  name: string;
-  url: string;
-  size: number;
-  uploadTime: string;
-  type: 'question' | 'answer' | 'answer_sheet';
-}
+  // 验证分数输入是否有效
+  static validateScore(score: number, questionNumber: number, maxScore: number): {
+    isValid: boolean;
+    errorMessage?: string;
+    suggestedScore?: number;
+  } {
+    // 检查分数是否为有效数字
+    if (isNaN(score) || score === null || score === undefined) {
+      return {
+        isValid: false,
+        errorMessage: `第${questionNumber}题分数必须是有效数字`
+      };
+    }
 
-// 考试接口
-export interface Exam {
-  id: string;
-  title: string;
-  description: string;
-  questionFile?: ExamFile;
-  answerFile?: ExamFile;
-  answerSheetFile?: ExamFile;
-  startTime: string;
-  endTime: string;
-  status: 'draft' | 'published' | 'ongoing' | 'grading' | 'completed';
-  totalQuestions?: number;
-  duration?: number;
-  maxScore?: number;
-  province?: string;
-  grade?: string;
-  subject?: string;
-}
+    // 检查分数是否在有效范围内
+    if (score < 0) {
+      return {
+        isValid: false,
+        errorMessage: `第${questionNumber}题分数不能为负数`,
+        suggestedScore: 0
+      };
+    }
 
-// 学生答案接口
-export interface ExamAnswer {
-  questionNumber: number;
-  imageUrl: string;
-  uploadTime: string;
-  originalFileName?: string;
-}
+    if (score > maxScore) {
+      return {
+        isValid: false,
+        errorMessage: `第${questionNumber}题分数不能超过${maxScore}分`,
+        suggestedScore: maxScore
+      };
+    }
 
-// 考试提交接口
-export interface ExamSubmission {
-  id: string;
-  examId: string;
-  studentId: string;
-  studentName: string;
-  studentUsername: string;
-  studentSchool?: string;
-  studentProvince?: string;
-  answers: ExamAnswer[];
-  submittedAt: string;
-  status: 'submitted' | 'grading' | 'graded';
-  score?: number;
-  gradedBy?: string;
-  gradedAt?: string;
-  feedback?: string;
-}
+    // 检查小数位数（通常限制为1位小数）
+    const decimalPlaces = (score.toString().split('.')[1] || '').length;
+    if (decimalPlaces > 1) {
+      return {
+        isValid: false,
+        errorMessage: `第${questionNumber}题分数最多保留1位小数`,
+        suggestedScore: Math.round(score * 10) / 10
+      };
+    }
 
-// 阅卷任务接口
-export interface GradingTask {
-  id: string;
-  examId: string;
-  examTitle: string;
-  submissionId: string;
-  studentName: string;
-  studentUsername: string;
-  studentSchool?: string;
-  studentProvince?: string;
-  submittedAt: string;
-  status: 'pending' | 'grading' | 'completed';
-  score?: number;
-  maxScore?: number;
-  graderId?: string;
-  graderName?: string;
-  assignedAt?: string;
-  startedAt?: string;
-  completedAt?: string;
-  feedback?: string;
-  submission: ExamSubmission;
-  priority?: 'low' | 'normal' | 'high' | 'urgent';
-}
+    return { isValid: true };
+  }
 
-// 阅卷统计接口
-export interface GradingStatistics {
-  totalTasks: number;
-  pendingTasks: number;
-  gradingTasks: number;
-  completedTasks: number;
-  todayCompleted: number;
-  averageScore?: number;
-  efficiency?: {
-    tasksPerHour: number;
-    averageGradingTime: number; // 分钟
-  };
-}
+  // 批量验证题目分数
+  static validateQuestionScores(questionScores: Array<{
+    questionNumber: number;
+    score: number;
+    maxScore: number;
+  }>): {
+    isValid: boolean;
+    errors: Array<{
+      questionNumber: number;
+      errorMessage: string;
+      suggestedScore?: number;
+    }>;
+  } {
+    const errors: Array<{
+      questionNumber: number;
+      errorMessage: string;
+      suggestedScore?: number;
+    }> = [];
 
-// 阅卷进度接口
-export interface GradingProgress {
-  examId: string;
-  examTitle: string;
-  totalSubmissions: number;
-  gradedSubmissions: number;
-  pendingSubmissions: number;
-  myCompletedTasks: number;
-  progress: number; // 百分比
-}
+    questionScores.forEach((question) => {
+      const validation = this.validateScore(
+        question.score,
+        question.questionNumber,
+        question.maxScore
+      );
 
-class GraderAPI {
+      if (!validation.isValid) {
+        errors.push({
+          questionNumber: question.questionNumber,
+          errorMessage: validation.errorMessage!,
+          suggestedScore: validation.suggestedScore
+        });
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  // 提交单题分数（带验证）
+  static async submitQuestionScore(
+    taskId: string,
+    questionNumber: number,
+    score: number,
+    maxScore: number,
+    comments?: string
+  ): Promise<ApiResponse<any>> {
+    this.validateRequired(taskId, '任务ID');
+    this.validateRequired(questionNumber, '题目编号');
+    this.validateRequired(score, '题目分数');
+    this.validateRequired(maxScore, '题目满分');
+
+    // 验证分数
+    const validation = this.validateScore(score, questionNumber, maxScore);
+    if (!validation.isValid) {
+      throw new Error(validation.errorMessage);
+    }
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/tasks/${taskId}/questions/${questionNumber}/score`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          score,
+          maxScore,
+          comments,
+          submittedAt: new Date().toISOString()
+        }),
+      },
+      '提交题目分数'
+    );
+  }
+
+  // 获取单题的评分历史
+  static async getQuestionGradingHistory(taskId: string, questionNumber: number): Promise<ApiResponse<any>> {
+    this.validateRequired(taskId, '任务ID');
+    this.validateRequired(questionNumber, '题目编号');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/tasks/${taskId}/questions/${questionNumber}/history`,
+      { method: 'GET' },
+      '获取题目评分历史'
+    );
+  }
+
   // ===================== 阅卷任务管理模块 =====================
   
   // 获取阅卷任务列表
   static async getGradingTasks(params?: {
+    status?: 'pending' | 'in_progress' | 'grading' | 'completed' | 'abandoned';
     page?: number;
     limit?: number;
     examId?: string;
-    status?: 'pending' | 'grading' | 'completed';
-    priority?: 'low' | 'normal' | 'high' | 'urgent';
-    search?: string;
-  }): Promise<ApiResponse<{
-    tasks: GradingTask[];
-    total: number;
-    page: number;
-    limit: number;
-  }>> {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-          if (value !== undefined) {
-            queryParams.append(key, value.toString());
-          }
-        });
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/grader/tasks?${queryParams}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('获取阅卷任务失败:', error);
-      throw error;
-    }
+    priority?: string;
+  }): Promise<ApiResponse<PaginatedResponse<any>>> {
+    const queryParams = this.buildQueryParams(params);
+
+    return this.makeRequest<PaginatedResponse<any>>(
+      `${this.API_BASE_URL}/grader/tasks${queryParams}`,
+      { method: 'GET' },
+      '获取阅卷任务'
+    );
   }
 
   // 获取单个阅卷任务详情
+  static async getGradingTaskDetail(taskId: string): Promise<ApiResponse<any>> {
+    this.validateRequired(taskId, '任务ID');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/tasks/${taskId}`,
+      { method: 'GET' },
+      '获取阅卷任务详情'
+    );
+  }
+
+  // 获取单个阅卷任务（别名方法，用于兼容性）
   static async getGradingTask(taskId: string): Promise<ApiResponse<GradingTask>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/tasks/${taskId}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('获取阅卷任务详情失败:', error);
-      throw error;
-    }
+    return this.getGradingTaskDetail(taskId);
   }
 
   // 开始阅卷任务
-  static async startGradingTask(taskId: string): Promise<ApiResponse<GradingTask>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/tasks/${taskId}/start`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('开始阅卷任务失败:', error);
-      throw error;
-    }
+  static async startGradingTask(taskId: string): Promise<ApiResponse<any>> {
+    this.validateRequired(taskId, '任务ID');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/tasks/${taskId}/start`,
+      { method: 'POST' },
+      '开始阅卷任务'
+    );
   }
 
-  // 提交阅卷结果
+  // 提交阅卷结果（增强版带分值验证）
+  static async submitGradingResult(taskId: string, gradingData: {
+    questionScores: Array<{
+      questionId: string;
+      questionNumber: number;
+      score: number;
+      maxScore: number;
+      comments?: string;
+      annotations?: any[];
+    }>;
+    totalScore: number;
+    maxTotalScore: number;
+    generalComments?: string;
+    submissionTime: string;
+  }): Promise<ApiResponse<any>> {
+    this.validateRequired(taskId, '任务ID');
+    this.validateRequired(gradingData, '阅卷数据');
+    this.validateRequired(gradingData.questionScores, '题目分数');
+    this.validateRequired(gradingData.totalScore, '总分');
+
+    // 验证总分有效性
+    if (gradingData.totalScore < 0) {
+      throw new Error('总分不能为负数');
+    }
+
+    if (gradingData.maxTotalScore && gradingData.totalScore > gradingData.maxTotalScore) {
+      throw new Error(`总分不能超过${gradingData.maxTotalScore}分`);
+    }
+
+    // 批量验证所有题目分数
+    const questionValidations = gradingData.questionScores.map(item => ({
+      questionNumber: item.questionNumber,
+      score: item.score,
+      maxScore: item.maxScore
+    }));
+
+    const validation = this.validateQuestionScores(questionValidations);
+    if (!validation.isValid) {
+      const errorMessages = validation.errors.map(error => error.errorMessage).join('; ');
+      throw new Error(`分数验证失败: ${errorMessages}`);
+    }
+
+    // 验证每个题目的基本信息
+    gradingData.questionScores.forEach((item, index) => {
+      if (!item.questionId) {
+        throw new Error(`第${index + 1}题的题目ID不能为空`);
+      }
+      if (!item.questionNumber || item.questionNumber <= 0) {
+        throw new Error(`第${index + 1}题的题目编号无效`);
+      }
+    });
+
+    // 验证总分是否与各题得分之和一致
+    const calculatedTotal = gradingData.questionScores.reduce((sum, item) => sum + item.score, 0);
+    if (Math.abs(calculatedTotal - gradingData.totalScore) > 0.01) {
+      throw new Error(`总分(${gradingData.totalScore})与各题得分之和(${calculatedTotal})不一致`);
+    }
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/tasks/${taskId}/submit`,
+      {
+        method: 'POST',
+        body: JSON.stringify(gradingData),
+      },
+      '提交阅卷结果'
+    );
+  }
+
+  // 提交阅卷（兼容性方法）
   static async submitGrading(taskId: string, gradingData: {
     score: number;
     maxScore: number;
     feedback?: string;
-    questionScores?: Array<{
-      questionNumber: number;
-      score: number;
-      maxScore: number;
-      feedback?: string;
-    }>;
-  }): Promise<ApiResponse<GradingTask>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/tasks/${taskId}/submit`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(gradingData),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('提交阅卷结果失败:', error);
-      throw error;
-    }
+  }): Promise<ApiResponse<any>> {
+    this.validateRequired(taskId, '任务ID');
+    this.validateRequired(gradingData, '阅卷数据');
+
+    const submissionData = {
+      questionScores: [{
+        questionId: 'default',
+        questionNumber: 1,
+        score: gradingData.score,
+        maxScore: gradingData.maxScore,
+        comments: gradingData.feedback
+      }],
+      totalScore: gradingData.score,
+      maxTotalScore: gradingData.maxScore,
+      generalComments: gradingData.feedback,
+      submissionTime: new Date().toISOString()
+    };
+
+    return this.submitGradingResult(taskId, submissionData);
   }
 
-  // 暂存阅卷进度
+  // 保存阅卷进度
   static async saveGradingProgress(taskId: string, progressData: {
-    score?: number;
-    feedback?: string;
     questionScores?: Array<{
-      questionNumber: number;
-      score: number;
-      maxScore: number;
-      feedback?: string;
+      questionId: string;
+      score?: number;
+      comments?: string;
+      annotations?: any[];
     }>;
+    currentQuestionIndex?: number;
+    lastSaveTime: string;
   }): Promise<ApiResponse<any>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/tasks/${taskId}/save-progress`, {
+    this.validateRequired(taskId, '任务ID');
+    this.validateRequired(progressData, '进度数据');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/tasks/${taskId}/save-progress`,
+      {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(progressData),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('保存阅卷进度失败:', error);
-      throw error;
-    }
+      },
+      '保存阅卷进度'
+    );
   }
 
   // 放弃阅卷任务
   static async abandonGradingTask(taskId: string, reason?: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/tasks/${taskId}/abandon`, {
+    this.validateRequired(taskId, '任务ID');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/tasks/${taskId}/abandon`,
+      {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify({ reason }),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('放弃阅卷任务失败:', error);
-      throw error;
-    }
+      },
+      '放弃阅卷任务'
+    );
   }
 
   // ===================== 考试管理模块 =====================
   
   // 获取可阅卷的考试列表
   static async getAvailableExams(params?: {
+    status?: string;
     page?: number;
     limit?: number;
-    status?: 'grading' | 'completed';
-    province?: string;
-    grade?: string;
     subject?: string;
-  }): Promise<ApiResponse<{
-    exams: Exam[];
-    total: number;
-    page: number;
-    limit: number;
-  }>> {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-          if (value !== undefined) {
-            queryParams.append(key, value.toString());
-          }
-        });
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/grader/exams?${queryParams}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('获取考试列表失败:', error);
-      throw error;
-    }
+  }): Promise<ApiResponse<PaginatedResponse<any>>> {
+    const queryParams = this.buildQueryParams(params);
+
+    return this.makeRequest<PaginatedResponse<any>>(
+      `${this.API_BASE_URL}/grader/exams${queryParams}`,
+      { method: 'GET' },
+      '获取考试列表'
+    );
   }
 
   // 获取考试详情
-  static async getExamDetail(examId: string): Promise<ApiResponse<Exam>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/exams/${examId}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('获取考试详情失败:', error);
-      throw error;
-    }
+  static async getExamDetail(examId: string): Promise<ApiResponse<any>> {
+    this.validateRequired(examId, '考试ID');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/exams/${examId}`,
+      { method: 'GET' },
+      '获取考试详情'
+    );
   }
 
-  // 获取考试的阅卷进度
-  static async getExamGradingProgress(examId: string): Promise<ApiResponse<GradingProgress>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/exams/${examId}/progress`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('获取考试阅卷进度失败:', error);
-      throw error;
-    }
+  // 获取考试阅卷进度
+  static async getExamGradingProgress(examId: string): Promise<ApiResponse<any>> {
+    this.validateRequired(examId, '考试ID');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/exams/${examId}/progress`,
+      { method: 'GET' },
+      '获取考试阅卷进度'
+    );
   }
 
-  // ===================== 学生答卷管理模块 =====================
+  // ===================== 答卷管理模块 =====================
   
   // 获取学生答卷详情
-  static async getSubmissionDetail(submissionId: string): Promise<ApiResponse<ExamSubmission>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/submissions/${submissionId}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('获取答卷详情失败:', error);
-      throw error;
-    }
+  static async getSubmissionDetail(submissionId: string): Promise<ApiResponse<any>> {
+    this.validateRequired(submissionId, '答卷ID');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/submissions/${submissionId}`,
+      { method: 'GET' },
+      '获取答卷详情'
+    );
   }
 
   // 获取答案图片
-  static async getAnswerImage(imageUrl: string): Promise<ApiResponse<{
-    url: string;
-    base64?: string;
-  }>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/images?url=${encodeURIComponent(imageUrl)}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('获取答案图片失败:', error);
-      throw error;
-    }
+  static async getAnswerImage(imageUrl: string): Promise<ApiResponse<any>> {
+    this.validateRequired(imageUrl, '图片URL');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/images?url=${encodeURIComponent(imageUrl)}`,
+      { method: 'GET' },
+      '获取答案图片'
+    );
   }
 
-  // ===================== 统计与报告模块 =====================
+  // ===================== 统计分析模块 =====================
   
-  // 获取阅卷统计信息
+  // 获取阅卷统计数据
   static async getGradingStatistics(params?: {
-    dateRange?: {
-      startDate: string;
-      endDate: string;
-    };
     examId?: string;
-  }): Promise<ApiResponse<GradingStatistics>> {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params?.dateRange) {
-        queryParams.append('startDate', params.dateRange.startDate);
-        queryParams.append('endDate', params.dateRange.endDate);
-      }
-      if (params?.examId) {
-        queryParams.append('examId', params.examId);
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/grader/statistics?${queryParams}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('获取阅卷统计失败:', error);
-      throw error;
-    }
+    startDate?: string;
+    endDate?: string;
+    period?: 'day' | 'week' | 'month';
+  }): Promise<ApiResponse<any>> {
+    const queryParams = this.buildQueryParams(params);
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/statistics${queryParams}`,
+      { method: 'GET' },
+      '获取阅卷统计'
+    );
   }
 
-  // 获取我的阅卷历史
-  static async getMyGradingHistory(params?: {
+  // 获取阅卷历史记录
+  static async getGradingHistory(params?: {
     page?: number;
     limit?: number;
     examId?: string;
     startDate?: string;
     endDate?: string;
-  }): Promise<ApiResponse<{
-    tasks: GradingTask[];
-    total: number;
-    page: number;
-    limit: number;
-  }>> {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-          if (value !== undefined) {
-            queryParams.append(key, value.toString());
-          }
-        });
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/grader/history?${queryParams}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('获取阅卷历史失败:', error);
-      throw error;
-    }
+    status?: string;
+  }): Promise<ApiResponse<PaginatedResponse<any>>> {
+    const queryParams = this.buildQueryParams(params);
+
+    return this.makeRequest<PaginatedResponse<any>>(
+      `${this.API_BASE_URL}/grader/history${queryParams}`,
+      { method: 'GET' },
+      '获取阅卷历史'
+    );
   }
 
-  // ===================== 个人中心模块 =====================
+  // ===================== 个人信息管理模块 =====================
   
   // 获取个人信息
-  static async getProfile(): Promise<ApiResponse<{
-    id: string;
-    username: string;
-    email: string;
-    avatar?: string;
-    role: 'grader';
-    province?: string;
-    school?: string;
-    subjects?: string[];
-    certification?: {
-      level: string;
-      subjects: string[];
-      validUntil: string;
-    };
-    statistics: {
-      totalGraded: number;
-      averageScore: number;
-      efficiency: number;
-      accuracy: number;
-    };
-  }>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/profile`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('获取个人信息失败:', error);
-      throw error;
-    }
+  static async getProfile(): Promise<ApiResponse<any>> {
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/profile`,
+      { method: 'GET' },
+      '获取个人信息'
+    );
   }
 
   // 更新个人信息
   static async updateProfile(profileData: {
-    username?: string;
-    email?: string;
+    name?: string;
+    phone?: string;
+    bio?: string;
+    expertise?: string[];
     avatar?: string;
-    school?: string;
   }): Promise<ApiResponse<any>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/profile`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(profileData),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('更新个人信息失败:', error);
-      throw error;
+    this.validateRequired(profileData, '个人信息');
+
+    // 验证手机号格式
+    if (profileData.phone && !/^1[3-9]\d{9}$/.test(profileData.phone)) {
+      throw new Error('手机号格式不正确');
     }
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/profile`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(profileData),
+      },
+      '更新个人信息'
+    );
   }
 
   // 修改密码
   static async changePassword(passwordData: {
-    oldPassword: string;
+    currentPassword: string;
     newPassword: string;
+    confirmPassword: string;
   }): Promise<ApiResponse<any>> {
-    try {
-      // 对密码进行哈希处理
-      const hashedOldPassword = PasswordHasher.hashPasswordWithSalt(passwordData.oldPassword);
-      const hashedNewPassword = PasswordHasher.hashPasswordWithSalt(passwordData.newPassword);
-      
-      const response = await fetch(`${API_BASE_URL}/grader/change-password`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
+    this.validateRequired(passwordData.currentPassword, '当前密码');
+    this.validateRequired(passwordData.newPassword, '新密码');
+    this.validateRequired(passwordData.confirmPassword, '确认密码');
+
+    // 验证新密码和确认密码是否一致
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      throw new Error('新密码和确认密码不一致');
+    }
+
+    // 验证密码强度
+    if (passwordData.newPassword.length < 6) {
+      throw new Error('密码长度至少6位');
+    }
+
+    // 密码哈希处理
+    const hashedCurrentPassword = PasswordHasher.hashPasswordWithSalt(passwordData.currentPassword);
+    const hashedNewPassword = PasswordHasher.hashPasswordWithSalt(passwordData.newPassword);
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/grader/change-password`,
+      {
+        method: 'PUT',
         body: JSON.stringify({
-          oldPassword: hashedOldPassword,
+          currentPassword: hashedCurrentPassword,
           newPassword: hashedNewPassword,
         }),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('修改密码失败:', error);
-      throw error;
-    }
+      },
+      '修改密码'
+    );
   }
 
-  // ===================== 文件处理模块 =====================
+  // ===================== 文件下载模块 =====================
   
-  // 下载考试文件
-  static async downloadExamFile(fileId: string, fileType: 'question' | 'answer' | 'answer_sheet'): Promise<void> {
+  // 下载考试相关文件
+  static async downloadFile(fileId: string, fileType: 'exam' | 'answer' | 'template'): Promise<any> {
+    this.validateRequired(fileId, '文件ID');
+    this.validateRequired(fileType, '文件类型');
+
     try {
-      const response = await fetch(`${API_BASE_URL}/grader/files/${fileId}/download?type=${fileType}`, {
+      const response = await fetch(`${this.API_BASE_URL}/grader/files/${fileId}/download?type=${fileType}`, {
         method: 'GET',
-        headers: getAuthHeaders(),
+        headers: this.getAuthHeaders(),
       });
-      
+
       if (!response.ok) {
-        throw new Error('文件下载失败');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
+      // 下载文件
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      
-      // 从响应头获取文件名
-      const contentDisposition = response.headers.get('Content-Disposition');
-      const fileName = contentDisposition 
-        ? contentDisposition.split('filename=')[1]?.replace(/"/g, '') 
-        : `exam-${fileType}-${fileId}`;
-      
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `file_${fileId}.${fileType === 'exam' ? 'pdf' : 'zip'}`;
+      document.body.appendChild(a);
+      a.click();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('下载文件失败:', error);
-      throw error;
-    }
-  }
+      document.body.removeChild(a);
 
-  // 上传头像
-  static async uploadAvatar(file: File): Promise<ApiResponse<{ avatarUrl: string }>> {
-    try {
-      const formData = new FormData();
-      formData.append('avatar', file);
-      
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/grader/upload-avatar`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      return await response.json();
+      return { success: true, message: '文件下载成功' };
     } catch (error) {
-      console.error('上传头像失败:', error);
-      throw error;
-    }
-  }
-
-  // ===================== 系统通知模块 =====================
-  
-  // 获取通知列表
-  static async getNotifications(params?: {
-    page?: number;
-    limit?: number;
-    status?: 'unread' | 'read' | 'all';
-  }): Promise<ApiResponse<{
-    notifications: Array<{
-      id: string;
-      title: string;
-      content: string;
-      type: 'system' | 'exam' | 'task' | 'warning';
-      status: 'unread' | 'read';
-      createdAt: string;
-      data?: any;
-    }>;
-    total: number;
-    unreadCount: number;
-  }>> {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-          if (value !== undefined) {
-            queryParams.append(key, value.toString());
-          }
-        });
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/grader/notifications?${queryParams}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('获取通知列表失败:', error);
-      throw error;
-    }
-  }
-
-  // 标记通知为已读
-  static async markNotificationAsRead(notificationId: string): Promise<ApiResponse<any>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/notifications/${notificationId}/read`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('标记通知已读失败:', error);
-      throw error;
-    }
-  }
-
-  // 标记所有通知为已读
-  static async markAllNotificationsAsRead(): Promise<ApiResponse<any>> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/grader/notifications/read-all`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('标记所有通知已读失败:', error);
-      throw error;
+      return this.handleApiError(error, '下载文件');
     }
   }
 }

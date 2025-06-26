@@ -9,7 +9,8 @@ import {
   EditOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
-import type { Student, Exam, ExamSubmission, ExamAnswer } from '../hooks/useCoachLogic';
+import type { Student } from '../hooks/useCoachLogic';
+import { StudentExam as Exam, ExamSubmission, ExamAnswer } from '../../../types/common';
 import UserSettings from '../../../components/UserSettings';
 import CurrentExamPage from '../../../components/CurrentExamPage';
 import HistoryExamPage from '../../../components/HistoryExamPage';
@@ -155,7 +156,7 @@ const DashboardPage: React.FC<{
               <div key={student.id} style={{ marginBottom: 12, padding: 12, background: '#f6f8fa', borderRadius: 6 }}>
                 <div style={{ fontWeight: 'bold' }}>{student.name} ({student.username})</div>
                 <div style={{ color: '#666', fontSize: 12 }}>
-                  {student.grade} - {student.province} {student.school}
+                  {student.province} {student.school}
                 </div>
               </div>
             ))}
@@ -440,11 +441,6 @@ const StudentManagementPage: React.FC<{
       key: 'username',
     },
     {
-      title: '年级',
-      dataIndex: 'grade',
-      key: 'grade',
-    },
-    {
       title: '省份',
       dataIndex: 'province',
       key: 'province',
@@ -555,17 +551,6 @@ const StudentManagementPage: React.FC<{
             <Input placeholder="请输入用户名" />
           </Form.Item>
           <Form.Item
-            name="grade"
-            label="年级"
-            rules={[{ required: true, message: '请选择年级' }]}
-          >
-            <Select placeholder="请选择年级">
-              <Select.Option value="高一">高一</Select.Option>
-              <Select.Option value="高二">高二</Select.Option>
-              <Select.Option value="高三">高三</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
             name="province"
             label="省份"
             rules={[{ required: true, message: '请输入省份' }]}
@@ -617,17 +602,6 @@ const StudentManagementPage: React.FC<{
             rules={[{ required: true, message: '请输入学生姓名' }]}
           >
             <Input placeholder="请输入学生姓名" />
-          </Form.Item>
-          <Form.Item
-            name="grade"
-            label="年级"
-            rules={[{ required: true, message: '请选择年级' }]}
-          >
-            <Select placeholder="请选择年级">
-              <Select.Option value="高一">高一</Select.Option>
-              <Select.Option value="高二">高二</Select.Option>
-              <Select.Option value="高三">高三</Select.Option>
-            </Select>
           </Form.Item>
           <Form.Item
             name="province"

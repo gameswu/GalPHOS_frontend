@@ -16,7 +16,8 @@ import {
   Form,
   InputNumber,
   message,
-  Input
+  Input,
+  Empty
 } from 'antd';
 import { 
   LeftOutlined,
@@ -29,7 +30,7 @@ import {
   SaveOutlined,
   StopOutlined
 } from '@ant-design/icons';
-import type { Exam, GradingTask } from '../hooks/useGraderLogic';
+import type { Exam, GradingTask, ExamAnswer } from '../hooks/useGraderLogic';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -201,10 +202,10 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
             description={
               <Space direction="vertical" size={4}>
                 <Text type="secondary">
-                  提交时间: {new Date(task.submittedAt).toLocaleString()}
+                  提交时间: {task.submittedAt ? new Date(task.submittedAt).toLocaleString() : '未知'}
                 </Text>
                 <Text type="secondary">
-                  答题数量: {task.submission.answers.length} 题
+                  答题数量: {task.submission?.answers?.length || 0} 题
                 </Text>
               </Space>
             }
@@ -244,7 +245,7 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
                     <Tag color="orange">得分: {currentTask.score}</Tag>
                   )}
                   <Text type="secondary">
-                    提交时间: {new Date(currentTask.submittedAt).toLocaleString()}
+                    提交时间: {currentTask.submittedAt ? new Date(currentTask.submittedAt).toLocaleString() : '未知'}
                   </Text>
                 </Space>
               </Space>
@@ -284,20 +285,20 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
         {/* 答题图片展示 */}
         <Card title="学生答题">
           <Row gutter={[16, 16]}>
-            {currentTask.submission.answers.map((answer, index) => (
-              <Col key={answer.questionNumber} xs={24} sm={12} md={8} lg={6}>
+            {currentTask.submission?.answers?.map((answer: ExamAnswer, index: number) => (
+              <Col key={answer.questionNumber || index} xs={24} sm={12} md={8} lg={6}>
                 <Card
                   size="small"
-                  title={`第 ${answer.questionNumber} 题`}
+                  title={`第 ${answer.questionNumber || index + 1} 题`}
                   extra={
                     <Text type="secondary" style={{ fontSize: '12px' }}>
-                      {new Date(answer.uploadTime).toLocaleString()}
+                      {answer.uploadTime ? new Date(answer.uploadTime).toLocaleString() : '未知时间'}
                     </Text>
                   }
                 >
                   <Image
-                    src={answer.imageUrl}
-                    alt={`第${answer.questionNumber}题答案`}
+                    src={answer.imageUrl || '/placeholder.png'}
+                    alt={`第${answer.questionNumber || index + 1}题答案`}
                     style={{ width: '100%' }}
                     placeholder={
                       <div style={{ 
@@ -313,7 +314,11 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
                   />
                 </Card>
               </Col>
-            ))}
+            )) || (
+              <Col span={24}>
+                <Empty description="暂无答题数据" />
+              </Col>
+            )}
           </Row>
         </Card>
       </div>

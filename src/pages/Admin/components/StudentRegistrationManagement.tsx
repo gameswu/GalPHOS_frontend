@@ -19,7 +19,7 @@ import {
   CheckOutlined,
   CloseOutlined
 } from '@ant-design/icons';
-import type { StudentRegistrationRequest } from '../types/systemTypes';
+import type { StudentRegistrationRequest } from '../../../types/common';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -107,7 +107,6 @@ const StudentRegistrationManagement: React.FC = () => {
         type: 'user',
         province: request.province,
         school: request.school,
-        grade: request.grade,
         coachUsername: request.coachUsername,
         createdAt: new Date().toISOString(),
         status: 'active'
@@ -159,11 +158,6 @@ const StudentRegistrationManagement: React.FC = () => {
       title: '学校',
       dataIndex: 'school',
       key: 'school',
-    },
-    {
-      title: '年级',
-      dataIndex: 'grade',
-      key: 'grade',
     },
     {
       title: '申请教练',
@@ -288,9 +282,6 @@ const StudentRegistrationManagement: React.FC = () => {
               </Descriptions.Item>
               <Descriptions.Item label="学校">
                 {currentRequest.school}
-              </Descriptions.Item>
-              <Descriptions.Item label="年级" span={3}>
-                {currentRequest.grade}
               </Descriptions.Item>
               <Descriptions.Item label="申请时间" span={3}>
                 {new Date(currentRequest.createdAt).toLocaleString()}

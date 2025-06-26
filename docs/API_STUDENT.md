@@ -3,6 +3,8 @@
 ## 概述
 GalPHOS系统的学生面板API接口，提供学生用户的考试管理、个人资料管理、赛区变更申请等功能。
 
+> **类型定义**: 本文档中的所有数据类型基于统一类型系统定义，详见 [API类型定义参考](./API_TYPES_REFERENCE.md)
+
 ## 基础信息
 
 ### API基础URL
@@ -30,62 +32,6 @@ interface ApiResponse<T> {
 }
 ```
 
-### 数据类型定义
-
-#### 考试文件类型
-```typescript
-interface ExamFile {
-  id: string;
-  name: string;
-  url: string;
-  size: number;
-  uploadTime: string;
-}
-```
-
-#### 考试信息类型
-```typescript
-interface Exam {
-  id: string;
-  title: string;
-  description: string;
-  questionFile?: ExamFile;     // 试题文件
-  answerFile?: ExamFile;       // 答案文件
-  answerSheetFile?: ExamFile;  // 答题卡文件
-  startTime: string;           // ISO 8601格式
-  endTime: string;             // ISO 8601格式
-  status: "draft" | "published" | "ongoing" | "grading" | "completed";
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-  participants?: string[];     // 参与考试的学生用户名列表
-  totalQuestions?: number;
-  duration?: number;           // 考试时长（分钟）
-}
-```
-
-#### 考试答案类型
-```typescript
-interface ExamAnswer {
-  questionNumber: number;
-  imageUrl: string;           // 答题图片URL
-  uploadTime: string;         // ISO 8601格式
-}
-```
-
-#### 考试提交记录类型
-```typescript
-interface ExamSubmission {
-  id: string;
-  examId: string;
-  studentUsername: string;
-  answers: ExamAnswer[];
-  submittedAt: string;        // ISO 8601格式
-  status: "submitted" | "grading" | "graded";
-  score?: number;             // 评分结果（0-100）
-}
-```
-
 ---
 
 ## 1. 考试管理
@@ -99,6 +45,7 @@ interface ExamSubmission {
 
 **响应**:
 ```typescript
+// 使用统一类型：ApiResponse<StudentExam[]>
 {
   success: true,
   data: [

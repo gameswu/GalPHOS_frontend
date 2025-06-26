@@ -19,46 +19,14 @@ import {
   UploadOutlined,
   CheckCircleOutlined
 } from '@ant-design/icons';
+import { 
+  StudentExam as Exam,
+  ExamFile,
+  ExamAnswer,
+  ExamSubmission
+} from '../types/common';
 
 const { Title } = Typography;
-
-interface ExamFile {
-  id: string;
-  name: string;
-  url: string;
-  size: number;
-  uploadTime: string;
-}
-
-interface Exam {
-  id: string;
-  title: string;
-  description: string;
-  questionFile?: ExamFile;
-  answerFile?: ExamFile;
-  answerSheetFile?: ExamFile;
-  startTime: string;
-  endTime: string;
-  status: 'draft' | 'published' | 'ongoing' | 'grading' | 'completed';
-  totalQuestions?: number;
-  duration?: number;
-}
-
-interface ExamAnswer {
-  questionNumber: number;
-  imageUrl: string;
-  uploadTime: string;
-}
-
-interface ExamSubmission {
-  id: string;
-  examId: string;
-  studentUsername: string;
-  answers: ExamAnswer[];
-  submittedAt: string;
-  status: 'submitted' | 'grading' | 'graded';
-  score?: number;
-}
 
 interface Student {
   id: string;
@@ -169,7 +137,10 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
       // 模拟文件上传到服务器并获取URL
       const imageUrl = URL.createObjectURL(file);
       answers.push({
+        questionId: `q_${currentExam.id}_${i}`, // 生成题目ID
         questionNumber: i,
+        answer: '', // 图片答案，暂时为空字符串
+        maxScore: 100, // 默认满分，实际应该从题目配置获取
         imageUrl,
         uploadTime: new Date().toISOString()
       });

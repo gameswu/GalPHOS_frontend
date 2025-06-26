@@ -2,10 +2,23 @@ import { useState, useEffect, useCallback } from 'react';
 import { message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import AdminAPI from '../../../api/admin';
-import type { Province, School } from '../types/regionTypes';
-import type { Exam, ExamFile } from '../types/examTypes';
-import type { GradingTask, GradingAssignment, GraderInfo, GradingProgress } from '../types/gradingTypes';
-import type { AdminUser, SystemSettings, PasswordChangeData, AdminCreateData } from '../types/systemTypes';
+import type { 
+  Province, 
+  School,
+  RegionFormData,
+  RegionChangeRequest,
+  Exam, 
+  ExamFile, 
+  ExamFormData,
+  AdminGradingTask,
+  GradingAssignment,
+  GraderInfo,
+  GradingProgress,
+  AdminUser, 
+  SystemSettings, 
+  PasswordChangeData, 
+  AdminCreateData 
+} from '../../../types/common';
 
 // 用户类型定义
 export interface PendingUser {
@@ -66,10 +79,10 @@ const initializeGraderData = (): GraderInfo[] => {
 };
 
 // 初始化阅卷任务数据 - 空数组
-const initializeGradingTasks = (): GradingTask[] => {
+const initializeGradingTasks = (): AdminGradingTask[] => {
   const savedTasks = localStorage.getItem('gradingTasks');
   if (!savedTasks) {
-    const defaultTasks: GradingTask[] = [];
+    const defaultTasks: AdminGradingTask[] = [];
     localStorage.setItem('gradingTasks', JSON.stringify(defaultTasks));
     return defaultTasks;
   }
@@ -147,7 +160,7 @@ export const useAdminLogic = () => {
   const [regions, setRegions] = useState<Province[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
   const [graders, setGraders] = useState<GraderInfo[]>([]);
-  const [gradingTasks, setGradingTasks] = useState<GradingTask[]>([]);
+  const [gradingTasks, setGradingTasks] = useState<AdminGradingTask[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(false);
@@ -519,7 +532,8 @@ export const useAdminLogic = () => {
         startTime: examData.startTime,
         endTime: examData.endTime,
         totalQuestions: examData.totalQuestions,
-        duration: examData.duration
+        duration: examData.duration || 120, // 默认120分钟
+        maxScore: 100 // 默认100分
       });
       if (response.success && response.data) {
         message.success('考试创建成功');

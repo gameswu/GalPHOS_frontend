@@ -27,21 +27,23 @@ import {
   LogoutOutlined
 } from '@ant-design/icons';
 import type { PendingUser, ApprovedUser } from '../hooks/useAdminLogic';
-import type { Province } from '../types/regionTypes';
+import type { 
+  Province,
+  Exam,
+  GradingTask,
+  AdminGradingTask,
+  GraderInfo,
+  AdminUser,
+  SystemSettings as SystemSettingsType,
+  PasswordChangeData,
+  AdminCreateData
+} from '../../../types/common';
 import RegionManagement from './RegionManagement';
 import RegionChangeRequestManagement from './RegionChangeRequestManagement';
 import StudentRegistrationManagement from './StudentRegistrationManagement';
 import ExamManagement from './ExamManagement';
 import GradingManagement from './GradingManagement';
 import SystemSettings from './SystemSettings';
-import type { Exam } from '../types/examTypes';
-import type { GradingTask, GraderInfo } from '../types/gradingTypes';
-import type { 
-  AdminUser, 
-  SystemSettings as SystemSettingsType, 
-  PasswordChangeData, 
-  AdminCreateData 
-} from '../types/systemTypes';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -54,7 +56,7 @@ interface AdminContentProps {
   regions: Province[];
   exams: Exam[];
   graders: GraderInfo[];
-  gradingTasks: GradingTask[];
+  gradingTasks: AdminGradingTask[];
   adminUsers: AdminUser[];
   systemSettings: SystemSettingsType | null;
   currentAdmin: AdminUser | null;
@@ -95,7 +97,7 @@ const DashboardPage: React.FC<{
   regions: Province[];
   approvedUsers: ApprovedUser[];
   exams: Exam[];
-  gradingTasks: GradingTask[];
+  gradingTasks: AdminGradingTask[];
   graders: GraderInfo[];
 }> = ({ pendingCount, isOffline, regions, approvedUsers, exams, gradingTasks, graders }) => {
   const totalSchools = regions.reduce((sum, region) => sum + region.schools.length, 0);

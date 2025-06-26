@@ -1,10 +1,13 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import StudentAPI from '../../../api/student';
-import type { Exam, ExamAnswer, ExamSubmission, DashboardData } from '../../../api/student';
+import type { StudentExam as Exam, ExamAnswer, ExamSubmission } from '../../../types/common';
+
+// DashboardData可能是StudentAPI特有的，暂时保留从API导入
+import type { DashboardData } from '../../../api/student';
 
 // 重新导出类型以保持兼容性
-export type { Exam, ExamAnswer, ExamSubmission } from '../../../api/student';
+export type { StudentExam as Exam, ExamAnswer, ExamSubmission } from '../../../types/common';
 
 export const useStudentLogic = () => {
   const [loading, setLoading] = useState(false);
@@ -141,7 +144,7 @@ export const useStudentLogic = () => {
   }, []);
 
   // 获取考试提交记录
-  const getExamSubmission = useCallback(async (examId: string): Promise<ExamSubmission | null> => {
+  const getExamSubmission = useCallback(async (examId: string, studentUsername?: string): Promise<ExamSubmission | null> => {
     try {
       const result = await StudentAPI.getExamSubmission(examId);
       if (result.success && result.data) {

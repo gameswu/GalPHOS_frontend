@@ -1,0 +1,164 @@
+.score-input-container {
+  margin-bottom: 12px;
+}
+
+.score-input-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.score-input {
+  width: 80px;
+  height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.score-input:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.score-input.error {
+  border-color: #ff4d4f;
+  background-color: #fff2f0;
+}
+
+.score-input.error:focus {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+.score-input:disabled {
+  background-color: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.score-max {
+  margin-left: 8px;
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.score-error {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+  gap: 8px;
+}
+
+.error-message {
+  font-size: 12px;
+  color: #ff4d4f;
+  line-height: 1.4;
+}
+
+.suggest-button {
+  padding: 2px 8px;
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.suggest-button:hover {
+  background-color: #40a9ff;
+}
+
+.suggest-button:active {
+  background-color: #096dd9;
+}
+
+.score-rules {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .score-input {
+    width: 70px;
+    height: 32px;
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+  
+  .score-max {
+    font-size: 13px;
+  }
+  
+  .error-message {
+    font-size: 11px;
+  }
+  
+  .suggest-button {
+    padding: 1px 6px;
+    font-size: 11px;
+  }
+}
+
+/* 高对比度主题支持 */
+@media (prefers-contrast: high) {
+  .score-input {
+    border-width: 2px;
+  }
+  
+  .score-input.error {
+    border-width: 2px;
+    border-color: #d73027;
+  }
+  
+  .error-message {
+    color: #d73027;
+    font-weight: 600;
+  }
+}
+
+/* 深色主题支持 */
+@media (prefers-color-scheme: dark) {
+  .score-input {
+    background-color: #1f1f1f;
+    color: #fff;
+    border-color: #434343;
+  }
+  
+  .score-input:focus {
+    border-color: #177ddc;
+    box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
+  }
+  
+  .score-input.error {
+    background-color: #2a1215;
+    border-color: #cf1322;
+  }
+  
+  .score-input:disabled {
+    background-color: #262626;
+    color: #595959;
+  }
+  
+  .score-max {
+    color: #b4b4b4;
+  }
+  
+  .error-message {
+    color: #ff7875;
+  }
+  
+  .score-rules {
+    color: #8c8c8c;
+  }
+}

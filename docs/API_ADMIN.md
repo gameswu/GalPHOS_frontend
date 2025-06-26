@@ -3,6 +3,8 @@
 ## 概述
 GalPHOS管理员面板API接口，提供用户管理、考试管理、阅卷管理、赛区管理等功能。所有接口都需要管理员身份的Bearer Token认证。
 
+> **类型定义**: 本文档中的所有数据类型基于统一类型系统定义，详见 [API类型定义参考](./API_TYPES_REFERENCE.md)
+
 ## 基础信息
 
 ### API基础URL
@@ -80,6 +82,7 @@ http://localhost:3001/api
 
 **响应**:
 ```typescript
+// 使用统一类型：ApiResponse<PendingUser[]>
 {
   success: true,
   data: [
@@ -94,7 +97,7 @@ http://localhost:3001/api
       status: "pending"
     }
   ],
-  message?: "获取成功"
+  message: "获取成功"
 }
 ```
 
@@ -134,6 +137,7 @@ http://localhost:3001/api
 
 **响应**:
 ```typescript
+// 使用统一类型：ApiResponse<{ users: ApprovedUser[], total: number, page: number, limit: number }>
 {
   success: true,
   data: {
@@ -145,7 +149,7 @@ http://localhost:3001/api
         role: "coach",
         province: "北京市",
         school: "北京第一中学",
-        status: "active",
+        status: "approved",
         approvedAt: "2024-01-01T08:00:00.000Z",
         lastLoginAt: "2024-01-15T10:30:00.000Z"
       }

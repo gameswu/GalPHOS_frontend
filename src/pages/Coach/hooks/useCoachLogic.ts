@@ -1,59 +1,22 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import CoachAPI from '../../../api/coach';
+import { 
+  StudentExam as Exam,
+  ExamFile,
+  ExamAnswer,
+  ExamSubmission
+} from '../../../types/common';
 
 export interface Student {
   id: string;
   name: string;
   username: string;
   phone: string;
-  grade: string;
   province: string;
   school: string;
   status: 'active' | 'inactive';
   createdAt: string;
-}
-
-export interface ExamFile {
-  id: string;
-  name: string;
-  url: string;
-  size: number;
-  uploadTime: string;
-}
-
-export interface Exam {
-  id: string;
-  title: string;
-  description: string;
-  questionFile?: ExamFile;
-  answerFile?: ExamFile;
-  answerSheetFile?: ExamFile;
-  startTime: string;
-  endTime: string;
-  status: 'draft' | 'published' | 'ongoing' | 'grading' | 'completed';
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-  participants?: string[];
-  totalQuestions?: number;
-  duration?: number;
-}
-
-export interface ExamSubmission {
-  id: string;
-  examId: string;
-  studentUsername: string;
-  answers: ExamAnswer[];
-  submittedAt: string;
-  status: 'submitted' | 'grading' | 'graded';
-  score?: number;
-}
-
-export interface ExamAnswer {
-  questionNumber: number;
-  imageUrl: string;
-  uploadTime: string;
 }
 
 // 模拟数据
@@ -114,8 +77,7 @@ export const useCoachLogic = () => {
   const addStudent = useCallback(async (studentData: Omit<Student, 'id' | 'createdAt' | 'status'>) => {
     try {
       const response = await CoachAPI.addStudent({
-        username: studentData.username,
-        grade: studentData.grade
+        username: studentData.username
       });
       
       if (response.success) {
@@ -255,8 +217,8 @@ export const useCoachLogic = () => {
         studentUsername,
         answers: answers.map(answer => ({
           questionNumber: answer.questionNumber,
-          imageUrl: answer.imageUrl,
-          uploadTime: answer.uploadTime
+          imageUrl: answer.imageUrl || '',
+          uploadTime: answer.uploadTime || new Date().toISOString()
         }))
       });
       

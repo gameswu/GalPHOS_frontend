@@ -34,7 +34,7 @@ import {
   DownloadOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import type { Exam, ExamFile } from '../types/examTypes';
+import type { Exam, ExamFile } from '../../../types/common';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;

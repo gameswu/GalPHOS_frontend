@@ -12,46 +12,14 @@ import {
   DownloadOutlined,
   EyeOutlined
 } from '@ant-design/icons';
+import { 
+  StudentExam as Exam,
+  ExamFile,
+  ExamAnswer,
+  ExamSubmission
+} from '../types/common';
 
 const { Title } = Typography;
-
-interface ExamFile {
-  id: string;
-  name: string;
-  url: string;
-  size: number;
-  uploadTime: string;
-}
-
-interface Exam {
-  id: string;
-  title: string;
-  description: string;
-  questionFile?: ExamFile;
-  answerFile?: ExamFile;
-  answerSheetFile?: ExamFile;
-  startTime: string;
-  endTime: string;
-  status: 'draft' | 'published' | 'ongoing' | 'grading' | 'completed';
-  totalQuestions?: number;
-  duration?: number;
-}
-
-interface ExamAnswer {
-  questionNumber: number;
-  imageUrl: string;
-  uploadTime: string;
-}
-
-interface ExamSubmission {
-  id: string;
-  examId: string;
-  studentUsername: string;
-  answers: ExamAnswer[];
-  submittedAt: string;
-  status: 'submitted' | 'grading' | 'graded';
-  score?: number;
-}
 
 interface Student {
   username: string;

@@ -5,7 +5,7 @@ import {
   FileTextOutlined,
   TrophyOutlined
 } from '@ant-design/icons';
-import type { Exam, ExamSubmission, ExamAnswer } from '../hooks/useStudentLogic';
+import type { StudentExam as Exam, ExamSubmission, ExamAnswer } from '../../../types/common';
 import UserSettings from '../../../components/UserSettings';
 import CurrentExamPage from '../../../components/CurrentExamPage';
 import HistoryExamPage from '../../../components/HistoryExamPage';
