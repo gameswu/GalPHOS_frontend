@@ -714,7 +714,7 @@ const CoachContent: React.FC<CoachContentProps> = ({
           submitExamAnswers={(examId, answers, studentUsername) => 
             submitExamAnswers(examId, answers, studentUsername!)
           }
-          getExamSubmission={(examId, studentUsername) => {
+          getExamSubmission={async (examId, studentUsername) => {
             // 为了兼容性，这里返回null，实际应该重构组件支持异步
             return null;
           }}
@@ -730,22 +730,7 @@ const CoachContent: React.FC<CoachContentProps> = ({
           exams={exams}
           loading={loading}
           downloadFile={downloadFile}
-          getExamSubmission={(examId, studentUsername) => {
-            // 为了兼容性，这里返回null，实际应该重构组件支持异步
-            return null;
-          }}
-          userRole="coach"
-          students={students}
-        />
-      );
-    
-    case 'history-exam':
-      return (
-        <HistoryExamPage
-          exams={exams}
-          loading={loading}
-          downloadFile={downloadFile}
-          getExamSubmission={(examId, studentUsername) => {
+          getExamSubmission={async (examId, studentUsername) => {
             // 为了兼容性，这里返回null，实际应该重构组件支持异步
             return null;
           }}

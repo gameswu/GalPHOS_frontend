@@ -23,14 +23,18 @@ interface StudentContentProps {
   };
   loading: boolean;
   exams: Exam[];
+  dashboardData?: any;
   onAccountSettings: () => void;
   updateProfile: (data: { username: string; avatar?: string }) => Promise<void>;
   changePassword: (data: { oldPassword: string; newPassword: string }) => Promise<void>;
   requestRegionChange: (data: { province: string; school: string; reason: string }) => Promise<void>;
   onLogout: () => void;
   submitExamAnswers: (examId: string, answers: ExamAnswer[]) => Promise<void>;
-  getExamSubmission: (examId: string) => ExamSubmission | null;
-  downloadFile: (fileUrl: string, fileName: string) => void;
+  getExamSubmission: (examId: string) => Promise<ExamSubmission | null>;
+  downloadFile: (fileId: string, fileName: string) => Promise<void>;
+  uploadAnswerImage?: (file: File, examId: string, questionNumber: number) => Promise<string>;
+  uploadAvatar?: (file: File) => Promise<string>;
+  getRegionChangeStatus?: () => Promise<any[]>;
 }
 
 // 账户设置页面
@@ -53,26 +57,29 @@ const AccountSettingsPage: React.FC<{
 // 仪表板页面
 const DashboardPage: React.FC<{ 
   exams: Exam[];
-  getExamSubmission: (examId: string) => ExamSubmission | null;
-}> = ({ exams, getExamSubmission }) => {
+  getExamSubmission: (examId: string) => Promise<ExamSubmission | null>;
+  dashboardData?: any;
+}> = ({ exams, getExamSubmission, dashboardData }) => {
   const currentTime = new Date();
   
-  // 统计数据
+  // 使用传入的dashboardData或计算默认值
+  const stats = dashboardData || {
+    totalExams: exams.length,
+    completedExams: exams.filter(exam => 
+      exam.status === 'completed' || new Date(exam.endTime) < currentTime
+    ).length,
+    ongoingExams: exams.filter(exam => 
+      (exam.status === 'published' || exam.status === 'ongoing') && new Date(exam.endTime) > currentTime
+    ).length,
+    upcomingExams: 0,
+    averageScore: 0,
+    lastExamScore: 0,
+    recentExams: []
+  };
+
   const currentExams = exams.filter(exam => 
     (exam.status === 'published' || exam.status === 'ongoing') && new Date(exam.endTime) > currentTime
   );
-  
-  const completedExams = exams.filter(exam => 
-    exam.status === 'completed' || new Date(exam.endTime) < currentTime
-  );
-
-  const mySubmissions = completedExams.filter(exam => getExamSubmission(exam.id));
-  const averageScore = mySubmissions.length > 0 
-    ? mySubmissions.reduce((sum, exam) => {
-        const submission = getExamSubmission(exam.id);
-        return sum + (submission?.score || 0);
-      }, 0) / mySubmissions.length 
-    : 0;
 
   return (
     <div>
@@ -86,7 +93,7 @@ const DashboardPage: React.FC<{
           <Card>
             <Statistic
               title="当前考试"
-              value={currentExams.length}
+              value={stats.ongoingExams}
               suffix="场"
               valueStyle={{ color: '#1890ff' }}
               prefix={<FileTextOutlined />}
@@ -96,8 +103,8 @@ const DashboardPage: React.FC<{
         <Col span={6}>
           <Card>
             <Statistic
-              title="已参加考试"
-              value={mySubmissions.length}
+              title="已完成考试"
+              value={stats.completedExams}
               suffix="场"
               valueStyle={{ color: '#52c41a' }}
               prefix={<TrophyOutlined />}
@@ -108,7 +115,7 @@ const DashboardPage: React.FC<{
           <Card>
             <Statistic
               title="平均成绩"
-              value={averageScore.toFixed(1)}
+              value={stats.averageScore.toFixed(1)}
               suffix="分"
               valueStyle={{ color: '#faad14' }}
               prefix={<TrophyOutlined />}
@@ -118,8 +125,19 @@ const DashboardPage: React.FC<{
         <Col span={6}>
           <Card>
             <Statistic
+              title="最近成绩"
+              value={stats.lastExamScore}
+              suffix="分"
+              valueStyle={{ color: '#722ed1' }}
+              prefix={<TrophyOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
               title="历史考试"
-              value={completedExams.length}
+              value={stats.totalExams}
               suffix="场"
               valueStyle={{ color: '#722ed1' }}
               prefix={<FileTextOutlined />}
@@ -154,6 +172,7 @@ const StudentContent: React.FC<StudentContentProps> = ({
   userInfo,
   loading,
   exams,
+  dashboardData,
   onAccountSettings,
   updateProfile,
   changePassword,
@@ -161,7 +180,10 @@ const StudentContent: React.FC<StudentContentProps> = ({
   onLogout,
   submitExamAnswers,
   getExamSubmission,
-  downloadFile
+  downloadFile,
+  uploadAnswerImage,
+  uploadAvatar,
+  getRegionChangeStatus
 }) => {
   switch (selectedKey) {
     case 'dashboard':
@@ -169,6 +191,7 @@ const StudentContent: React.FC<StudentContentProps> = ({
         <DashboardPage 
           exams={exams}
           getExamSubmission={getExamSubmission}
+          dashboardData={dashboardData}
         />
       );
     

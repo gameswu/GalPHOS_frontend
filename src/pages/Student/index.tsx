@@ -27,7 +27,9 @@ const Student: React.FC = () => {
   const {
     loading,
     exams,
+    dashboardData,
     loadExams,
+    loadDashboardData,
     handleAccountSettings,
     handleLogout: handleLogoutLogic,
     updateProfile,
@@ -35,7 +37,10 @@ const Student: React.FC = () => {
     requestRegionChange,
     submitExamAnswers,
     getExamSubmission,
-    downloadFile
+    downloadFile,
+    uploadAnswerImage,
+    uploadAvatar,
+    getRegionChangeStatus
   } = useStudentLogic();
 
   // 检查登录状态和用户权限
@@ -64,7 +69,8 @@ const Student: React.FC = () => {
     
     setUserInfo(user);
     loadExams();
-  }, [navigate, loadExams]);
+    loadDashboardData();
+  }, [navigate, loadExams, loadDashboardData]);
 
   // 菜单点击处理
   const handleMenuClick = ({ key }: { key: string }) => {
@@ -219,6 +225,7 @@ const Student: React.FC = () => {
             userInfo={userInfo}
             loading={loading}
             exams={exams}
+            dashboardData={dashboardData}
             onAccountSettings={handleAccountSettings}
             updateProfile={updateProfile}
             changePassword={changePassword}
@@ -227,6 +234,9 @@ const Student: React.FC = () => {
             submitExamAnswers={submitExamAnswers}
             getExamSubmission={getExamSubmission}
             downloadFile={downloadFile}
+            uploadAnswerImage={uploadAnswerImage}
+            uploadAvatar={uploadAvatar}
+            getRegionChangeStatus={getRegionChangeStatus}
           />
         </Content>
       </Layout>

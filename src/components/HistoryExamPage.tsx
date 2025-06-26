@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   Typography, 
@@ -37,23 +37,34 @@ interface Exam {
   duration?: number;
 }
 
+interface ExamAnswer {
+  questionNumber: number;
+  imageUrl: string;
+  uploadTime: string;
+}
+
 interface ExamSubmission {
   id: string;
   examId: string;
   studentUsername: string;
-  answers: any[];
+  answers: ExamAnswer[];
   submittedAt: string;
   status: 'submitted' | 'grading' | 'graded';
   score?: number;
+}
+
+interface Student {
+  username: string;
+  name: string;
 }
 
 interface HistoryExamPageProps {
   exams: Exam[];
   loading: boolean;
   downloadFile: (fileUrl: string, fileName: string) => void;
-  getExamSubmission: (examId: string, studentUsername?: string) => ExamSubmission | null;
+  getExamSubmission: (examId: string, studentUsername?: string) => Promise<ExamSubmission | null>;
   userRole: 'student' | 'coach';
-  students?: any[];
+  students?: Student[];
 }
 
 const HistoryExamPage: React.FC<HistoryExamPageProps> = ({ 
@@ -64,6 +75,26 @@ const HistoryExamPage: React.FC<HistoryExamPageProps> = ({
   userRole,
   students = []
 }) => {
+  const [submissionStates, setSubmissionStates] = useState<Record<string, ExamSubmission | null>>({});
+
+  // 初始化提交状态
+  React.useEffect(() => {
+    const loadSubmissionStates = async () => {
+      const states: Record<string, ExamSubmission | null> = {};
+      for (const exam of exams) {
+        if (userRole === 'student') {
+          const submission = await getExamSubmission(exam.id);
+          states[exam.id] = submission;
+        }
+      }
+      setSubmissionStates(states);
+    };
+
+    if (exams.length > 0) {
+      loadSubmissionStates();
+    }
+  }, [exams, userRole, getExamSubmission]);
+
   // 历史考试：已结束的考试
   const historyExams = exams.filter(exam => 
     exam.status === 'completed' || new Date(exam.endTime) < new Date()
@@ -82,14 +113,16 @@ const HistoryExamPage: React.FC<HistoryExamPageProps> = ({
       ellipsis: true,
     },
     {
-      title: '考试时间',
-      key: 'examTime',
-      render: (_: any, record: Exam) => (
-        <div>
-          <div>开始：{new Date(record.startTime).toLocaleString()}</div>
-          <div>结束：{new Date(record.endTime).toLocaleString()}</div>
-        </div>
-      ),
+      title: '开始时间',
+      dataIndex: 'startTime',
+      key: 'startTime',
+      render: (time: string) => new Date(time).toLocaleString(),
+    },
+    {
+      title: '结束时间',
+      dataIndex: 'endTime',
+      key: 'endTime',
+      render: (time: string) => new Date(time).toLocaleString(),
     },
     {
       title: '题目数量',
@@ -102,7 +135,7 @@ const HistoryExamPage: React.FC<HistoryExamPageProps> = ({
       key: 'myScore',
       render: (_: any, record: Exam) => {
         if (userRole === 'student') {
-          const submission = getExamSubmission(record.id);
+          const submission = submissionStates[record.id];
           if (submission && submission.score !== undefined) {
             return <Tag color="gold">{submission.score} 分</Tag>;
           } else if (submission) {
@@ -112,12 +145,8 @@ const HistoryExamPage: React.FC<HistoryExamPageProps> = ({
           }
         } else {
           // 教练视角：显示参与学生数
-          const participatedCount = students.filter(student => 
-            getExamSubmission(record.id, student.username)
-          ).length;
-          return <Tag color={participatedCount > 0 ? "blue" : "default"}>
-            {participatedCount}/{students.length} 人参与
-          </Tag>;
+          // TODO: 实现教练视图的成绩统计
+          return <Tag color="default">统计中...</Tag>;
         }
       },
     },
@@ -125,70 +154,63 @@ const HistoryExamPage: React.FC<HistoryExamPageProps> = ({
       title: '操作',
       key: 'action',
       render: (_: any, record: Exam) => (
-        <Space size="small" wrap>
-          {/* 试题下载 */}
+        <Space size="small">
           {record.questionFile && (
-            <Button
-              size="small"
+            <Button 
+              type="text" 
+              size="small" 
               icon={<DownloadOutlined />}
               onClick={() => downloadFile(record.questionFile!.url, record.questionFile!.name)}
             >
-              试题
+              题目
             </Button>
           )}
-
-          {/* 答案下载 */}
           {record.answerFile && (
-            <Button
-              size="small"
+            <Button 
+              type="text" 
+              size="small" 
               icon={<DownloadOutlined />}
               onClick={() => downloadFile(record.answerFile!.url, record.answerFile!.name)}
             >
               答案
             </Button>
           )}
-
-          {/* 答题卡下载 */}
-          {record.answerSheetFile && (
-            <Button
-              size="small"
-              icon={<DownloadOutlined />}
-              onClick={() => downloadFile(record.answerSheetFile!.url, record.answerSheetFile!.name)}
+          {userRole === 'student' && (
+            <Button 
+              type="text" 
+              size="small" 
+              icon={<EyeOutlined />}
             >
-              答题卡
+              查看提交
             </Button>
           )}
-
-          {/* 查看详情 */}
-          <Button
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => console.log('查看考试详情', record.id)}
-          >
-            详情
-          </Button>
         </Space>
       ),
     },
   ];
 
   return (
-    <Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={4}>
-          <HistoryOutlined style={{ marginRight: 8 }} />
-          历史考试
-        </Title>
-      </div>
+    <div>
+      <Title level={4}>
+        <HistoryOutlined style={{ marginRight: 8 }} />
+        历史考试
+      </Title>
       
-      <Table
-        columns={columns}
-        dataSource={historyExams}
-        loading={loading}
-        rowKey="id"
-        pagination={{ pageSize: 10 }}
-      />
-    </Card>
+      <Card>
+        <Table
+          columns={columns}
+          dataSource={historyExams}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
+          }}
+        />
+      </Card>
+    </div>
   );
 };
 

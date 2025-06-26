@@ -70,7 +70,7 @@ interface CurrentExamPageProps {
   exams: Exam[];
   loading: boolean;
   submitExamAnswers: (examId: string, answers: ExamAnswer[], studentUsername?: string) => Promise<void>;
-  getExamSubmission: (examId: string, studentUsername?: string) => ExamSubmission | null;
+  getExamSubmission: (examId: string, studentUsername?: string) => Promise<ExamSubmission | null>;
   downloadFile: (fileUrl: string, fileName: string) => void;
   userRole: 'student' | 'coach';
   students?: Student[]; // 仅教练角色需要
@@ -90,6 +90,34 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
   const [answerFiles, setAnswerFiles] = useState<{ [key: number]: File }>({});
   const [submitting, setSubmitting] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<string>('');
+  const [submissionStates, setSubmissionStates] = useState<Record<string, boolean>>({});
+
+  // 检查考试提交状态
+  const checkSubmissionStatus = async (examId: string, studentUsername?: string) => {
+    try {
+      const submission = await getExamSubmission(examId, studentUsername);
+      return !!submission;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  // 初始化提交状态
+  React.useEffect(() => {
+    const loadSubmissionStates = async () => {
+      const states: Record<string, boolean> = {};
+      for (const exam of exams) {
+        if (userRole === 'student') {
+          states[exam.id] = await checkSubmissionStatus(exam.id);
+        }
+      }
+      setSubmissionStates(states);
+    };
+
+    if (exams.length > 0) {
+      loadSubmissionStates();
+    }
+  }, [exams, userRole]);
 
   // 当前考试：已发布且未结束的考试
   const currentTime = new Date();
@@ -221,19 +249,15 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
       key: 'submission',
       render: (_: any, record: Exam) => {
         if (userRole === 'student') {
-          const submission = getExamSubmission(record.id);
-          if (submission) {
+          const isSubmitted = submissionStates[record.id];
+          if (isSubmitted) {
             return <Tag color="success" icon={<CheckCircleOutlined />}>已提交</Tag>;
           }
           return <Tag color="default">未提交</Tag>;
         } else {
           // 教练视图：显示已提交的学生数量
-          const submittedCount = students.filter(student => 
-            getExamSubmission(record.id, student.username)
-          ).length;
-          return <Tag color={submittedCount > 0 ? "success" : "default"}>
-            {submittedCount}/{students.length} 已提交
-          </Tag>;
+          // TODO: 实现教练视图的提交状态统计
+          return <Tag color="default">统计中...</Tag>;
         }
       },
     },
