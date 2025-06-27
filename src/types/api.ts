@@ -1,4 +1,6 @@
 // 通用API类型定义
+import { microserviceRouter } from '../services/microserviceRouter';
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -22,8 +24,6 @@ export interface QueryParams {
 
 // 通用API基础类
 export class BaseAPI {
-  protected static API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001/api';
-
   // 获取认证头
   protected static getAuthHeaders(): Record<string, string> {
     const token = localStorage.getItem('token');
@@ -31,6 +31,11 @@ export class BaseAPI {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
+  }
+
+  // 获取完整API URL（通过微服务路由）
+  protected static getApiUrl(path: string): string {
+    return microserviceRouter.buildApiUrl(path);
   }
 
   // 统一错误处理
@@ -49,11 +54,12 @@ export class BaseAPI {
 
   // 统一请求处理
   protected static async makeRequest<T>(
-    url: string,
+    path: string,
     options: RequestInit = {},
     operation: string
   ): Promise<ApiResponse<T>> {
     try {
+      const url = this.getApiUrl(path);
       const response = await fetch(url, {
         ...options,
         headers: {

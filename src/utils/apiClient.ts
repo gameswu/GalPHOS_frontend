@@ -1,7 +1,6 @@
 // 全局API客户端，处理token机制和错误处理
 import { message } from 'antd';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001/api';
+import { microserviceRouter } from '../services/microserviceRouter';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -67,7 +66,8 @@ class ApiClient {
   // GET请求
   async get<T>(url: string): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}${url}`, {
+      const fullUrl = microserviceRouter.buildApiUrl(url);
+      const response = await fetch(fullUrl, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -82,7 +82,8 @@ class ApiClient {
   // POST请求
   async post<T>(url: string, data?: any): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}${url}`, {
+      const fullUrl = microserviceRouter.buildApiUrl(url);
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: data ? JSON.stringify(data) : undefined,
@@ -98,7 +99,8 @@ class ApiClient {
   // PUT请求
   async put<T>(url: string, data?: any): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}${url}`, {
+      const fullUrl = microserviceRouter.buildApiUrl(url);
+      const response = await fetch(fullUrl, {
         method: 'PUT',
         headers: this.getAuthHeaders(),
         body: data ? JSON.stringify(data) : undefined,
@@ -114,7 +116,8 @@ class ApiClient {
   // DELETE请求
   async delete<T>(url: string): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}${url}`, {
+      const fullUrl = microserviceRouter.buildApiUrl(url);
+      const response = await fetch(fullUrl, {
         method: 'DELETE',
         headers: this.getAuthHeaders(),
       });
@@ -136,7 +139,8 @@ class ApiClient {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const response = await fetch(`${API_BASE_URL}${url}`, {
+      const fullUrl = microserviceRouter.buildApiUrl(url);
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers,
         body: formData,

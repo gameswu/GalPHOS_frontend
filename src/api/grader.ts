@@ -18,7 +18,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/exams/${examId}/questions/scores`,
+      `/grader/exams/${examId}/questions/scores`,
       { method: 'GET' },
       '获取题目分值配置'
     );
@@ -129,7 +129,7 @@ class GraderAPI extends BaseAPI {
     }
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/tasks/${taskId}/questions/${questionNumber}/score`,
+      `/grader/tasks/${taskId}/questions/${questionNumber}/score`,
       {
         method: 'POST',
         body: JSON.stringify({
@@ -149,7 +149,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(questionNumber, '题目编号');
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/tasks/${taskId}/questions/${questionNumber}/history`,
+      `/grader/tasks/${taskId}/questions/${questionNumber}/history`,
       { method: 'GET' },
       '获取题目评分历史'
     );
@@ -168,7 +168,7 @@ class GraderAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<PaginatedResponse<any>>(
-      `${this.API_BASE_URL}/grader/tasks${queryParams}`,
+      `/grader/tasks${queryParams}`,
       { method: 'GET' },
       '获取阅卷任务'
     );
@@ -179,7 +179,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(taskId, '任务ID');
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/tasks/${taskId}`,
+      `/grader/tasks/${taskId}`,
       { method: 'GET' },
       '获取阅卷任务详情'
     );
@@ -195,7 +195,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(taskId, '任务ID');
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/tasks/${taskId}/start`,
+      `/grader/tasks/${taskId}/start`,
       { method: 'POST' },
       '开始阅卷任务'
     );
@@ -260,7 +260,7 @@ class GraderAPI extends BaseAPI {
     }
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/tasks/${taskId}/submit`,
+      `/grader/tasks/${taskId}/submit`,
       {
         method: 'POST',
         body: JSON.stringify(gradingData),
@@ -310,7 +310,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(progressData, '进度数据');
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/tasks/${taskId}/save-progress`,
+      `/grader/tasks/${taskId}/save-progress`,
       {
         method: 'POST',
         body: JSON.stringify(progressData),
@@ -324,7 +324,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(taskId, '任务ID');
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/tasks/${taskId}/abandon`,
+      `/grader/tasks/${taskId}/abandon`,
       {
         method: 'POST',
         body: JSON.stringify({ reason }),
@@ -345,7 +345,7 @@ class GraderAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<PaginatedResponse<any>>(
-      `${this.API_BASE_URL}/grader/exams${queryParams}`,
+      `/grader/exams${queryParams}`,
       { method: 'GET' },
       '获取考试列表'
     );
@@ -356,7 +356,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/exams/${examId}`,
+      `/grader/exams/${examId}`,
       { method: 'GET' },
       '获取考试详情'
     );
@@ -367,7 +367,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/exams/${examId}/progress`,
+      `/grader/exams/${examId}/progress`,
       { method: 'GET' },
       '获取考试阅卷进度'
     );
@@ -380,7 +380,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(submissionId, '答卷ID');
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/submissions/${submissionId}`,
+      `/grader/submissions/${submissionId}`,
       { method: 'GET' },
       '获取答卷详情'
     );
@@ -391,7 +391,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(imageUrl, '图片URL');
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/images?url=${encodeURIComponent(imageUrl)}`,
+      `/grader/images?url=${encodeURIComponent(imageUrl)}`,
       { method: 'GET' },
       '获取答案图片'
     );
@@ -409,7 +409,7 @@ class GraderAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/statistics${queryParams}`,
+      `/grader/statistics${queryParams}`,
       { method: 'GET' },
       '获取阅卷统计'
     );
@@ -427,7 +427,7 @@ class GraderAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<PaginatedResponse<any>>(
-      `${this.API_BASE_URL}/grader/history${queryParams}`,
+      `/grader/history${queryParams}`,
       { method: 'GET' },
       '获取阅卷历史'
     );
@@ -438,7 +438,7 @@ class GraderAPI extends BaseAPI {
   // 获取个人信息
   static async getProfile(): Promise<ApiResponse<any>> {
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/profile`,
+      `/grader/profile`,
       { method: 'GET' },
       '获取个人信息'
     );
@@ -460,7 +460,7 @@ class GraderAPI extends BaseAPI {
     }
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/profile`,
+      `/grader/profile`,
       {
         method: 'PUT',
         body: JSON.stringify(profileData),
@@ -494,7 +494,7 @@ class GraderAPI extends BaseAPI {
     const hashedNewPassword = PasswordHasher.hashPasswordWithSalt(passwordData.newPassword);
 
     return this.makeRequest<any>(
-      `${this.API_BASE_URL}/grader/change-password`,
+      `/grader/change-password`,
       {
         method: 'PUT',
         body: JSON.stringify({
@@ -514,7 +514,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(fileType, '文件类型');
 
     try {
-      const response = await fetch(`${this.API_BASE_URL}/grader/files/${fileId}/download?type=${fileType}`, {
+      const response = await fetch(`/grader/files/${fileId}/download?type=${fileType}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });

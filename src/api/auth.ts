@@ -41,7 +41,7 @@ class AuthAPI extends BaseAPI {
       };
       
       return await this.makeRequest<any>(
-        `${this.API_BASE_URL}/auth/login`,
+        `/auth/login`,
         {
           method: 'POST',
           body: JSON.stringify(loginData),
@@ -89,7 +89,7 @@ class AuthAPI extends BaseAPI {
       };
       
       return await this.makeRequest<any>(
-        `${this.API_BASE_URL}/auth/register`,
+        `/auth/register`,
         {
           method: 'POST',
           body: JSON.stringify(registerData),
@@ -105,7 +105,7 @@ class AuthAPI extends BaseAPI {
   static async getProvincesAndSchools(): Promise<ApiResponse<any>> {
     try {
       return await this.makeRequest<any>(
-        `${this.API_BASE_URL}/regions/provinces-schools`,
+        `/regions/provinces-schools`,
         {
           method: 'GET',
           headers: {
@@ -125,7 +125,7 @@ class AuthAPI extends BaseAPI {
       this.validateRequired(token, 'Token');
 
       return await this.makeRequest<any>(
-        `${this.API_BASE_URL}/auth/validate`,
+        `/auth/validate`,
         {
           method: 'GET',
           headers: {
@@ -144,7 +144,7 @@ class AuthAPI extends BaseAPI {
   static async logout(): Promise<ApiResponse<any>> {
     try {
       return await this.makeRequest<any>(
-        `${this.API_BASE_URL}/auth/logout`,
+        `/auth/logout`,
         {
           method: 'POST',
         },
@@ -171,7 +171,7 @@ class AuthAPI extends BaseAPI {
       };
       
       return await this.makeRequest<any>(
-        `${this.API_BASE_URL}/auth/admin-login`,
+        `/auth/admin-login`,
         {
           method: 'POST',
           body: JSON.stringify(loginData),
