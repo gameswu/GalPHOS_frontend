@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import StudentAPI from '../../../api/student';
+import { authService } from '../../../services/authService';
 import type { StudentExam as Exam, ExamAnswer, ExamSubmission } from '../../../types/common';
 
 // DashboardData可能是StudentAPI特有的，暂时保留从API导入
@@ -50,14 +51,16 @@ export const useStudentLogic = () => {
     try {
       const result = await StudentAPI.updateProfile(data);
       if (result.success) {
-        // 更新本地存储的用户信息
-        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        const updatedUserInfo = {
-          ...userInfo,
-          username: data.username,
-          avatar: data.avatar
-        };
-        localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
+        // 使用 authService 更新用户信息
+        const currentUser = authService.getCurrentUser();
+        if (currentUser) {
+          const updatedUserInfo = {
+            ...currentUser,
+            username: data.username,
+            avatar: data.avatar
+          };
+          authService.setAuthData(updatedUserInfo, authService.getToken() || '');
+        }
         
         message.success(result.message || '个人资料更新成功');
       } else {
@@ -109,9 +112,7 @@ export const useStudentLogic = () => {
 
   // 退出登录
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userInfo');
-    localStorage.removeItem('token');
+    authService.clearAuthData();
     message.success('已退出登录');
   }, []);
 

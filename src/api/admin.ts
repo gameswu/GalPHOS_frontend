@@ -1,5 +1,6 @@
 // 管理员相关API接口
 import { PasswordHasher } from '../utils/passwordHasher';
+import { authService } from '../services/authService';
 import { ApiResponse, BaseAPI, PaginatedResponse } from '../types/api';
 import { 
   Exam,
@@ -345,7 +346,7 @@ class AdminAPI extends BaseAPI {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${authService.getToken()}`,
           // 不设置 Content-Type，让浏览器自动设置 multipart/form-data
         },
       },
@@ -444,7 +445,7 @@ class AdminAPI extends BaseAPI {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${authService.getToken()}`,
           // 不设置 Content-Type，让浏览器自动设置 multipart/form-data
         },
       },
@@ -720,7 +721,7 @@ class AdminAPI extends BaseAPI {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${authService.getToken()}`,
           // 不设置 Content-Type，让浏览器自动设置 multipart/form-data
         },
       },

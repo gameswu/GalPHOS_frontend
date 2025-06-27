@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Form, message } from 'antd';
 import LoginUI from './LoginUI';
 import AuthAPI from '../../api/auth';
+import { authService } from '../../services/authService';
 
 // 统一的类型定义 - 登录表单移除赛区字段
 interface LoginForm {
@@ -61,23 +62,26 @@ const useLogin = () => {
   
   // 初始化数据和检查登录状态
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const userInfo = localStorage.getItem('userInfo');
-    
-    if (isLoggedIn && userInfo) {
-      const user = JSON.parse(userInfo);
-      if (user.type === 'admin') {
-        navigate('/admin', { replace: true });
-      } else {
-        // 根据角色跳转到对应页面
-        const roleRoutes: Record<string, string> = {
-          student: '/student',
-          grader: '/grader',
-          coach: '/coach'
-        };
-        navigate(roleRoutes[user.role] || '/login', { replace: true });
+    const checkLoginStatus = async () => {
+      const isAuthenticated = await authService.isAuthenticated();
+      
+      if (isAuthenticated) {
+        const userInfo = authService.getCurrentUser();
+        if (userInfo?.type === 'admin') {
+          navigate('/admin', { replace: true });
+        } else if (userInfo?.role) {
+          // 根据角色跳转到对应页面
+          const roleRoutes: Record<string, string> = {
+            student: '/student',
+            grader: '/grader',
+            coach: '/coach'
+          };
+          navigate(roleRoutes[userInfo.role] || '/login', { replace: true });
+        }
       }
-    }
+    };
+    
+    checkLoginStatus();
     
     // 加载省份和学校数据
     loadProvincesData();
@@ -113,9 +117,8 @@ const useLogin = () => {
       
       const response = await AuthAPI.login(values);
       if (response.success) {
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userInfo', JSON.stringify(response.data));
-        localStorage.setItem('token', response.token || '');
+        // 使用 authService 统一处理登录状态
+        authService.setAuthData(response.data, response.token || '');
         message.success('登录成功！');
         
         // 根据角色跳转到对应页面

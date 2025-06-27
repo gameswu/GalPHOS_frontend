@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, message } from 'antd';
 import AuthAPI from '../../api/auth';
+import { authService } from '../../services/authService';
 
 interface AdminLoginForm {
   username: string;
@@ -15,17 +16,20 @@ export const useAdminLogin = () => {
   
   // 检查是否已经登录，如果是则重定向
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const userInfo = localStorage.getItem('userInfo');
-    
-    if (isLoggedIn && userInfo) {
-      const user = JSON.parse(userInfo);
-      if (user.type === 'admin') {
-        navigate('/admin', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
+    const checkLoginStatus = async () => {
+      const isAuthenticated = await authService.isAuthenticated();
+      
+      if (isAuthenticated) {
+        const userInfo = authService.getCurrentUser();
+        if (userInfo?.type === 'admin') {
+          navigate('/admin', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
       }
-    }
+    };
+    
+    checkLoginStatus();
   }, [navigate]);
 
   // 处理管理员登录
@@ -36,12 +40,11 @@ export const useAdminLogin = () => {
       
       const response = await AuthAPI.adminLogin(values);
       if (response.success) {
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userInfo', JSON.stringify({
+        // 使用 authService 统一处理登录状态
+        authService.setAuthData({
           ...response.data,
           type: 'admin'
-        }));
-        localStorage.setItem('token', response.token || '');
+        }, response.token || '');
         message.success('管理员登录成功！');
         navigate('/admin', { replace: true });
       } else {

@@ -1,5 +1,6 @@
 // 学生相关API接口
 import { PasswordHasher } from '../utils/passwordHasher';
+import { authService } from '../services/authService';
 import { ApiResponse, BaseAPI } from '../types/api';
 import { 
   StudentExam as Exam,
@@ -127,7 +128,7 @@ class StudentAPI extends BaseAPI {
       formData.append('examId', examId);
       formData.append('questionNumber', questionNumber.toString());
 
-      const token = localStorage.getItem('token');
+      const token = authService.getToken();
       const response = await fetch(`${this.API_BASE_URL}/student/upload/answer-image`, {
         method: 'POST',
         headers: {
@@ -218,7 +219,7 @@ class StudentAPI extends BaseAPI {
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const token = localStorage.getItem('token');
+      const token = authService.getToken();
       const response = await fetch(`${this.API_BASE_URL}/student/upload/avatar`, {
         method: 'POST',
         headers: {
@@ -282,7 +283,7 @@ class StudentAPI extends BaseAPI {
       this.validateRequired(fileId, '文件ID');
       this.validateRequired(fileName, '文件名');
 
-      const token = localStorage.getItem('token');
+      const token = authService.getToken();
       const response = await fetch(`${this.API_BASE_URL}/student/files/download/${fileId}`, {
         method: 'GET',
         headers: {

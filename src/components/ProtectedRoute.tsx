@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Spin } from 'antd';
-import { apiClient } from '../utils/apiClient';
+import { authService } from '../services/authService';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -25,33 +25,28 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   const checkAuthentication = async () => {
     try {
-      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      const userInfoStr = localStorage.getItem('userInfo');
-      const token = localStorage.getItem('token');
-
-      // 基础检查：是否有登录标记、用户信息和token
-      if (!isLoggedIn || !userInfoStr || !token) {
+      // 使用 authService 进行统一认证检查
+      const isAuthenticated = await authService.isAuthenticated();
+      
+      if (!isAuthenticated) {
         redirectToLogin();
         return;
       }
 
-      // 验证token有效性
-      const isTokenValid = await apiClient.validateToken();
-      if (!isTokenValid) {
+      const userInfo = authService.getCurrentUser();
+      if (!userInfo) {
         redirectToLogin();
         return;
       }
-
-      const userInfo = JSON.parse(userInfoStr);
 
       // 检查管理员权限
-      if (adminOnly && userInfo.type !== 'admin') {
+      if (adminOnly && !authService.isAdmin()) {
         redirectToLogin();
         return;
       }
 
       // 检查角色权限
-      if (requiredRole && userInfo.role !== requiredRole) {
+      if (requiredRole && !authService.hasRole(requiredRole)) {
         redirectToLogin();
         return;
       }
@@ -66,10 +61,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   };
 
   const redirectToLogin = () => {
-    // 清除认证数据
-    localStorage.removeItem('token');
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userInfo');
+    // 使用 authService 清除认证数据
+    authService.clearAuthData();
 
     // 根据是否需要管理员权限决定跳转页面
     if (adminOnly) {

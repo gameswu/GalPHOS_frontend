@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import GraderAPI from '../../../api/grader';
+import { authService } from '../../../services/authService';
 import type { 
   GraderExam as Exam, 
   GradingTask, 
@@ -250,14 +251,16 @@ export const useGraderLogic = () => {
       const response = await GraderAPI.updateProfile(data);
       
       if (response.success) {
-        // 更新本地存储的用户信息
-        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        const updatedUserInfo = {
-          ...userInfo,
-          username: data.username,
-          avatar: data.avatar
-        };
-        localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
+        // 使用 authService 更新用户信息
+        const currentUser = authService.getCurrentUser();
+        if (currentUser) {
+          const updatedUserInfo = {
+            ...currentUser,
+            username: data.username,
+            avatar: data.avatar
+          };
+          authService.setAuthData(updatedUserInfo, authService.getToken() || '');
+        }
         
         message.success('个人资料更新成功');
       } else {
@@ -301,9 +304,7 @@ export const useGraderLogic = () => {
 
   // 退出登录
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userInfo');
-    localStorage.removeItem('token');
+    authService.clearAuthData();
     message.success('已退出登录');
   }, []);
 

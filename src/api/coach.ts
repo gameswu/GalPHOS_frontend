@@ -1,5 +1,6 @@
 // 教练相关API接口
 import { PasswordHasher } from '../utils/passwordHasher';
+import { authService } from '../services/authService';
 import { ApiResponse, BaseAPI, PaginatedResponse } from '../types/api';
 import { 
   StudentExam as Exam,
@@ -137,7 +138,7 @@ class CoachAPI extends BaseAPI {
   // 下载考试文件
   static async downloadExamFile(examId: string, fileType: 'question' | 'answerSheet' | 'result'): Promise<Blob> {
     try {
-      const token = localStorage.getItem('token');
+      const token = authService.getToken();
       const response = await fetch(`${this.API_BASE_URL}/coach/exams/${examId}/files/${fileType}`, {
         method: 'GET',
         headers: {
@@ -188,7 +189,7 @@ class CoachAPI extends BaseAPI {
       formData.append('questionNumber', questionNumber.toString());
       formData.append('studentUsername', studentUsername);
 
-      const token = localStorage.getItem('token');
+      const token = authService.getToken();
       const response = await fetch(`${this.API_BASE_URL}/coach/exams/${examId}/upload-answer`, {
         method: 'POST',
         headers: {
@@ -351,7 +352,7 @@ class CoachAPI extends BaseAPI {
       const formData = new FormData();
       formData.append('file', file);
 
-      const token = localStorage.getItem('token');
+      const token = authService.getToken();
       const response = await fetch(`${this.API_BASE_URL}/coach/profile/upload-avatar`, {
         method: 'POST',
         headers: {

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import CoachAPI from '../../../api/coach';
+import { authService } from '../../../services/authService';
 import { 
   StudentExam as Exam,
   ExamFile,
@@ -137,13 +138,15 @@ export const useCoachLogic = () => {
       const response = await CoachAPI.updateProfile(data);
       
       if (response.success) {
-        // 更新本地存储的用户信息
-        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        const updatedUserInfo = {
-          ...userInfo,
-          ...data
-        };
-        localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
+        // 使用 authService 更新用户信息
+        const currentUser = authService.getCurrentUser();
+        if (currentUser) {
+          const updatedUserInfo = {
+            ...currentUser,
+            ...data
+          };
+          authService.setAuthData(updatedUserInfo, authService.getToken() || '');
+        }
         
         message.success('个人资料更新成功');
       } else {
@@ -204,9 +207,7 @@ export const useCoachLogic = () => {
 
   // 退出登录
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userInfo');
-    localStorage.removeItem('token');
+    authService.clearAuthData();
     message.success('已退出登录');
   }, []);
 

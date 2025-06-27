@@ -3,6 +3,7 @@ import { Layout, Menu, Typography, Button, message, Avatar } from 'antd';
 import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useCoachLogic } from './hooks/useCoachLogic';
+import { authService } from '../../services/authService';
 import { getCoachMenuItems, getTitleByKey } from './config/menuConfig';
 import CoachContent from './components/CoachContent';
 
@@ -50,31 +51,40 @@ const Coach: React.FC = () => {
 
   // 检查登录状态和用户权限
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const userInfoStr = localStorage.getItem('userInfo');
+    const checkAuth = async () => {
+      const isAuthenticated = await authService.isAuthenticated();
+      
+      if (!isAuthenticated) {
+        message.error('请先登录');
+        navigate('/login');
+        return;
+      }
+      
+      const user = authService.getCurrentUser();
+      if (!user) {
+        message.error('获取用户信息失败');
+        navigate('/login');
+        return;
+      }
+      
+      if (user.type === 'admin') {
+        message.error('管理员请使用管理员面板');
+        navigate('/admin');
+        return;
+      }
+      
+      if (user.role !== 'coach') {
+        message.error('当前用户不是教练角色');
+        navigate('/login');
+        return;
+      }
+      
+      setUserInfo(user as UserInfo);
+      loadStudents();
+      loadExams();
+    };
     
-    if (!isLoggedIn || !userInfoStr) {
-      message.error('请先登录');
-      navigate('/login');
-      return;
-    }
-    
-    const user = JSON.parse(userInfoStr) as UserInfo;
-    if (user.type === 'admin') {
-      message.error('管理员请使用管理员面板');
-      navigate('/admin');
-      return;
-    }
-    
-    if (user.role !== 'coach') {
-      message.error('当前用户不是教练角色');
-      navigate('/login');
-      return;
-    }
-    
-    setUserInfo(user);
-    loadStudents();
-    loadExams();
+    checkAuth();
   }, [navigate, loadStudents, loadExams]);
 
   // 菜单点击处理

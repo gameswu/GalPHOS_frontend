@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import AdminAPI from '../../../api/admin';
+import { authService } from '../../../services/authService';
 import type { 
   Province, 
   School,
@@ -78,34 +79,37 @@ export const useAdminLogic = () => {
 
   // 初始化数据
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const userInfo = localStorage.getItem('userInfo');
+    const checkAuth = async () => {
+      const isAuthenticated = await authService.isAuthenticated();
+      
+      if (!isAuthenticated) {
+        message.error('请先登录');
+        navigate('/admin-login');
+        return;
+      }
+      
+      const user = authService.getCurrentUser();
+      if (!user || !authService.isAdmin()) {
+        message.error('权限不足');
+        navigate('/login');
+        return;
+      }
+      
+      // 加载所有数据
+      loadPendingUsers();
+      loadApprovedUsers();
+      loadRegions();
+      loadExams();
+      loadGraders();
+      loadGradingTasks();
+      loadAdminUsers();
+      loadSystemSettings();
+      loadCurrentAdmin();
+      loadCoachStudentsStats();
+      loadDashboardStats();
+    };
     
-    if (!isLoggedIn || !userInfo) {
-      message.error('请先登录');
-      navigate('/admin-login');
-      return;
-    }
-    
-    const user = JSON.parse(userInfo);
-    if (user.type !== 'admin') {
-      message.error('权限不足');
-      navigate('/login');
-      return;
-    }
-    
-    // 加载所有数据
-    loadPendingUsers();
-    loadApprovedUsers();
-    loadRegions();
-    loadExams();
-    loadGraders();
-    loadGradingTasks();
-    loadAdminUsers();
-    loadSystemSettings();
-    loadCurrentAdmin();
-    loadCoachStudentsStats();
-    loadDashboardStats();
+    checkAuth();
   }, [navigate]);
 
   // 加载待审核用户
@@ -651,9 +655,7 @@ export const useAdminLogic = () => {
 
   // 退出登录
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userInfo');
-    localStorage.removeItem('token');
+    authService.clearAuthData();
     message.success('退出登录成功');
     navigate('/admin-login');
   }, [navigate]);
