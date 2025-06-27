@@ -479,6 +479,47 @@ class CoachAPI extends BaseAPI {
       throw error;
     }
   }
+
+  // ===================== 赛区变更申请模块 =====================
+
+  // 申请赛区变更
+  static async submitRegionChangeRequest(data: {
+    province: string;
+    school: string;
+    reason: string;
+  }): Promise<ApiResponse<any>> {
+    try {
+      this.validateRequired(data.province, '省份');
+      this.validateRequired(data.school, '学校');
+      this.validateRequired(data.reason, '申请理由');
+
+      return await this.makeRequest<any>(
+        `${this.API_BASE_URL}/coach/profile/change-region`,
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+        },
+        '提交赛区变更申请'
+      );
+    } catch (error) {
+      return this.handleApiError(error, '提交赛区变更申请');
+    }
+  }
+
+  // 获取我的赛区变更申请记录
+  static async getMyRegionChangeRequests(): Promise<ApiResponse<any>> {
+    try {
+      return await this.makeRequest<any>(
+        `${this.API_BASE_URL}/coach/profile/change-region-requests`,
+        {
+          method: 'GET',
+        },
+        '获取赛区变更申请记录'
+      );
+    } catch (error) {
+      return this.handleApiError(error, '获取赛区变更申请记录');
+    }
+  }
 }
 
 export default CoachAPI;

@@ -20,6 +20,7 @@ import {
   CloseOutlined
 } from '@ant-design/icons';
 import type { RegionChangeRequest } from '../../../types/common';
+import AdminAPI from '../../../api/admin';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -35,11 +36,28 @@ const RegionChangeRequestManagement: React.FC = () => {
   const loadRequests = async () => {
     setLoading(true);
     try {
-      // 从localStorage获取申请记录（实际应该从后端API获取）
-      const requestsData = JSON.parse(localStorage.getItem('regionChangeRequests') || '[]');
-      setRequests(requestsData);
+      // 优先使用API获取申请记录
+      const response = await AdminAPI.getRegionChangeRequests();
+      if (response.success && response.data) {
+        setRequests(response.data);
+      } else {
+        message.warning('API获取失败，使用本地数据');
+        // 回退到localStorage方式
+        const requestsData = JSON.parse(localStorage.getItem('regionChangeRequests') || '[]');
+        setRequests(requestsData);
+      }
     } catch (error) {
-      message.error('加载申请记录失败');
+      console.error('API获取赛区变更申请失败:', error);
+      message.warning('API暂不可用，使用本地数据');
+      // 回退到localStorage方式
+      try {
+        const requestsData = JSON.parse(localStorage.getItem('regionChangeRequests') || '[]');
+        setRequests(requestsData);
+      } catch (localError) {
+        console.error('加载本地申请记录失败:', localError);
+        message.error('加载申请记录失败');
+        setRequests([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -63,33 +81,63 @@ const RegionChangeRequestManagement: React.FC = () => {
       
       if (!currentRequest) return;
       
-      // 更新申请状态
-      const updatedRequests = requests.map(req => 
-        req.id === currentRequest.id 
-          ? {
-              ...req,
-              status: values.action as 'approved' | 'rejected',
-              reviewedBy: 'admin', // 实际应该使用当前管理员的用户名
-              reviewedAt: new Date().toISOString(),
-              reviewNote: values.note
-            }
-          : req
-      );
-      
-      setRequests(updatedRequests);
-      localStorage.setItem('regionChangeRequests', JSON.stringify(updatedRequests));
-      
-      // 如果批准，更新用户的赛区信息
-      if (values.action === 'approved') {
-        updateUserRegion(currentRequest);
+      // 优先使用API处理审核
+      try {
+        const response = await AdminAPI.handleRegionChangeRequest(
+          currentRequest.id,
+          values.action,
+          values.note
+        );
+        
+        if (response.success) {
+          message.success(`申请已${values.action === 'approve' ? '批准' : '拒绝'}`);
+          // API成功后重新加载数据
+          await loadRequests();
+        } else {
+          message.warning('API处理失败，使用本地处理方式');
+          // API失败时回退到本地处理
+          handleLocalReview(values);
+        }
+      } catch (error) {
+        console.error('API处理赛区变更申请失败:', error);
+        message.warning('API暂不可用，使用本地处理方式');
+        // API失败时回退到本地处理
+        handleLocalReview(values);
       }
       
-      message.success(`申请已${values.action === 'approved' ? '批准' : '拒绝'}`);
       setReviewModalVisible(false);
       setCurrentRequest(null);
     } catch (error) {
       message.error('审核失败，请重试');
     }
+  };
+
+  // 本地审核处理（回退方案）
+  const handleLocalReview = (values: any) => {
+    if (!currentRequest) return;
+    
+    // 更新申请状态
+    const updatedRequests = requests.map(req => 
+      req.id === currentRequest.id 
+        ? {
+            ...req,
+            status: values.action as 'approved' | 'rejected',
+            reviewedBy: 'admin', // 实际应该使用当前管理员的用户名
+            reviewedAt: new Date().toISOString(),
+            reviewNote: values.note
+          }
+        : req
+    );
+    
+    setRequests(updatedRequests);
+    localStorage.setItem('regionChangeRequests', JSON.stringify(updatedRequests));
+    
+    // 如果批准，更新用户的赛区信息
+    if (values.action === 'approve') {
+      updateUserRegion(currentRequest);
+    }
+    
+    message.success(`申请已${values.action === 'approve' ? '批准' : '拒绝'}（本地处理）`);
   };
 
   // 更新用户赛区信息

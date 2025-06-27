@@ -80,6 +80,30 @@ class AdminAPI extends BaseAPI {
     );
   }
 
+  // 获取教练管理学生关系
+  static async getCoachStudents(): Promise<ApiResponse<any[]>> {
+    return this.makeRequest<any[]>(
+      `${this.API_BASE_URL}/admin/coach-students`,
+      { method: 'GET' },
+      '获取教练管理学生关系'
+    );
+  }
+
+  // 获取教练管理学生统计
+  static async getCoachStudentsStats(): Promise<ApiResponse<{
+    totalCoachStudents: number;
+    coachStudentsByCoach: { [coachId: string]: number };
+  }>> {
+    return this.makeRequest<{
+      totalCoachStudents: number;
+      coachStudentsByCoach: { [coachId: string]: number };
+    }>(
+      `${this.API_BASE_URL}/admin/coach-students/stats`,
+      { method: 'GET' },
+      '获取教练管理学生统计'
+    );
+  }
+
   // ===================== 地区管理模块 =====================
   
   // 获取所有地区
@@ -751,6 +775,108 @@ class AdminAPI extends BaseAPI {
       `${this.API_BASE_URL}/admin/dashboard/stats`,
       { method: 'GET' },
       '获取仪表盘统计数据'
+    );
+  }
+
+  // 添加教练-学生关系API方法到AdminAPI
+  static async createCoachStudentRelation(data: {
+    coachId: string;
+    studentId: string;
+  }): Promise<ApiResponse<any>> {
+    this.validateRequired(data.coachId, '教练ID');
+    this.validateRequired(data.studentId, '学生ID');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/admin/coach-students`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+      '创建教练学生关系'
+    );
+  }
+
+  // 删除教练-学生关系
+  static async deleteCoachStudentRelation(relationId: string): Promise<ApiResponse<any>> {
+    this.validateRequired(relationId, '关系ID');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/admin/coach-students/${relationId}`,
+      { method: 'DELETE' },
+      '删除教练学生关系'
+    );
+  }
+
+  // ===================== 学生注册申请管理模块 =====================
+  
+  // 获取学生注册申请列表
+  static async getStudentRegistrations(params?: {
+    status?: 'pending' | 'approved' | 'rejected';
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<any>> {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const url = queryParams.toString() 
+      ? `${this.API_BASE_URL}/admin/student-registrations?${queryParams.toString()}`
+      : `${this.API_BASE_URL}/admin/student-registrations`;
+
+    return this.makeRequest<any>(
+      url,
+      { method: 'GET' },
+      '获取学生注册申请列表'
+    );
+  }
+
+  // 审核学生注册申请
+  static async reviewStudentRegistration(requestId: string, data: {
+    action: 'approve' | 'reject';
+    note?: string;
+  }): Promise<ApiResponse<any>> {
+    this.validateRequired(requestId, '申请ID');
+    this.validateRequired(data.action, '审核操作');
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/admin/student-registrations/${requestId}/review`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+      '审核学生注册申请'
+    );
+  }
+
+  // 创建学生注册申请
+  static async createStudentRegistration(data: {
+    username: string;
+    password: string;
+    province: string;
+    school: string;
+    coachUsername: string;
+    reason?: string;
+  }): Promise<ApiResponse<any>> {
+    this.validateRequired(data.username, '用户名');
+    this.validateRequired(data.password, '密码');
+    this.validateRequired(data.province, '省份');
+    this.validateRequired(data.school, '学校');
+    this.validateRequired(data.coachUsername, '教练用户名');
+
+    // 密码哈希处理
+    const hashedPassword = PasswordHasher.hashPasswordWithSalt(data.password);
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/admin/student-registrations`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          ...data,
+          password: hashedPassword,
+        }),
+      },
+      '创建学生注册申请'
     );
   }
 }

@@ -79,7 +79,7 @@ const useLogin = () => {
       }
     }
     
-    // TODO: 加载省份和学校数据
+    // 加载省份和学校数据
     loadProvincesData();
   }, [navigate]);
 

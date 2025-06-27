@@ -63,6 +63,10 @@ interface AdminContentProps {
   pendingCount: number;
   loading: boolean;
   isOffline: boolean;
+  coachStudentsStats?: {
+    totalCoachStudents: number;
+    coachStudentsByCoach: { [coachId: string]: number };
+  };
   onApprove: (userId: string) => void;
   onReject: (userId: string) => void;
   onDisableUser: (userId: string) => void;
@@ -99,7 +103,11 @@ const DashboardPage: React.FC<{
   exams: Exam[];
   gradingTasks: AdminGradingTask[];
   graders: GraderInfo[];
-}> = ({ pendingCount, isOffline, regions, approvedUsers, exams, gradingTasks, graders }) => {
+  coachStudentsStats?: {
+    totalCoachStudents: number;
+    coachStudentsByCoach: { [coachId: string]: number };
+  };
+}> = ({ pendingCount, isOffline, regions, approvedUsers, exams, gradingTasks, graders, coachStudentsStats }) => {
   const totalSchools = regions.reduce((sum, region) => sum + region.schools.length, 0);
   const activeUsers = approvedUsers.filter(user => user.status === 'approved').length;
   
@@ -128,6 +136,26 @@ const DashboardPage: React.FC<{
     students: approvedUsers.filter(u => u.role === 'student').length,
     graders: approvedUsers.filter(u => u.role === 'grader').length
   };
+
+  // 教练管理的学生统计 - 优先使用API数据，回退到localStorage
+  const getCoachManagedStudentsCount = () => {
+    // 优先使用API数据
+    if (coachStudentsStats && coachStudentsStats.totalCoachStudents >= 0) {
+      return coachStudentsStats.totalCoachStudents;
+    }
+    
+    // API数据不可用时，回退到localStorage
+    try {
+      const allCoachStudents = JSON.parse(localStorage.getItem('coachStudents') || '{}');
+      return Object.values(allCoachStudents).reduce((total: number, students: any) => 
+        total + (Array.isArray(students) ? students.length : 0), 0
+      );
+    } catch {
+      return 0;
+    }
+  };
+  
+  const coachManagedStudentsCount = getCoachManagedStudentsCount();
 
   return (
     <div>
@@ -176,7 +204,7 @@ const DashboardPage: React.FC<{
 
       {/* 用户角色统计 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col span={8}>
+        <Col span={6}>
           <Card>
             <Statistic
               title="教练数量"
@@ -186,17 +214,27 @@ const DashboardPage: React.FC<{
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col span={6}>
           <Card>
             <Statistic
-              title="学生数量"
+              title="独立学生"
               value={userRoleStats.students}
               valueStyle={{ color: '#52c41a' }}
               suffix="人"
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="教练管理学生"
+              value={coachManagedStudentsCount}
+              valueStyle={{ color: '#13c2c2' }}
+              suffix="人"
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
           <Card>
             <Statistic
               title="阅卷者数量"
@@ -361,6 +399,7 @@ const UserManagementPage: React.FC<{
 }> = ({ pendingUsers, approvedUsers, loading, onApprove, onReject, onDisableUser, onEnableUser, onDeleteUser }) => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
 
   // 待审核用户表格列
   const pendingColumns = [
@@ -369,6 +408,20 @@ const UserManagementPage: React.FC<{
       dataIndex: 'username',
       key: 'username',
       render: (text: string) => <Text strong>{text}</Text>,
+    },
+    {
+      title: '用户类型',
+      dataIndex: 'role',
+      key: 'role',
+      render: (role: string) => {
+        const roleMap = {
+          student: { text: '学生', color: 'blue' },
+          coach: { text: '教练', color: 'green' },
+          grader: { text: '阅卷者', color: 'orange' }
+        };
+        const roleInfo = roleMap[role as keyof typeof roleMap];
+        return <Tag color={roleInfo?.color}>{roleInfo?.text}</Tag>;
+      },
     },
     {
       title: '手机号',
@@ -444,6 +497,20 @@ const UserManagementPage: React.FC<{
       dataIndex: 'username',
       key: 'username',
       render: (text: string) => <Text strong>{text}</Text>,
+    },
+    {
+      title: '用户类型',
+      dataIndex: 'role',
+      key: 'role',
+      render: (role: string) => {
+        const roleMap = {
+          student: { text: '学生', color: 'blue' },
+          coach: { text: '教练', color: 'green' },
+          grader: { text: '阅卷者', color: 'orange' }
+        };
+        const roleInfo = roleMap[role as keyof typeof roleMap];
+        return <Tag color={roleInfo?.color}>{roleInfo?.text}</Tag>;
+      },
     },
     {
       title: '手机号',
@@ -545,18 +612,66 @@ const UserManagementPage: React.FC<{
                          (user.school || '').toLowerCase().includes(searchText.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesRole;
+  });
+
+  // 待审核用户筛选
+  const filteredPendingUsers = pendingUsers.filter(user => {
+    const matchesSearch = user.username.toLowerCase().includes(searchText.toLowerCase()) ||
+                         user.phone.includes(searchText) ||
+                         (user.province || '').toLowerCase().includes(searchText.toLowerCase()) ||
+                         (user.school || '').toLowerCase().includes(searchText.toLowerCase());
+    
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    
+    return matchesSearch && matchesRole;
   });
 
   return (
     <div>
+      {/* 筛选控件 */}
+      <Card style={{ marginBottom: 16 }}>
+        <Space wrap>
+          <Search
+            placeholder="搜索用户名、手机号、省份或学校"
+            allowClear
+            style={{ width: 300 }}
+            onSearch={setSearchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+          <Select
+            value={roleFilter}
+            onChange={setRoleFilter}
+            style={{ width: 120 }}
+            placeholder="用户类型"
+          >
+            <Select.Option value="all">全部类型</Select.Option>
+            <Select.Option value="student">学生</Select.Option>
+            <Select.Option value="coach">教练</Select.Option>
+            <Select.Option value="grader">阅卷者</Select.Option>
+          </Select>
+          <Select
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ width: 120 }}
+            placeholder="用户状态"
+          >
+            <Select.Option value="all">全部状态</Select.Option>
+            <Select.Option value="approved">正常</Select.Option>
+            <Select.Option value="active">正常</Select.Option>
+            <Select.Option value="disabled">禁用</Select.Option>
+          </Select>
+        </Space>
+      </Card>
+
       <Tabs defaultActiveKey="pending">
-        <TabPane tab={`待审核 (${pendingUsers.filter(u => u.status === 'pending').length})`} key="pending">
+        <TabPane tab={`待审核 (${filteredPendingUsers.length})`} key="pending">
           <Card>
             <Table
               columns={pendingColumns}
-              dataSource={pendingUsers}
+              dataSource={filteredPendingUsers}
               rowKey="id"
               loading={loading}
               pagination={{
@@ -569,27 +684,8 @@ const UserManagementPage: React.FC<{
           </Card>
         </TabPane>
         
-        <TabPane tab={`已审核 (${approvedUsers.length})`} key="approved">
+        <TabPane tab={`已审核 (${filteredApprovedUsers.length})`} key="approved">
           <Card>
-            <Space style={{ marginBottom: 16 }}>
-              <Search
-                placeholder="搜索用户名、手机号、省份或学校"
-                allowClear
-                style={{ width: 300 }}
-                onSearch={setSearchText}
-                onChange={(e) => setSearchText(e.target.value)}
-              />
-              <Select
-                value={statusFilter}
-                onChange={setStatusFilter}
-                style={{ width: 120 }}
-              >
-                <Select.Option value="all">全部状态</Select.Option>
-                <Select.Option value="approved">正常</Select.Option>
-                <Select.Option value="active">正常</Select.Option>
-                <Select.Option value="disabled">禁用</Select.Option>
-              </Select>
-            </Space>
             <Table
               columns={approvedColumns}
               dataSource={filteredApprovedUsers}
@@ -624,6 +720,7 @@ const AdminContent: React.FC<AdminContentProps> = ({
   pendingCount,
   loading,
   isOffline,
+  coachStudentsStats,
   onApprove,
   onReject,
   onDisableUser,
@@ -661,6 +758,7 @@ const AdminContent: React.FC<AdminContentProps> = ({
           exams={exams}
           gradingTasks={gradingTasks}
           graders={graders}
+          coachStudentsStats={coachStudentsStats}
         />
       );
     
@@ -750,6 +848,7 @@ const AdminContent: React.FC<AdminContentProps> = ({
           exams={exams}
           gradingTasks={gradingTasks}
           graders={graders}
+          coachStudentsStats={coachStudentsStats}
         />
       );
   }

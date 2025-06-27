@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   Typography, 
@@ -25,6 +25,7 @@ import {
   ExamAnswer,
   ExamSubmission
 } from '../types/common';
+import CoachAPI from '../api/coach';
 
 const { Title } = Typography;
 
@@ -48,17 +49,96 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
   exams, 
   loading, 
   submitExamAnswers, 
-  getExamSubmission, 
+  getExamSubmission,
   downloadFile,
   userRole,
   students = []
 }) => {
+  // 提交状态
+  const [submissionStates, setSubmissionStates] = useState<{ [examId: string]: ExamSubmission | null }>({});
+  const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [submissionModalVisible, setSubmissionModalVisible] = useState(false);
-  const [currentExam, setCurrentExam] = useState<Exam | null>(null);
-  const [answerFiles, setAnswerFiles] = useState<{ [key: number]: File }>({});
   const [submitting, setSubmitting] = useState(false);
+  const [answerFiles, setAnswerFiles] = useState<{ [questionNumber: number]: File }>({});
+  const [currentExam, setCurrentExam] = useState<Exam | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<string>('');
-  const [submissionStates, setSubmissionStates] = useState<Record<string, boolean>>({});
+  const [form] = Form.useForm();
+
+  // 教练提交状态统计
+  const [submissionStats, setSubmissionStats] = useState<{ [examId: string]: {
+    submittedCount: number;
+    totalCount: number;
+  } }>({});
+
+  // 加载提交状态统计
+  useEffect(() => {
+    if (userRole === 'coach') {
+      loadSubmissionStats();
+    } else {
+      loadStudentSubmissions();
+    }
+  }, [userRole, exams, students]);
+
+  // 加载教练的提交状态统计
+  const loadSubmissionStats = async () => {
+    if (userRole !== 'coach') return;
+
+    const stats: { [examId: string]: any } = {};
+
+    for (const exam of exams) {
+      try {
+        // 通过API获取提交统计
+        const response = await CoachAPI.getSubmissions(exam.id);
+        if (response.success && response.data) {
+          const submissions = Array.isArray(response.data) ? response.data : [];
+          stats[exam.id] = {
+            submittedCount: submissions.length,
+            totalCount: students.length
+          };
+        }
+      } catch (error) {
+        console.error(`获取考试${exam.id}提交统计失败:`, error);
+        // 回退到本地统计
+        const localStats = getLocalSubmissionStats(exam.id);
+        stats[exam.id] = localStats;
+      }
+    }
+
+    setSubmissionStats(stats);
+  };
+
+  // 本地提交统计回退方案
+  const getLocalSubmissionStats = (examId: string) => {
+    try {
+      const submissions = JSON.parse(localStorage.getItem('examSubmissions') || '{}');
+      const examSubmissions = submissions[examId] || [];
+      
+      return {
+        submittedCount: examSubmissions.length,
+        totalCount: students.length
+      };
+    } catch {
+      return {
+        submittedCount: 0,
+        totalCount: students.length
+      };
+    }
+  };
+
+  // 加载学生的提交状态
+  const loadStudentSubmissions = async () => {
+    for (const exam of exams) {
+      try {
+        const submission = await getExamSubmission(exam.id);
+        setSubmissionStates(prev => ({
+          ...prev,
+          [exam.id]: submission
+        }));
+      } catch (error) {
+        console.error(`获取考试${exam.id}提交状态失败:`, error);
+      }
+    }
+  };
 
   // 检查考试提交状态
   const checkSubmissionStatus = async (examId: string, studentUsername?: string) => {
@@ -73,10 +153,16 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
   // 初始化提交状态
   React.useEffect(() => {
     const loadSubmissionStates = async () => {
-      const states: Record<string, boolean> = {};
+      const states: { [examId: string]: ExamSubmission | null } = {};
       for (const exam of exams) {
         if (userRole === 'student') {
-          states[exam.id] = await checkSubmissionStatus(exam.id);
+          try {
+            const submission = await getExamSubmission(exam.id);
+            states[exam.id] = submission;
+          } catch (error) {
+            console.error(`获取考试${exam.id}提交状态失败:`, error);
+            states[exam.id] = null;
+          }
         }
       }
       setSubmissionStates(states);
@@ -227,8 +313,12 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
           return <Tag color="default">未提交</Tag>;
         } else {
           // 教练视图：显示已提交的学生数量
-          // TODO: 实现教练视图的提交状态统计
-          return <Tag color="default">统计中...</Tag>;
+          const { submittedCount, totalCount } = submissionStats[record.id] || { submittedCount: 0, totalCount: 0 };
+          return (
+            <span>
+              <Tag color="success">{submittedCount}</Tag> / <Tag>{totalCount}</Tag>
+            </span>
+          );
         }
       },
     },

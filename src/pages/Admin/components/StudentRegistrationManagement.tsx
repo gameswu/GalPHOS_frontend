@@ -20,6 +20,7 @@ import {
   CloseOutlined
 } from '@ant-design/icons';
 import type { StudentRegistrationRequest } from '../../../types/common';
+import AdminAPI from '../../../api/admin';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -35,11 +36,28 @@ const StudentRegistrationManagement: React.FC = () => {
   const loadRequests = async () => {
     setLoading(true);
     try {
-      // 从localStorage获取申请记录（实际应该从后端API获取）
-      const requestsData = JSON.parse(localStorage.getItem('studentRegistrationRequests') || '[]');
-      setRequests(requestsData);
+      // 优先使用API获取申请记录
+      const response = await AdminAPI.getStudentRegistrations();
+      if (response.success && response.data?.requests) {
+        setRequests(response.data.requests);
+      } else {
+        message.warning('API获取失败，使用本地数据');
+        // 回退到localStorage方式
+        const requestsData = JSON.parse(localStorage.getItem('studentRegistrationRequests') || '[]');
+        setRequests(requestsData);
+      }
     } catch (error) {
-      message.error('加载申请记录失败');
+      console.error('API获取学生注册申请失败:', error);
+      message.warning('API暂不可用，使用本地数据');
+      // 回退到localStorage方式
+      try {
+        const requestsData = JSON.parse(localStorage.getItem('studentRegistrationRequests') || '[]');
+        setRequests(requestsData);
+      } catch (localError) {
+        console.error('加载本地申请记录失败:', localError);
+        message.error('加载申请记录失败');
+        setRequests([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -63,28 +81,33 @@ const StudentRegistrationManagement: React.FC = () => {
       
       if (!currentRequest) return;
       
-      // 更新申请状态
-      const updatedRequests = requests.map(req => 
-        req.id === currentRequest.id 
-          ? {
-              ...req,
-              status: values.action as 'approved' | 'rejected',
-              reviewedBy: 'admin', // 实际应该使用当前管理员的用户名
-              reviewedAt: new Date().toISOString(),
-              reviewNote: values.note
-            }
-          : req
-      );
-      
-      setRequests(updatedRequests);
-      localStorage.setItem('studentRegistrationRequests', JSON.stringify(updatedRequests));
-      
-      // 如果批准，将学生添加到已审核用户列表
-      if (values.action === 'approved') {
-        addApprovedStudent(currentRequest);
+      // 优先使用API处理审核
+      try {
+        const response = await AdminAPI.reviewStudentRegistration(currentRequest.id, {
+          action: values.action,
+          note: values.note
+        });
+        
+        if (response.success) {
+          message.success(`申请已${values.action === 'approve' ? '批准' : '拒绝'}`);
+          // 如果批准，还需要创建教练-学生关系
+          if (values.action === 'approve') {
+            await handleApprovedStudent(currentRequest);
+          }
+          // API成功后重新加载数据
+          await loadRequests();
+        } else {
+          message.warning('API处理失败，使用本地处理方式');
+          // API失败时回退到本地处理
+          await handleLocalReview(values);
+        }
+      } catch (error) {
+        console.error('API处理学生注册申请失败:', error);
+        message.warning('API暂不可用，使用本地处理方式');
+        // API失败时回退到本地处理
+        await handleLocalReview(values);
       }
       
-      message.success(`申请已${values.action === 'approved' ? '批准' : '拒绝'}`);
       setReviewModalVisible(false);
       setCurrentRequest(null);
     } catch (error) {
@@ -92,8 +115,58 @@ const StudentRegistrationManagement: React.FC = () => {
     }
   };
 
+  // 本地审核处理（回退方案）
+  const handleLocalReview = async (values: any) => {
+    if (!currentRequest) return;
+    
+    // 更新申请状态
+    const updatedRequests = requests.map(req => 
+      req.id === currentRequest.id 
+        ? {
+            ...req,
+            status: values.action as 'approved' | 'rejected',
+            reviewedBy: 'admin', // 实际应该使用当前管理员的用户名
+            reviewedAt: new Date().toISOString(),
+            reviewNote: values.note
+          }
+        : req
+    );
+    
+    setRequests(updatedRequests);
+    localStorage.setItem('studentRegistrationRequests', JSON.stringify(updatedRequests));
+    
+    // 如果批准，将学生添加到已审核用户列表
+    if (values.action === 'approve') {
+      await addApprovedStudent(currentRequest);
+    }
+    
+    message.success(`申请已${values.action === 'approve' ? '批准' : '拒绝'}（本地处理）`);
+  };
+
+  // 处理批准的学生（API模式）
+  const handleApprovedStudent = async (request: StudentRegistrationRequest) => {
+    try {
+      // 直接调用教练-学生关系创建API
+      const response = await AdminAPI.createCoachStudentRelation({
+        coachId: request.coachUsername, // 暂时使用username作为ID
+        studentId: request.username     // 暂时使用username作为ID
+      });
+      
+      if (response.success) {
+        message.success('教练-学生关系创建成功');
+      } else {
+        message.warning('教练-学生关系创建失败，请手动处理');
+      }
+    } catch (error) {
+      console.error('创建教练-学生关系失败:', error);
+      message.warning('教练-学生关系创建失败，将使用本地存储方式');
+      // 回退到原有的本地处理方式
+      await addApprovedStudent(request);
+    }
+  };
+
   // 添加已批准的学生到系统
-  const addApprovedStudent = (request: StudentRegistrationRequest) => {
+  const addApprovedStudent = async (request: StudentRegistrationRequest) => {
     try {
       // 获取已审核用户列表
       const approvedUsers = JSON.parse(localStorage.getItem('approvedUsers') || '[]');
@@ -117,17 +190,35 @@ const StudentRegistrationManagement: React.FC = () => {
       localStorage.setItem('approvedUsers', JSON.stringify(approvedUsers));
       
       // 同时更新教练的学生列表
-      updateCoachStudentList(request.coachUsername, newStudent);
+      await updateCoachStudentList(request.coachUsername, newStudent);
       
     } catch (error) {
       console.error('添加已批准学生失败:', error);
     }
   };
 
-  // 更新教练的学生列表
-  const updateCoachStudentList = (coachUsername: string, newStudent: any) => {
+  // 更新教练的学生列表 - 使用API调用替代localStorage
+  const updateCoachStudentList = async (coachUsername: string, newStudent: any) => {
     try {
-      // 获取所有教练的学生数据
+      // 优先尝试API调用
+      const response = await AdminAPI.createCoachStudentRelation({
+        coachId: coachUsername, // 暂时使用username作为ID
+        studentId: newStudent.id
+      });
+      
+      if (response.success) {
+        message.success('教练-学生关系创建成功');
+        return;
+      } else {
+        message.warning('API创建关系失败，使用本地存储方式');
+      }
+    } catch (error) {
+      console.error('API创建教练学生关系失败:', error);
+      message.warning('API暂不可用，使用本地存储方式');
+    }
+    
+    // API失败时回退到localStorage方式
+    try {
       const allCoachStudents = JSON.parse(localStorage.getItem('coachStudents') || '{}');
       
       if (!allCoachStudents[coachUsername]) {
@@ -138,8 +229,10 @@ const StudentRegistrationManagement: React.FC = () => {
       allCoachStudents[coachUsername].push(newStudent);
       
       localStorage.setItem('coachStudents', JSON.stringify(allCoachStudents));
+      message.info('已使用本地存储方式保存关系');
     } catch (error) {
       console.error('更新教练学生列表失败:', error);
+      message.error('创建教练-学生关系失败');
     }
   };
 

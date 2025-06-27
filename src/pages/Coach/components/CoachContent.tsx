@@ -704,7 +704,7 @@ const CoachContent: React.FC<CoachContentProps> = ({
           exams={exams}
           loading={loading}
           downloadFile={downloadFile}
-          getExamSubmission={async (examId, studentUsername) => {
+          getExamSubmission={async (examId: string, studentUsername?: string) => {
             // 为了兼容性，这里返回null，实际应该重构组件支持异步
             return null;
           }}

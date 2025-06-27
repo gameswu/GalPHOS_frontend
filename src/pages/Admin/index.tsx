@@ -25,6 +25,7 @@ const Admin: React.FC = () => {
     collapsed,
     isOffline,
     pendingCount,
+    coachStudentsStats,
     // 方法
     handleApprove,
     handleReject,
@@ -153,6 +154,7 @@ const Admin: React.FC = () => {
             pendingCount={pendingCount}
             loading={loading}
             isOffline={isOffline}
+            coachStudentsStats={coachStudentsStats}
             onApprove={handleApprove}
             onReject={handleReject}
             onDisableUser={handleDisableUser}

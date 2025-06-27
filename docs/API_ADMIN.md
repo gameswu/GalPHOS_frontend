@@ -45,24 +45,6 @@ interface ApiResponse<T> {
 }
 ```
 
----档
-
-## 概述
-GalPHOS管理员面板API接口，提供用户管理、考试管理、阅卷管理、赛区管理等功能。
-
----
-
-## 基础信息
-
-### 基础URL
-```
-http://localhost:3001/api
-```
-
-### 认证方式
-- JWT Token认证（管理员权限）
-- Header格式：`Authorization: Bearer <admin_token>`
-
 ---
 
 ## 1. 用户管理模块
@@ -198,6 +180,187 @@ http://localhost:3001/api
 }
 ```
 
+### 1.6 获取教练学生关系统计
+**接口**: `GET /coach-students/stats`
+
+**描述**: 获取教练管理的学生统计信息
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    totalCoaches: 25,
+    totalManagedStudents: 150,
+    averageStudentsPerCoach: 6
+  }
+}
+```
+
+### 1.7 获取教练学生关系列表
+**接口**: `GET /coach-students`
+
+**描述**: 获取教练-学生关系的详细列表
+
+**查询参数**:
+- `page?` (number): 页码，默认1
+- `limit?` (number): 每页数量，默认20
+- `coachId?` (string): 特定教练ID筛选
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    relationships: [
+      {
+        id: "rel_001",
+        coachId: "coach_001",
+        coachUsername: "coach001",
+        coachName: "李老师",
+        studentId: "managed_stu_001",
+        studentUsername: "zhangsan001",
+        studentName: "张三",
+        createdAt: "2024-01-01T00:00:00.000Z"
+      }
+    ],
+    total: 150,
+    page: 1,
+    limit: 20
+  }
+}
+```
+
+### 1.8 创建教练学生关系
+**接口**: `POST /coach-students`
+
+**描述**: 创建教练与学生的管理关系
+
+**请求体**:
+```typescript
+{
+  coachId: "coach_001",
+  studentUsername: "zhangsan001",
+  studentName: "张三"
+}
+```
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    id: "rel_001",
+    message: "教练学生关系创建成功"
+  }
+}
+```
+
+### 1.9 删除教练学生关系
+**接口**: `DELETE /coach-students/{relationshipId}`
+
+**描述**: 删除教练与学生的管理关系
+
+**路径参数**:
+- `relationshipId` (string): 关系ID
+
+**响应**:
+```typescript
+{
+  success: true,
+  message: "教练学生关系删除成功"
+}
+```
+
+### 1.10 获取学生注册申请列表
+**接口**: `GET /student-registrations`
+
+**描述**: 获取学生注册申请列表
+
+**查询参数**:
+- `status?` (string): 状态筛选 pending | approved | rejected
+- `page?` (number): 页码，默认1
+- `limit?` (number): 每页数量，默认20
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    requests: [
+      {
+        id: "reg_001",
+        username: "student001",
+        province: "北京市",
+        school: "北京第一中学",
+        coachUsername: "coach001",
+        status: "pending",
+        reason?: "申请理由",
+        createdAt: "2024-01-01T00:00:00.000Z",
+        reviewedBy?: "admin001",
+        reviewedAt?: "2024-01-02T00:00:00.000Z",
+        reviewNote?: "审核备注"
+      }
+    ],
+    total: 50,
+    page: 1,
+    limit: 20
+  }
+}
+```
+
+### 1.11 处理学生注册申请
+**接口**: `POST /student-registrations/{requestId}/review`
+
+**描述**: 审核学生注册申请
+
+**路径参数**:
+- `requestId` (string): 申请ID
+
+**请求体**:
+```typescript
+{
+  action: "approve" | "reject",
+  note?: "审核备注"
+}
+```
+
+**响应**:
+```typescript
+{
+  success: true,
+  message: "学生注册申请审核完成"
+}
+```
+
+### 1.12 创建学生注册申请
+**接口**: `POST /student-registrations`
+
+**描述**: 创建新的学生注册申请（通常由教练或学生发起）
+
+**请求体**:
+```typescript
+{
+  username: "student001",
+  password: "hashedPassword",
+  province: "北京市",
+  school: "北京第一中学",
+  coachUsername: "coach001",
+  reason?: "申请理由"
+}
+```
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    id: "reg_001",
+    message: "学生注册申请已提交，等待管理员审核"
+  }
+}
+```
+
 ## 2. 赛区管理模块
 
 ### 2.1 获取赛区列表
@@ -252,7 +415,69 @@ http://localhost:3001/api
 }
 ```
 
-### 2.3 添加学校
+### 2.2 获取省份列表
+
+**接口路径：** `GET /admin/regions/provinces`
+
+**描述**: 获取所有省份列表（不包含学校信息）
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: Array<{
+    id: string,
+    name: string
+  }>
+}
+```
+
+### 2.3 添加省份
+**接口**: `POST /regions/provinces`
+
+**描述**: 添加新的省份/直辖市
+
+**请求体**:
+```typescript
+{
+  name: "上海市"
+}
+```
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    id: "province_002",
+    name: "上海市"
+  },
+  message: "省份添加成功"
+}
+```
+
+### 2.4 获取省份下的学校列表
+
+**接口路径：** `GET /admin/regions/schools`
+
+**描述**: 获取指定省份下的学校列表
+
+**查询参数**:
+- `provinceId` (string): 省份ID
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: Array<{
+    id: string,
+    name: string,
+    provinceId: string
+  }>
+}
+```
+
+### 2.5 添加学校
 **接口**: `POST /regions/schools`
 
 **描述**: 为指定省份添加学校
@@ -278,7 +503,7 @@ http://localhost:3001/api
 }
 ```
 
-### 2.4 更新学校
+### 2.6 更新学校
 
 **接口路径：** `PUT /admin/regions/schools/{schoolId}`
 
@@ -289,15 +514,15 @@ http://localhost:3001/api
 }
 ```
 
-### 2.5 删除学校
+### 2.7 删除学校
 
 **接口路径：** `DELETE /admin/regions/schools/{schoolId}`
 
-### 2.6 删除省份
+### 2.8 删除省份
 
 **接口路径：** `DELETE /admin/regions/provinces/{provinceId}`
 
-### 2.7 获取赛区变更申请
+### 2.9 获取赛区变更申请
 
 **接口路径：** `GET /admin/regions/change-requests`
 
@@ -321,7 +546,7 @@ http://localhost:3001/api
 }
 ```
 
-### 2.8 处理赛区变更申请
+### 2.10 处理赛区变更申请
 
 **接口路径：** `POST /admin/regions/change-requests/{requestId}`
 
@@ -433,8 +658,103 @@ http://localhost:3001/api
 }
 ```
 
----
+### 3.8 设置题目分值
 
+**接口路径：** `POST /admin/exams/{examId}/question-scores`
+
+**描述**: 为考试设置题目分值配置
+
+**请求参数：**
+```typescript
+{
+  questions: Array<{
+    number: number,
+    score: number,
+    content?: string
+  }>
+}
+```
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    examId: string,
+    questions: Array<{
+      number: number,
+      score: number,
+      content?: string
+    }>
+  },
+  message: "题目分值设置成功"
+}
+```
+
+### 3.9 获取题目分值
+
+**接口路径：** `GET /admin/exams/{examId}/question-scores`
+
+**描述**: 获取考试的题目分值配置
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    examId: string,
+    questions: Array<{
+      number: number,
+      score: number,
+      content?: string
+    }>
+  }
+}
+```
+
+### 3.10 更新单个题目分值
+
+**接口路径：** `PUT /admin/exams/{examId}/question-scores/{questionNumber}`
+
+**请求参数：**
+```typescript
+{
+  score: number,
+  content?: string
+}
+```
+
+### 3.11 删除题目分值
+
+**接口路径：** `DELETE /admin/exams/{examId}/question-scores/{questionNumber}`
+
+### 3.12 导入题目分值
+
+**接口路径：** `POST /admin/exams/{examId}/question-scores/import`
+
+**请求参数（FormData）：**
+```typescript
+{
+  file: File  // CSV或Excel格式的分值文件
+}
+```
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    imported: number,
+    errors: Array<{
+      row: number,
+      message: string
+    }>
+  },
+  message: "题目分值导入完成"
+}
+```
+
+---
 ## 4. 阅卷管理模块
 
 ### 4.1 获取阅卷者列表
@@ -605,6 +925,63 @@ http://localhost:3001/api
 }
 ```
 
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    url: string,
+    filename: string,
+    size: number
+  },
+  message: "头像上传成功"
+}
+```
+
+### 5.9 获取个人资料
+
+**接口路径：** `GET /admin/profile`
+
+**描述**: 获取当前管理员的个人资料信息
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    id: string,
+    username: string,
+    name?: string,
+    avatar?: string,
+    role: string,
+    createdAt: string,
+    lastLoginAt: string
+  }
+}
+```
+
+### 5.10 修改个人密码
+
+**接口路径：** `POST /admin/profile/password`
+
+**描述**: 当前管理员修改自己的密码
+
+**请求参数：**
+```typescript
+{
+  oldPassword: string,  // 哈希化
+  newPassword: string   // 哈希化
+}
+```
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  message: "密码修改成功"
+}
+```
+
 ---
 
 ## 6. 仪表盘统计模块
@@ -641,6 +1018,11 @@ http://localhost:3001/api
     regions: {
       provinces: number,
       schools: number
+    },
+    coachStudents: {
+      totalCoaches: number,
+      totalManagedStudents: number,
+      averageStudentsPerCoach: number
     },
     recent: {
       newUsers: Array<{

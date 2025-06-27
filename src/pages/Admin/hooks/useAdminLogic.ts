@@ -46,112 +46,7 @@ export interface ApprovedUser {
 }
 
 // 初始化省份和学校数据 - 只保留基本结构
-const initializeRegionData = (): Province[] => {
-  const savedRegions = localStorage.getItem('regionData');
-  if (!savedRegions) {
-    const defaultRegions: Province[] = [];
-    localStorage.setItem('regionData', JSON.stringify(defaultRegions));
-    return defaultRegions;
-  }
-  return JSON.parse(savedRegions);
-};
-
-// 初始化考试数据 - 空数组
-const initializeExamData = (): Exam[] => {
-  const savedExams = localStorage.getItem('examData');
-  if (!savedExams) {
-    const defaultExams: Exam[] = [];
-    localStorage.setItem('examData', JSON.stringify(defaultExams));
-    return defaultExams;
-  }
-  return JSON.parse(savedExams);
-};
-
-// 初始化阅卷者数据 - 空数组
-const initializeGraderData = (): GraderInfo[] => {
-  const savedGraders = localStorage.getItem('graderData');
-  if (!savedGraders) {
-    const defaultGraders: GraderInfo[] = [];
-    localStorage.setItem('graderData', JSON.stringify(defaultGraders));
-    return defaultGraders;
-  }
-  return JSON.parse(savedGraders);
-};
-
-// 初始化阅卷任务数据 - 空数组
-const initializeGradingTasks = (): AdminGradingTask[] => {
-  const savedTasks = localStorage.getItem('gradingTasks');
-  if (!savedTasks) {
-    const defaultTasks: AdminGradingTask[] = [];
-    localStorage.setItem('gradingTasks', JSON.stringify(defaultTasks));
-    return defaultTasks;
-  }
-  return JSON.parse(savedTasks);
-};
-
-// 初始化管理员数据 - 只保留默认管理员
-const initializeAdminUsers = (): AdminUser[] => {
-  const defaultAdmins: AdminUser[] = [
-    {
-      id: 'admin001',
-      username: 'admin',
-      password: 'admin123',
-      avatar: '',
-      role: 'super_admin',
-      status: 'active',
-      createdAt: '2024-01-01T00:00:00.000Z',
-      lastLoginAt: new Date().toISOString(),
-      createdBy: 'system'
-    }
-  ];
-
-  const savedAdmins = localStorage.getItem('adminUsers');
-  if (!savedAdmins) {
-    localStorage.setItem('adminUsers', JSON.stringify(defaultAdmins));
-    return defaultAdmins;
-  }
-  return JSON.parse(savedAdmins);
-};
-
-// 初始化系统设置
-const initializeSystemSettings = (): SystemSettings => {
-  const defaultSettings: SystemSettings = {
-    siteName: 'GalPHOS 物理竞赛系统',
-    siteDescription: '全国物理竞赛在线考试与阅卷系统',
-    maxUploadSize: 50,
-    allowedFileTypes: ['.pdf', '.doc', '.docx', '.jpg', '.png'],
-    systemMaintenance: false,
-    maintenanceMessage: '系统正在维护中，预计在30分钟后恢复正常。'
-  };
-
-  const savedSettings = localStorage.getItem('systemSettings');
-  if (!savedSettings) {
-    localStorage.setItem('systemSettings', JSON.stringify(defaultSettings));
-    return defaultSettings;
-  }
-  return JSON.parse(savedSettings);
-};
-
-// 初始化用户数据 - 空数组
-const initializePendingUsers = (): PendingUser[] => {
-  const savedUsers = localStorage.getItem('pendingUsers');
-  if (!savedUsers) {
-    const defaultUsers: PendingUser[] = [];
-    localStorage.setItem('pendingUsers', JSON.stringify(defaultUsers));
-    return defaultUsers;
-  }
-  return JSON.parse(savedUsers);
-};
-
-const initializeApprovedUsers = (): ApprovedUser[] => {
-  const savedUsers = localStorage.getItem('approvedUsers');
-  if (!savedUsers) {
-    const defaultUsers: ApprovedUser[] = [];
-    localStorage.setItem('approvedUsers', JSON.stringify(defaultUsers));
-    return defaultUsers;
-  }
-  return JSON.parse(savedUsers);
-};
+// 所有数据现在通过API获取，不再使用localStorage初始化
 
 export const useAdminLogic = () => {
   const navigate = useNavigate();
@@ -168,6 +63,15 @@ export const useAdminLogic = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [currentAdmin, setCurrentAdmin] = useState<AdminUser | null>(null);
+  
+  // 教练管理学生统计状态
+  const [coachStudentsStats, setCoachStudentsStats] = useState<{
+    totalCoachStudents: number;
+    coachStudentsByCoach: { [coachId: string]: number };
+  }>({
+    totalCoachStudents: 0,
+    coachStudentsByCoach: {}
+  });
 
   // 计算待审核用户数量
   const pendingCount = pendingUsers.filter(user => user.status === 'pending').length;
@@ -190,6 +94,7 @@ export const useAdminLogic = () => {
       return;
     }
     
+    // 加载所有数据
     loadPendingUsers();
     loadApprovedUsers();
     loadRegions();
@@ -199,6 +104,8 @@ export const useAdminLogic = () => {
     loadAdminUsers();
     loadSystemSettings();
     loadCurrentAdmin();
+    loadCoachStudentsStats();
+    loadDashboardStats();
   }, [navigate]);
 
   // 加载待审核用户
@@ -316,6 +223,25 @@ export const useAdminLogic = () => {
       console.error('加载阅卷任务失败:', error);
       message.error('网络错误，无法获取阅卷任务');
       setGradingTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 加载仪表盘统计数据
+  const loadDashboardStats = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await AdminAPI.getDashboardStats();
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        console.warn('获取仪表盘数据失败:', response.message);
+        return null;
+      }
+    } catch (error) {
+      console.error('加载仪表盘数据失败:', error);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -941,6 +867,54 @@ export const useAdminLogic = () => {
     }
   }, []);
 
+  // 加载教练管理学生统计
+  const loadCoachStudentsStats = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await AdminAPI.getCoachStudentsStats();
+      if (response.success && response.data) {
+        setCoachStudentsStats(response.data);
+      } else {
+        message.error(response.message || '获取教练学生统计失败');
+        // 如果API失败，回退到localStorage方式
+        const fallbackStats = getCoachStudentsStatsFromLocalStorage();
+        setCoachStudentsStats(fallbackStats);
+      }
+    } catch (error) {
+      console.error('加载教练学生统计失败:', error);
+      // 如果API失败，回退到localStorage方式
+      const fallbackStats = getCoachStudentsStatsFromLocalStorage();
+      setCoachStudentsStats(fallbackStats);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 从localStorage获取教练学生统计（回退方案）
+  const getCoachStudentsStatsFromLocalStorage = useCallback(() => {
+    try {
+      const allCoachStudents = JSON.parse(localStorage.getItem('coachStudents') || '{}');
+      const totalCoachStudents = Object.values(allCoachStudents).reduce((total: number, students: any) => 
+        total + (Array.isArray(students) ? students.length : 0), 0
+      );
+      
+      const coachStudentsByCoach: { [coachId: string]: number } = {};
+      Object.entries(allCoachStudents).forEach(([coachId, students]: [string, any]) => {
+        coachStudentsByCoach[coachId] = Array.isArray(students) ? students.length : 0;
+      });
+      
+      return {
+        totalCoachStudents,
+        coachStudentsByCoach
+      };
+    } catch {
+      return {
+        totalCoachStudents: 0,
+        coachStudentsByCoach: {}
+      };
+    }
+  }, []);
+
   return {
     // 状态
     pendingUsers,
@@ -957,6 +931,7 @@ export const useAdminLogic = () => {
     collapsed,
     isOffline,
     pendingCount,
+    coachStudentsStats,
     // 方法
     handleApprove,
     handleReject,
@@ -994,6 +969,9 @@ export const useAdminLogic = () => {
     updateSystemSettings,
     loadAdminUsers,
     loadSystemSettings,
-    uploadAvatar
+    uploadAvatar,
+    // 仪表盘和数据加载方法
+    loadDashboardStats,
+    loadCoachStudentsStats
   };
 };

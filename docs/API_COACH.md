@@ -262,6 +262,31 @@ interface ApiResponse<T> {
 **路径参数**:
 - `fileType`: question | answerSheet | result
 
+### 2.4 获取考试成绩统计
+**接口**: `GET /exams/{examId}/score-stats`
+
+**描述**: 获取指定考试的成绩统计信息，用于历史考试页面的教练视图
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    totalStudents: 10,
+    submittedStudents: 8,
+    averageScore: 75.2,
+    scores: [
+      {
+        studentId: "student001",
+        studentName: "李学生",
+        score: 85,
+        submittedAt: "2025-01-01T10:00:00Z"
+      }
+    ]
+  }
+}
+```
+
 ---
 
 ## 3. 答题提交模块
@@ -451,6 +476,160 @@ interface ApiResponse<T> {
 }
 ```
 
+### 4.3 获取学生排名
+**接口**: `GET /grades/ranking/{examId}`
+
+**描述**: 获取指定考试中学生的排名信息
+
+**路径参数**:
+- `examId` (string): 考试ID
+
+**查询参数**:
+- `studentId?` (string): 特定学生ID（可选）
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    examId: "exam_001",
+    examTitle: "2024年物理竞赛初赛",
+    totalParticipants: 150,
+    rankings: [
+      {
+        rank: 1,
+        studentId: "managed_stu_001",
+        studentName: "张三",
+        score: 95,
+        percentage: 95.0
+      },
+      {
+        rank: 12,
+        studentId: "managed_stu_002", 
+        studentName: "李四",
+        score: 85,
+        percentage: 85.0
+      }
+    ],
+    coachStudentStats: {
+      highestRank: 1,
+      lowestRank: 45,
+      averageRank: 23.5,
+      topPercentage: 15.3  // 教练学生在前xx%
+    }
+  }
+}
+```
+
+### 4.4 导出成绩报告
+**接口**: `GET /grades/export/{examId}`
+
+**描述**: 导出考试成绩报告（Excel或PDF格式）
+
+**路径参数**:
+- `examId` (string): 考试ID
+
+**查询参数**:
+- `format?` (string): 导出格式 excel | pdf，默认excel
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    downloadUrl: "https://example.com/reports/exam_001_scores.xlsx",
+    filename: "2024年物理竞赛初赛_成绩报告.xlsx",
+    fileSize: 102400,
+    expiresAt: "2024-03-02T00:00:00.000Z"
+  }
+}
+```
+
+### 4.5 获取学生详细成绩
+**接口**: `GET /grades/student/{studentId}/exam/{examId}`
+
+**描述**: 获取特定学生在特定考试中的详细成绩
+
+**路径参数**:
+- `studentId` (string): 学生ID
+- `examId` (string): 考试ID
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    studentInfo: {
+      id: "managed_stu_001",
+      name: "张三",
+      username: "zhangsan001"
+    },
+    examInfo: {
+      id: "exam_001",
+      title: "2024年物理竞赛初赛",
+      date: "2024-03-01"
+    },
+    scoreDetails: {
+      totalScore: 85,
+      maxScore: 100,
+      percentage: 85.0,
+      rank: 12,
+      totalParticipants: 150,
+      questionScores: [
+        {
+          questionNumber: 1,
+          score: 8,
+          maxScore: 10,
+          feedback: "计算正确，步骤清晰"
+        },
+        {
+          questionNumber: 2,
+          score: 6,
+          maxScore: 10,
+          feedback: "方法正确，但计算有误"
+        }
+      ]
+    }
+  }
+}
+```
+
+### 4.6 批量获取学生成绩
+**接口**: `GET /grades/batch`
+
+**描述**: 批量获取多个学生的成绩信息
+
+**查询参数**:
+- `examId?` (string): 特定考试ID
+- `studentIds?` (string): 学生ID列表，逗号分隔
+- `sortBy?` (string): 排序字段 score | rank | name
+- `order?` (string): 排序方向 asc | desc
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    examId: "exam_001",
+    students: [
+      {
+        studentId: "managed_stu_001",
+        studentName: "张三",
+        score: 85,
+        rank: 12,
+        submittedAt: "2024-03-01T11:30:00.000Z"
+      }
+    ],
+    summary: {
+      totalStudents: 10,
+      averageScore: 78.5,
+      highestScore: 95,
+      lowestScore: 62
+    }
+  }
+}
+```
+
 ---
 
 ## 5. 个人设置模块
@@ -533,7 +712,33 @@ interface ApiResponse<T> {
 }
 ```
 
-### 5.5 上传头像
+### 5.5 获取我的赛区变更申请
+**接口**: `GET /profile/change-region-requests`
+
+**描述**: 获取当前教练的赛区变更申请记录
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: [
+    {
+      id: "req_001",
+      currentProvince: "北京市",
+      currentSchool: "北京第一中学",
+      requestedProvince: "上海市",
+      requestedSchool: "上海中学",
+      reason: "工作调动，需要变更赛区",
+      status: "pending",
+      createdAt: "2024-01-01T00:00:00.000Z",
+      reviewedAt?: "2024-01-02T00:00:00.000Z",
+      reviewNote?: "审核备注"
+    }
+  ]
+}
+```
+
+### 5.6 上传头像
 **接口**: `POST /profile/upload-avatar`
 
 **描述**: 上传头像图片

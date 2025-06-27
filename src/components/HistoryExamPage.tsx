@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   Typography, 
   Table, 
   Button, 
   Space, 
-  Tag
+  Tag,
+  message
 } from 'antd';
 import { 
   HistoryOutlined,
@@ -18,6 +19,7 @@ import {
   ExamAnswer,
   ExamSubmission
 } from '../types/common';
+import CoachAPI from '../api/coach';
 
 const { Title } = Typography;
 
@@ -28,40 +30,91 @@ interface Student {
 
 interface HistoryExamPageProps {
   exams: Exam[];
-  loading: boolean;
-  downloadFile: (fileUrl: string, fileName: string) => void;
-  getExamSubmission: (examId: string, studentUsername?: string) => Promise<ExamSubmission | null>;
+  loading?: boolean;
   userRole: 'student' | 'coach';
+  // 教练端的props
   students?: Student[];
+  downloadFile?: (fileUrl: string, fileName: string) => void;
+  getExamSubmission?: (examId: string, studentUsername?: string) => Promise<ExamSubmission | null>;
+  // 学生端的props  
+  submissionStates?: { [examId: string]: ExamSubmission | null };
+  onViewSubmission?: (examId: string) => void;
+  onDownloadFile?: (file: ExamFile) => void;
 }
 
 const HistoryExamPage: React.FC<HistoryExamPageProps> = ({ 
   exams, 
-  loading, 
-  downloadFile,
-  getExamSubmission,
+  loading = false,
+  students = [],
   userRole,
-  students = []
+  submissionStates = {},
+  onViewSubmission,
+  onDownloadFile,
+  downloadFile,
+  getExamSubmission
 }) => {
-  const [submissionStates, setSubmissionStates] = useState<Record<string, ExamSubmission | null>>({});
+  // 教练成绩统计状态
+  const [examStats, setExamStats] = useState<{ [examId: string]: {
+    totalStudents: number;
+    submittedStudents: number;
+    averageScore: number;
+  } }>({});
 
-  // 初始化提交状态
-  React.useEffect(() => {
-    const loadSubmissionStates = async () => {
-      const states: Record<string, ExamSubmission | null> = {};
-      for (const exam of exams) {
-        if (userRole === 'student') {
-          const submission = await getExamSubmission(exam.id);
-          states[exam.id] = submission;
-        }
-      }
-      setSubmissionStates(states);
-    };
-
-    if (exams.length > 0) {
-      loadSubmissionStates();
+  // 加载教练的考试统计数据
+  useEffect(() => {
+    if (userRole === 'coach') {
+      loadCoachExamStats();
     }
-  }, [exams, userRole, getExamSubmission]);
+  }, [userRole, exams]);
+
+  const loadCoachExamStats = async () => {
+    if (userRole !== 'coach') return;
+    
+    const stats: { [examId: string]: any } = {};
+    
+    for (const exam of exams) {
+      try {
+        const response = await CoachAPI.getExamScoreStatistics(exam.id);
+        if (response.success && response.data) {
+          stats[exam.id] = {
+            totalStudents: response.data.totalStudents,
+            submittedStudents: response.data.submittedStudents,
+            averageScore: response.data.averageScore
+          };
+        }
+      } catch (error) {
+        console.error(`获取考试${exam.id}统计失败:`, error);
+        // 回退到本地统计
+        const localStats = getLocalExamStats(exam.id);
+        stats[exam.id] = localStats;
+      }
+    }
+    
+    setExamStats(stats);
+  };
+
+  // 本地统计回退方案
+  const getLocalExamStats = (examId: string) => {
+    try {
+      // 从localStorage获取提交记录
+      const submissions = JSON.parse(localStorage.getItem('examSubmissions') || '{}');
+      const examSubmissions = submissions[examId] || [];
+      
+      return {
+        totalStudents: students.length,
+        submittedStudents: examSubmissions.length,
+        averageScore: examSubmissions.length > 0 
+          ? examSubmissions.reduce((sum: number, sub: any) => sum + (sub.score || 0), 0) / examSubmissions.length 
+          : 0
+      };
+    } catch {
+      return {
+        totalStudents: students.length,
+        submittedStudents: 0,
+        averageScore: 0
+      };
+    }
+  };
 
   // 历史考试：已结束的考试
   const historyExams = exams.filter(exam => 
@@ -113,8 +166,22 @@ const HistoryExamPage: React.FC<HistoryExamPageProps> = ({
           }
         } else {
           // 教练视角：显示参与学生数
-          // TODO: 实现教练视图的成绩统计
-          return <Tag color="default">统计中...</Tag>;
+          const stats = examStats[record.id];
+          const submittedCount = stats ? stats.submittedStudents : 0;
+          const totalCount = stats ? stats.totalStudents : students.length;
+          const averageScore = stats ? stats.averageScore : 0;
+
+          return (
+            <div>
+              <div>
+                <Tag color="blue">{submittedCount} 提交</Tag>
+                <Tag color="green">{totalCount} 总数</Tag>
+              </div>
+              <div>
+                平均分: <strong>{averageScore.toFixed(1)} 分</strong>
+              </div>
+            </div>
+          );
         }
       },
     },
@@ -128,7 +195,13 @@ const HistoryExamPage: React.FC<HistoryExamPageProps> = ({
               type="text" 
               size="small" 
               icon={<DownloadOutlined />}
-              onClick={() => downloadFile(record.questionFile!.url, record.questionFile!.name)}
+              onClick={() => {
+                if (onDownloadFile) {
+                  onDownloadFile(record.questionFile!);
+                } else if (downloadFile) {
+                  downloadFile(record.questionFile!.url, record.questionFile!.name);
+                }
+              }}
             >
               题目
             </Button>
@@ -138,16 +211,23 @@ const HistoryExamPage: React.FC<HistoryExamPageProps> = ({
               type="text" 
               size="small" 
               icon={<DownloadOutlined />}
-              onClick={() => downloadFile(record.answerFile!.url, record.answerFile!.name)}
+              onClick={() => {
+                if (onDownloadFile) {
+                  onDownloadFile(record.answerFile!);
+                } else if (downloadFile) {
+                  downloadFile(record.answerFile!.url, record.answerFile!.name);
+                }
+              }}
             >
               答案
             </Button>
           )}
-          {userRole === 'student' && (
+          {userRole === 'student' && onViewSubmission && (
             <Button 
               type="text" 
               size="small" 
               icon={<EyeOutlined />}
+              onClick={() => onViewSubmission!(record.id)}
             >
               查看提交
             </Button>
@@ -169,7 +249,7 @@ const HistoryExamPage: React.FC<HistoryExamPageProps> = ({
           columns={columns}
           dataSource={historyExams}
           rowKey="id"
-          loading={loading}
+          loading={false}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
