@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Typography, Table, Button, Space, Tag, Statistic, Row, Col, Modal, Form, InputNumber } from 'antd';
+import '../../../styles/responsive.css';
 import { 
   UserOutlined, 
   EditOutlined,

@@ -376,14 +376,25 @@ interface ApiResponse<T> {
     {
       id: "province_001",
       name: "北京市",
+      createdAt: "2024-01-01T00:00:00.000Z",
+      updatedAt: "2024-01-15T10:30:00.000Z",
+      createdBy: "admin001",
       schools: [
         {
           id: "school_001",
-          name: "北京第一中学"
+          name: "北京第一中学",
+          provinceId: "province_001",
+          createdAt: "2024-01-02T00:00:00.000Z",
+          updatedAt: "2024-01-10T08:15:00.000Z",
+          createdBy: "admin001"
         },
         {
           id: "school_002", 
-          name: "北京第二中学"
+          name: "北京第二中学",
+          provinceId: "province_001",
+          createdAt: "2024-01-03T00:00:00.000Z",
+          updatedAt: "2024-01-03T00:00:00.000Z",
+          createdBy: "admin001"
         }
       ]
     }
@@ -409,7 +420,10 @@ interface ApiResponse<T> {
   success: true,
   data: {
     id: "province_002",
-    name: "上海市"
+    name: "上海市",
+    createdAt: "2024-01-20T10:30:00.000Z",
+    updatedAt: "2024-01-20T10:30:00.000Z",
+    createdBy: "admin001"
   },
   message: "省份添加成功"
 }
@@ -427,7 +441,10 @@ interface ApiResponse<T> {
   success: boolean,
   data: Array<{
     id: string,
-    name: string
+    name: string,
+    createdAt: string,
+    updatedAt: string,
+    createdBy: string
   }>
 }
 ```
@@ -450,7 +467,10 @@ interface ApiResponse<T> {
   success: true,
   data: {
     id: "province_002",
-    name: "上海市"
+    name: "上海市",
+    createdAt: "2024-01-20T10:30:00.000Z",
+    updatedAt: "2024-01-20T10:30:00.000Z",
+    createdBy: "admin001"
   },
   message: "省份添加成功"
 }
@@ -472,7 +492,10 @@ interface ApiResponse<T> {
   data: Array<{
     id: string,
     name: string,
-    provinceId: string
+    provinceId: string,
+    createdAt: string,
+    updatedAt: string,
+    createdBy: string
   }>
 }
 ```
@@ -497,7 +520,10 @@ interface ApiResponse<T> {
   data: {
     id: "school_003",
     name: "北京第三中学",
-    provinceId: "province_001"
+    provinceId: "province_001",
+    createdAt: "2024-01-20T14:45:00.000Z",
+    updatedAt: "2024-01-20T14:45:00.000Z",
+    createdBy: "admin001"
   },
   message: "学校添加成功"
 }
@@ -507,6 +533,11 @@ interface ApiResponse<T> {
 
 **接口路径：** `PUT /admin/regions/schools/{schoolId}`
 
+**描述**: 更新学校信息
+
+**路径参数**:
+- `schoolId` (string): 学校ID
+
 **请求参数：**
 ```typescript
 {
@@ -514,35 +545,94 @@ interface ApiResponse<T> {
 }
 ```
 
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    id: string,
+    name: string,
+    provinceId: string,
+    createdAt: string,
+    updatedAt: string,
+    createdBy: string,
+    updatedBy: string
+  },
+  message: "学校信息更新成功"
+}
+```
+
 ### 2.7 删除学校
 
 **接口路径：** `DELETE /admin/regions/schools/{schoolId}`
 
-### 2.8 删除省份
+**描述**: 删除指定学校
 
-**接口路径：** `DELETE /admin/regions/provinces/{provinceId}`
-
-### 2.9 获取赛区变更申请
-
-**接口路径：** `GET /admin/regions/change-requests`
+**路径参数**:
+- `schoolId` (string): 学校ID
 
 **响应格式：**
 ```typescript
 {
   success: boolean,
-  data: Array<{
-    id: string,
-    userId: string,
-    username: string,
-    role: string,
-    currentProvince: string,
-    currentSchool: string,
-    requestedProvince: string,
-    requestedSchool: string,
-    reason: string,
-    status: 'pending' | 'approved' | 'rejected',
-    createdAt: string
-  }>
+  message: "学校删除成功"
+}
+```
+
+### 2.8 删除省份
+
+**接口路径：** `DELETE /admin/regions/provinces/{provinceId}`
+
+**描述**: 删除指定省份（注意：删除省份会同时删除该省份下的所有学校）
+
+**路径参数**:
+- `provinceId` (string): 省份ID
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  message: "省份删除成功"
+}
+```
+
+### 2.9 获取赛区变更申请
+
+**接口路径：** `GET /admin/regions/change-requests`
+
+**描述**: 获取所有赛区变更申请列表
+
+**查询参数**:
+- `status?` (string): 状态筛选 pending | approved | rejected
+- `page?` (number): 页码，默认1
+- `limit?` (number): 每页数量，默认20
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    requests: Array<{
+      id: string,
+      userId: string,
+      username: string,
+      role: string,
+      currentProvince: string,
+      currentSchool: string,
+      requestedProvince: string,
+      requestedSchool: string,
+      reason: string,
+      status: 'pending' | 'approved' | 'rejected',
+      createdAt: string,
+      updatedAt: string,
+      reviewedBy?: string,
+      reviewedAt?: string,
+      reviewNote?: string
+    }>,
+    total: number,
+    page: number,
+    limit: number
+  }
 }
 ```
 
@@ -550,11 +640,31 @@ interface ApiResponse<T> {
 
 **接口路径：** `POST /admin/regions/change-requests/{requestId}`
 
+**描述**: 审核赛区变更申请
+
+**路径参数**:
+- `requestId` (string): 申请ID
+
 **请求参数：**
 ```typescript
 {
   action: 'approve' | 'reject',
   reason?: string
+}
+```
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    id: string,
+    status: 'approved' | 'rejected',
+    reviewedBy: string,
+    reviewedAt: string,
+    reviewNote?: string
+  },
+  message: "赛区变更申请处理完成"
 }
 ```
 

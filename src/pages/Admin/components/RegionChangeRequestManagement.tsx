@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons';
 import type { RegionChangeRequest } from '../../../types/common';
 import AdminAPI from '../../../api/admin';
+import '../../../styles/responsive.css';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -122,6 +123,7 @@ const RegionChangeRequestManagement: React.FC = () => {
         ? {
             ...req,
             status: values.action as 'approved' | 'rejected',
+            updatedAt: new Date().toISOString(),
             reviewedBy: 'admin', // 实际应该使用当前管理员的用户名
             reviewedAt: new Date().toISOString(),
             reviewNote: values.note
@@ -180,11 +182,14 @@ const RegionChangeRequestManagement: React.FC = () => {
       title: '申请人',
       dataIndex: 'username',
       key: 'username',
+      width: 120,
     },
     {
       title: '角色',
       dataIndex: 'role',
       key: 'role',
+      width: 80,
+      className: 'mobile-hidden',
       render: (role: string) => {
         const roleMap = {
           student: '学生',
@@ -197,12 +202,15 @@ const RegionChangeRequestManagement: React.FC = () => {
     {
       title: '当前赛区',
       key: 'currentRegion',
+      width: 200,
+      className: 'mobile-hidden',
       render: (_: any, record: RegionChangeRequest) => 
         `${record.currentProvince || '未设置'} - ${record.currentSchool || '未设置'}`
     },
     {
       title: '申请变更为',
       key: 'requestedRegion',
+      width: 200,
       render: (_: any, record: RegionChangeRequest) => 
         `${record.requestedProvince} - ${record.requestedSchool}`
     },
@@ -210,12 +218,15 @@ const RegionChangeRequestManagement: React.FC = () => {
       title: '申请时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (time: string) => new Date(time).toLocaleString()
+      width: 160,
+      className: 'mobile-hidden',
+      render: (time: string) => time ? new Date(time).toLocaleString() : '-'
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
+      width: 100,
       render: (status: string) => {
         const statusConfig = {
           pending: { color: 'orange', text: '待审核' },
@@ -227,16 +238,33 @@ const RegionChangeRequestManagement: React.FC = () => {
       }
     },
     {
+      title: '审核信息',
+      key: 'reviewInfo',
+      width: 180,
+      render: (_: any, record: RegionChangeRequest) => {
+        if (record.status === 'pending') {
+          return <Tag color="orange">待审核</Tag>;
+        }
+        return (
+          <div style={{ fontSize: '12px' }}>
+            <div>审核者：{record.reviewedBy || '-'}</div>
+            <div>审核时间：{record.reviewedAt ? new Date(record.reviewedAt).toLocaleString() : '-'}</div>
+          </div>
+        );
+      }
+    },
+    {
       title: '操作',
       key: 'action',
+      width: 120,
       render: (_: any, record: RegionChangeRequest) => (
-        <Space size="small">
+        <Space size="small" className="responsive-buttons">
           <Button 
             size="small" 
             icon={<EyeOutlined />}
             onClick={() => handleReview(record)}
           >
-            {record.status === 'pending' ? '审核' : '查看详情'}
+            {record.status === 'pending' ? '审核' : '查看'}
           </Button>
         </Space>
       ),
@@ -288,13 +316,17 @@ const RegionChangeRequestManagement: React.FC = () => {
           <Button onClick={loadRequests}>刷新</Button>
         </div>
         
-        <Table
-          columns={columns}
-          dataSource={requests}
-          loading={loading}
-          rowKey="id"
-          pagination={{ pageSize: 10 }}
-        />
+        <div className="responsive-table-wrapper">
+          <Table
+            columns={columns}
+            dataSource={requests}
+            loading={loading}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            className="responsive-table"
+            scroll={{ x: 1000 }}
+          />
+        </div>
       </Card>
 
       {/* 审核模态框 */}
@@ -335,9 +367,29 @@ const RegionChangeRequestManagement: React.FC = () => {
               <Descriptions.Item label="申请理由" span={3}>
                 {currentRequest.reason}
               </Descriptions.Item>
-              <Descriptions.Item label="申请时间" span={3}>
+              <Descriptions.Item label="申请时间" span={2}>
                 {new Date(currentRequest.createdAt).toLocaleString()}
               </Descriptions.Item>
+              {currentRequest.updatedAt && currentRequest.updatedAt !== currentRequest.createdAt && (
+                <Descriptions.Item label="最后修改时间" span={1}>
+                  {new Date(currentRequest.updatedAt).toLocaleString()}
+                </Descriptions.Item>
+              )}
+              {currentRequest.status !== 'pending' && (
+                <>
+                  <Descriptions.Item label="审核者" span={1}>
+                    {currentRequest.reviewedBy || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="审核时间" span={2}>
+                    {currentRequest.reviewedAt ? new Date(currentRequest.reviewedAt).toLocaleString() : '-'}
+                  </Descriptions.Item>
+                  {currentRequest.reviewNote && (
+                    <Descriptions.Item label="审核备注" span={3}>
+                      {currentRequest.reviewNote}
+                    </Descriptions.Item>
+                  )}
+                </>
+              )}
             </Descriptions>
 
             {currentRequest.status === 'pending' ? (

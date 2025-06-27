@@ -35,6 +35,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Exam, ExamFile } from '../../../types/common';
+import '../../../styles/responsive.css';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -109,6 +110,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     {
       title: '考试时间',
       key: 'examTime',
+      className: 'mobile-hidden',
       render: (_: any, record: Exam) => (
         <Space direction="vertical" size={0}>
           <Text>{dayjs(record.startTime).format('YYYY-MM-DD HH:mm')}</Text>
@@ -122,6 +124,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       title: '时长',
       dataIndex: 'duration',
       key: 'duration',
+      className: 'mobile-hidden',
       render: (duration: number) => (
         <Tag color="blue">{duration || 0} 分钟</Tag>
       ),
@@ -130,6 +133,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       title: '题目数',
       dataIndex: 'totalQuestions',
       key: 'totalQuestions',
+      className: 'mobile-hidden',
       render: (count: number) => (
         <Tag color="cyan">{count || 0} 题</Tag>
       ),
@@ -147,6 +151,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       title: '参与人数',
       dataIndex: 'participants',
       key: 'participants',
+      className: 'mobile-hidden',
       render: (participants: string[]) => (
         <Tag color="green">{participants?.length || 0} 人</Tag>
       ),
@@ -155,13 +160,14 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       title: '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      className: 'mobile-hidden',
       render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm'),
     },
     {
       title: '操作',
       key: 'action',
       render: (_: any, record: Exam) => (
-        <Space size="small" wrap>
+        <Space size="small" wrap className="responsive-buttons">
           <Button
             type="link"
             size="small"
@@ -434,14 +440,18 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
           </Button>
         </div>
         
-        <Table
-          columns={examColumns}
-          dataSource={getFilteredExams()}
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-          size="small"
-        />
+        <div className="responsive-table-wrapper">
+          <Table
+            columns={examColumns}
+            dataSource={getFilteredExams()}
+            rowKey="id"
+            loading={loading}
+            pagination={{ pageSize: 10 }}
+            size="small"
+            className="responsive-table"
+            scroll={{ x: 1200 }}
+          />
+        </div>
       </Card>
 
       {/* 创建/编辑考试模态框 */}

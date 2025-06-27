@@ -23,6 +23,7 @@ import {
   BankOutlined
 } from '@ant-design/icons';
 import type { Province, School } from '../../../types/common';
+import '../../../styles/responsive.css';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -78,13 +79,14 @@ const RegionManagement: React.FC<RegionManagementProps> = ({
       title: '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      className: 'mobile-hidden',
       render: (text: string) => new Date(text).toLocaleDateString(),
     },
     {
       title: '操作',
       key: 'action',
       render: (_: any, record: Province) => (
-        <Space size="small">
+        <Space size="small" className="responsive-buttons">
           <Button
             type="link"
             size="small"
@@ -165,34 +167,34 @@ const RegionManagement: React.FC<RegionManagementProps> = ({
   return (
     <div>
       {/* 统计卡片 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col span={8}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }} className="responsive-cards">
+        <Col xs={24} sm={12} md={8} lg={8} xl={8}>
           <Card>
-            <div style={{ textAlign: 'center' }}>
-              <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
+            <div className="stats-card">
+              <Title level={2} style={{ margin: 0, color: '#1890ff' }} className="responsive-title">
                 {regions.length}
               </Title>
-              <Text type="secondary">省份总数</Text>
+              <Text type="secondary" className="responsive-text">省份总数</Text>
             </div>
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} sm={12} md={8} lg={8} xl={8}>
           <Card>
-            <div style={{ textAlign: 'center' }}>
-              <Title level={2} style={{ margin: 0, color: '#52c41a' }}>
+            <div className="stats-card">
+              <Title level={2} style={{ margin: 0, color: '#52c41a' }} className="responsive-title">
                 {allSchools.length}
               </Title>
-              <Text type="secondary">学校总数</Text>
+              <Text type="secondary" className="responsive-text">学校总数</Text>
             </div>
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} sm={24} md={8} lg={8} xl={8}>
           <Card>
-            <div style={{ textAlign: 'center' }}>
-              <Title level={2} style={{ margin: 0, color: '#fa8c16' }}>
+            <div className="stats-card">
+              <Title level={2} style={{ margin: 0, color: '#fa8c16' }} className="responsive-title">
                 {regions.reduce((max, region) => Math.max(max, region.schools.length), 0)}
               </Title>
-              <Text type="secondary">最多学校数</Text>
+              <Text type="secondary" className="responsive-text">最多学校数</Text>
             </div>
           </Card>
         </Col>
@@ -209,14 +211,18 @@ const RegionManagement: React.FC<RegionManagementProps> = ({
             添加省份
           </Button>
         </div>
-        <Table
-          columns={provinceColumns}
-          dataSource={regions}
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-          size="small"
-        />
+        <div className="responsive-table-wrapper">
+          <Table
+            columns={provinceColumns}
+            dataSource={regions}
+            rowKey="id"
+            loading={loading}
+            pagination={{ pageSize: 10 }}
+            size="small"
+            className="responsive-table"
+            scroll={{ x: 800 }}
+          />
+        </div>
       </Card>
 
       {/* 学校管理 */}
@@ -240,6 +246,7 @@ const RegionManagement: React.FC<RegionManagementProps> = ({
             >
               <List
                 dataSource={province.schools}
+                className="responsive-list"
                 renderItem={(school) => (
                   <List.Item
                     actions={[

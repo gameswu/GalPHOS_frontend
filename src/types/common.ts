@@ -405,14 +405,19 @@ export interface Province {
   schools: School[];
   createdAt: string;
   updatedAt: string;
+  createdBy: string;
+  updatedBy?: string;
 }
 
 // 学校信息
 export interface School {
   id: string;
   name: string;
+  provinceId: string;
   createdAt: string;
   updatedAt: string;
+  createdBy: string;
+  updatedBy?: string;
 }
 
 // 区域表单数据
@@ -424,6 +429,7 @@ export interface RegionFormData {
 // 区域变更请求
 export interface RegionChangeRequest {
   id: string;
+  userId: string;
   username: string;
   role: 'student' | 'grader' | 'coach';
   currentProvince?: string;
@@ -433,6 +439,7 @@ export interface RegionChangeRequest {
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
+  updatedAt: string;
   reviewedBy?: string;
   reviewedAt?: string;
   reviewNote?: string;

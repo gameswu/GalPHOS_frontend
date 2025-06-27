@@ -14,6 +14,7 @@ import { StudentExam as Exam, ExamSubmission, ExamAnswer } from '../../../types/
 import UserSettings from '../../../components/UserSettings';
 import CurrentExamPage from '../../../components/CurrentExamPage';
 import HistoryExamPage from '../../../components/HistoryExamPage';
+import '../../../styles/responsive.css';
 
 const { Title, Text } = Typography;
 

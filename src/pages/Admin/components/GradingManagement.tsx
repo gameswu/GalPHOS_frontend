@@ -34,6 +34,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Exam, AdminGradingTask, GraderInfo, GradingProgress } from '../../../types/common';
+import '../../../styles/responsive.css';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -112,6 +113,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
       title: '当前任务',
       dataIndex: 'currentTasks',
       key: 'currentTasks',
+      className: 'mobile-hidden',
       render: (count: number) => (
         <Tag color={count > 0 ? 'orange' : 'green'}>{count} 个</Tag>
       ),
@@ -120,6 +122,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
       title: '已完成任务',
       dataIndex: 'completedTasks',
       key: 'completedTasks',
+      className: 'mobile-hidden',
       render: (count: number) => (
         <Tag color="blue">{count} 个</Tag>
       ),
@@ -128,6 +131,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
       title: '总阅卷数',
       dataIndex: 'totalPapers',
       key: 'totalPapers',
+      className: 'mobile-hidden',
       render: (count: number) => (
         <Text>{count} 份</Text>
       ),
@@ -136,6 +140,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
       title: '平均分',
       dataIndex: 'avgScore',
       key: 'avgScore',
+      className: 'mobile-hidden',
       render: (score: number) => (
         <Text>{score.toFixed(1)} 分</Text>
       ),
@@ -144,6 +149,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
       title: '平均时间',
       dataIndex: 'avgGradingTime',
       key: 'avgGradingTime',
+      className: 'mobile-hidden',
       render: (time: number) => (
         <Text>{time} 秒</Text>
       ),
@@ -152,6 +158,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
       title: '最后活跃',
       dataIndex: 'lastActiveAt',
       key: 'lastActiveAt',
+      className: 'mobile-hidden',
       render: (time: string) => (
         <Text type="secondary">
           {dayjs(time).format('MM-DD HH:mm')}
@@ -179,6 +186,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
       title: '阅卷者',
       dataIndex: 'graderName',
       key: 'graderName',
+      className: 'mobile-hidden',
       render: (text: string) => (
         <Space>
           <Avatar icon={<UserOutlined />} size="small" />
@@ -432,14 +440,18 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
                 阅卷者管理
               </Title>
             </div>
-            <Table
-              columns={graderColumns}
-              dataSource={graders}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-              size="small"
-            />
+            <div className="responsive-table-wrapper">
+              <Table
+                columns={graderColumns}
+                dataSource={graders}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+                size="small"
+                className="responsive-table"
+                scroll={{ x: 800 }}
+              />
+            </div>
           </Card>
         </TabPane>
 
@@ -451,14 +463,18 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
                 阅卷任务进度
               </Title>
             </div>
-            <Table
-              columns={taskColumns}
-              dataSource={gradingTasks}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-              size="small"
-            />
+            <div className="responsive-table-wrapper">
+              <Table
+                columns={taskColumns}
+                dataSource={gradingTasks}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+                size="small"
+                className="responsive-table"
+                scroll={{ x: 800 }}
+              />
+            </div>
           </Card>
         </TabPane>
       </Tabs>

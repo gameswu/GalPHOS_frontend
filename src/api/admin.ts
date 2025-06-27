@@ -170,9 +170,10 @@ class AdminAPI extends BaseAPI {
   }
 
   // 更新学校信息
-  static async updateSchool(schoolId: string, schoolData: any): Promise<ApiResponse<any>> {
+  static async updateSchool(schoolId: string, schoolData: { name: string }): Promise<ApiResponse<any>> {
     this.validateRequired(schoolId, '学校ID');
     this.validateRequired(schoolData, '学校数据');
+    this.validateRequired(schoolData.name, '学校名称');
 
     return this.makeRequest<any>(
       `${this.API_BASE_URL}/admin/regions/schools/${schoolId}`,
@@ -207,9 +208,15 @@ class AdminAPI extends BaseAPI {
   }
 
   // 获取地区变更申请列表
-  static async getRegionChangeRequests(): Promise<ApiResponse<any[]>> {
-    return this.makeRequest<any[]>(
-      `${this.API_BASE_URL}/admin/regions/change-requests`,
+  static async getRegionChangeRequests(params?: {
+    status?: 'pending' | 'approved' | 'rejected';
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<any>> {
+    const queryParams = this.buildQueryParams(params);
+
+    return this.makeRequest<any>(
+      `${this.API_BASE_URL}/admin/regions/change-requests${queryParams}`,
       { method: 'GET' },
       '获取地区变更申请列表'
     );
@@ -223,7 +230,7 @@ class AdminAPI extends BaseAPI {
     return this.makeRequest<any>(
       `${this.API_BASE_URL}/admin/regions/change-requests/${requestId}`,
       {
-        method: 'PUT',
+        method: 'POST',
         body: JSON.stringify({ action, reason }),
       },
       '处理地区变更申请'

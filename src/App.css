@@ -37,6 +37,9 @@ a:hover {
   text-align: center;
 }
 
+/* 引入响应式样式 */
+@import './styles/responsive.css';
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;

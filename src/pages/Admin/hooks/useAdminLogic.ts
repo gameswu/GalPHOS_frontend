@@ -392,7 +392,7 @@ export const useAdminLogic = () => {
   const updateSchool = useCallback(async (provinceId: string, schoolId: string, schoolName: string) => {
     try {
       setLoading(true);
-      const response = await AdminAPI.updateSchool(schoolId, schoolName);
+      const response = await AdminAPI.updateSchool(schoolId, { name: schoolName });
       if (response.success) {
         message.success('学校更新成功');
         // 重新加载赛区数据

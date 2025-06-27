@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons';
 import type { StudentRegistrationRequest } from '../../../types/common';
 import AdminAPI from '../../../api/admin';
+import '../../../styles/responsive.css';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -246,6 +247,7 @@ const StudentRegistrationManagement: React.FC = () => {
       title: '省份',
       dataIndex: 'province',
       key: 'province',
+      className: 'mobile-hidden',
     },
     {
       title: '学校',
@@ -256,11 +258,13 @@ const StudentRegistrationManagement: React.FC = () => {
       title: '申请教练',
       dataIndex: 'coachUsername',
       key: 'coachUsername',
+      className: 'mobile-hidden',
     },
     {
       title: '申请时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      className: 'mobile-hidden',
       render: (time: string) => new Date(time).toLocaleString()
     },
     {
@@ -281,7 +285,7 @@ const StudentRegistrationManagement: React.FC = () => {
       title: '操作',
       key: 'action',
       render: (_: any, record: StudentRegistrationRequest) => (
-        <Space size="small">
+        <Space size="small" className="responsive-buttons">
           <Button 
             size="small" 
             icon={<EyeOutlined />}
@@ -339,13 +343,17 @@ const StudentRegistrationManagement: React.FC = () => {
           <Button onClick={loadRequests}>刷新</Button>
         </div>
         
-        <Table
-          columns={columns}
-          dataSource={requests}
-          loading={loading}
-          rowKey="id"
-          pagination={{ pageSize: 10 }}
-        />
+        <div className="responsive-table-wrapper">
+          <Table
+            columns={columns}
+            dataSource={requests}
+            loading={loading}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            className="responsive-table"
+            scroll={{ x: 800 }}
+          />
+        </div>
       </Card>
 
       {/* 审核模态框 */}
