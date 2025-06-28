@@ -17,7 +17,7 @@ class AdminAPI extends BaseAPI {
   // 获取待审核用户列表
   static async getPendingUsers(): Promise<ApiResponse<any[]>> {
     return this.makeRequest<any[]>(
-      `/admin/users/pending`,
+      `/api/admin/users/pending`,
       { method: 'GET' },
       '获取待审核用户'
     );
@@ -29,7 +29,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(action, '审核操作');
 
     return this.makeRequest<any>(
-      `/admin/users/approve`,
+      `/api/admin/users/approve`,
       {
         method: 'POST',
         body: JSON.stringify({ userId, action, reason }),
@@ -49,7 +49,7 @@ class AdminAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
     
     return this.makeRequest<any>(
-      `/admin/users/approved${queryParams}`,
+      `/api/admin/users/approved${queryParams}`,
       { method: 'GET' },
       '获取已审核用户列表'
     );
@@ -61,7 +61,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(status, '用户状态');
 
     return this.makeRequest<any>(
-      `/admin/users/status`,
+      `/api/admin/users/status`,
       {
         method: 'PUT',
         body: JSON.stringify({ userId, status }),
@@ -75,7 +75,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(userId, '用户ID');
 
     return this.makeRequest<any>(
-      `/admin/users/${userId}`,
+      `/api/admin/users/${userId}`,
       { method: 'DELETE' },
       '删除用户'
     );
@@ -84,7 +84,7 @@ class AdminAPI extends BaseAPI {
   // 获取教练管理学生关系
   static async getCoachStudents(): Promise<ApiResponse<any[]>> {
     return this.makeRequest<any[]>(
-      `/admin/coach-students`,
+      `/api/admin/coach-students`,
       { method: 'GET' },
       '获取教练管理学生关系'
     );
@@ -99,7 +99,7 @@ class AdminAPI extends BaseAPI {
       totalCoachStudents: number;
       coachStudentsByCoach: { [coachId: string]: number };
     }>(
-      `/admin/coach-students/stats`,
+      `/api/admin/coach-students/stats`,
       { method: 'GET' },
       '获取教练管理学生统计'
     );
@@ -110,7 +110,7 @@ class AdminAPI extends BaseAPI {
   // 获取所有地区
   static async getRegions(): Promise<ApiResponse<any[]>> {
     return this.makeRequest<any[]>(
-      `/admin/regions`,
+      `/api/admin/regions`,
       { method: 'GET' },
       '获取所有地区'
     );
@@ -119,7 +119,7 @@ class AdminAPI extends BaseAPI {
   // 获取所有省份
   static async getProvinces(): Promise<ApiResponse<any[]>> {
     return this.makeRequest<any[]>(
-      `/admin/regions/provinces`,
+      `/api/admin/regions/provinces`,
       { method: 'GET' },
       '获取所有省份'
     );
@@ -130,7 +130,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(provinceName, '省份名称');
 
     return this.makeRequest<any>(
-      `/admin/regions/provinces`,
+      `/api/admin/regions/provinces`,
       {
         method: 'POST',
         body: JSON.stringify({ name: provinceName }),
@@ -146,7 +146,7 @@ class AdminAPI extends BaseAPI {
     const queryParams = this.buildQueryParams({ provinceId });
 
     return this.makeRequest<any[]>(
-      `/admin/regions/schools${queryParams}`,
+      `/api/admin/regions/schools${queryParams}`,
       { method: 'GET' },
       '获取省份学校列表'
     );
@@ -158,7 +158,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(schoolName, '学校名称');
 
     return this.makeRequest<any>(
-      `/admin/regions/schools`,
+      `/api/admin/regions/schools`,
       {
         method: 'POST',
         body: JSON.stringify({ 
@@ -177,7 +177,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(schoolData.name, '学校名称');
 
     return this.makeRequest<any>(
-      `/admin/regions/schools/${schoolId}`,
+      `/api/admin/regions/schools/${schoolId}`,
       {
         method: 'PUT',
         body: JSON.stringify(schoolData),
@@ -191,7 +191,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(schoolId, '学校ID');
 
     return this.makeRequest<any>(
-      `/admin/regions/schools/${schoolId}`,
+      `/api/admin/regions/schools/${schoolId}`,
       { method: 'DELETE' },
       '删除学校'
     );
@@ -202,7 +202,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(provinceId, '省份ID');
 
     return this.makeRequest<any>(
-      `/admin/regions/provinces/${provinceId}`,
+      `/api/admin/regions/provinces/${provinceId}`,
       { method: 'DELETE' },
       '删除省份'
     );
@@ -217,7 +217,7 @@ class AdminAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<any>(
-      `/admin/regions/change-requests${queryParams}`,
+      `/api/admin/regions/change-requests${queryParams}`,
       { method: 'GET' },
       '获取地区变更申请列表'
     );
@@ -229,7 +229,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(action, '处理操作');
 
     return this.makeRequest<any>(
-      `/admin/regions/change-requests/${requestId}`,
+      `/api/admin/regions/change-requests/${requestId}`,
       {
         method: 'POST',
         body: JSON.stringify({ action, reason }),
@@ -245,7 +245,7 @@ class AdminAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<any>(
-      `/admin/exams${queryParams}`,
+      `/api/admin/exams${queryParams}`,
       { method: 'GET' },
       '获取考试列表'
     );
@@ -269,7 +269,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(examData.maxScore, '总分');
 
     return this.makeRequest<any>(
-      `/admin/exams`,
+      `/api/admin/exams`,
       {
         method: 'POST',
         body: JSON.stringify(examData),
@@ -284,7 +284,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(examData, '考试数据');
 
     return this.makeRequest<any>(
-      `/admin/exams/${examId}`,
+      `/api/admin/exams/${examId}`,
       {
         method: 'PUT',
         body: JSON.stringify(examData),
@@ -298,7 +298,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `/admin/exams/${examId}/publish`,
+      `/api/admin/exams/${examId}/publish`,
       { method: 'POST' },
       '发布考试'
     );
@@ -309,7 +309,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `/admin/exams/${examId}/unpublish`,
+      `/api/admin/exams/${examId}/unpublish`,
       { method: 'POST' },
       '取消发布考试'
     );
@@ -320,7 +320,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `/admin/exams/${examId}`,
+      `/api/admin/exams/${examId}`,
       { method: 'DELETE' },
       '删除考试'
     );
@@ -341,7 +341,7 @@ class AdminAPI extends BaseAPI {
     }
 
     return this.makeRequest<any>(
-      `/admin/exams/${examId}/files`,
+      `/api/admin/exams/${examId}/files`,
       {
         method: 'POST',
         body: formData,
@@ -376,7 +376,7 @@ class AdminAPI extends BaseAPI {
     });
 
     return this.makeRequest<any>(
-      `/admin/exams/${examId}/questions/scores`,
+      `/api/admin/exams/${examId}/questions/scores`,
       {
         method: 'POST',
         body: JSON.stringify({ questions }),
@@ -390,7 +390,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `/admin/exams/${examId}/questions/scores`,
+      `/api/admin/exams/${examId}/questions/scores`,
       { method: 'GET' },
       '获取题目分值配置'
     );
@@ -410,7 +410,7 @@ class AdminAPI extends BaseAPI {
     }
 
     return this.makeRequest<any>(
-      `/admin/exams/${examId}/questions/${questionNumber}/score`,
+      `/api/admin/exams/${examId}/questions/${questionNumber}/score`,
       {
         method: 'PUT',
         body: JSON.stringify({ score }),
@@ -425,7 +425,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(questionNumber, '题目编号');
 
     return this.makeRequest<any>(
-      `/admin/exams/${examId}/questions/${questionNumber}/score`,
+      `/api/admin/exams/${examId}/questions/${questionNumber}/score`,
       { method: 'DELETE' },
       '删除题目分值配置'
     );
@@ -440,7 +440,7 @@ class AdminAPI extends BaseAPI {
     formData.append('file', file);
 
     return this.makeRequest<any>(
-      `/admin/exams/${examId}/questions/scores/import`,
+      `/api/admin/exams/${examId}/questions/scores/import`,
       {
         method: 'POST',
         body: formData,
@@ -465,7 +465,7 @@ class AdminAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<any>(
-      `/admin/graders${queryParams}`,
+      `/api/admin/graders${queryParams}`,
       { method: 'GET' },
       '获取阅卷员列表'
     );
@@ -482,7 +482,7 @@ class AdminAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<any>(
-      `/admin/grading/tasks${queryParams}`,
+      `/api/admin/grading/tasks${queryParams}`,
       { method: 'GET' },
       '获取阅卷任务列表'
     );
@@ -510,7 +510,7 @@ class AdminAPI extends BaseAPI {
       this.validateRequired(assignmentDataOrExamId.graderId, '阅卷员ID');
 
       return this.makeRequest<any>(
-        `/admin/grading/assign`,
+        `/api/admin/grading/assign`,
         {
           method: 'POST',
           body: JSON.stringify(assignmentDataOrExamId),
@@ -536,7 +536,7 @@ class AdminAPI extends BaseAPI {
     const results = await Promise.all(
       assignments.map(assignment =>
         this.makeRequest<any>(
-          `/admin/grading/assign`,
+          `/api/admin/grading/assign`,
           {
             method: 'POST',
             body: JSON.stringify(assignment),
@@ -560,7 +560,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `/admin/grading/progress/${examId}`,
+      `/api/admin/grading/progress/${examId}`,
       { method: 'GET' },
       '获取阅卷进度'
     );
@@ -571,7 +571,7 @@ class AdminAPI extends BaseAPI {
   // 获取系统设置
   static async getSystemSettings(): Promise<ApiResponse<any>> {
     return this.makeRequest<any>(
-      `/admin/system/settings`,
+      `/api/admin/system/settings`,
       { method: 'GET' },
       '获取系统设置'
     );
@@ -596,7 +596,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(settings, '系统设置');
 
     return this.makeRequest<any>(
-      `/admin/system/settings`,
+      `/api/admin/system/settings`,
       {
         method: 'PUT',
         body: JSON.stringify(settings),
@@ -608,7 +608,7 @@ class AdminAPI extends BaseAPI {
   // 获取管理员列表
   static async getAdmins(): Promise<ApiResponse<any[]>> {
     return this.makeRequest<any[]>(
-      `/admin/system/admins`,
+      `/api/admin/system/admins`,
       { method: 'GET' },
       '获取管理员列表'
     );
@@ -631,7 +631,7 @@ class AdminAPI extends BaseAPI {
     const hashedPassword = PasswordHasher.hashPasswordWithSalt(adminData.password);
 
     return this.makeRequest<any>(
-      `/admin/system/admins`,
+      `/api/admin/system/admins`,
       {
         method: 'POST',
         body: JSON.stringify({
@@ -656,7 +656,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(adminData, '管理员数据');
 
     return this.makeRequest<any>(
-      `/admin/system/admins/${adminId}`,
+      `/api/admin/system/admins/${adminId}`,
       {
         method: 'PUT',
         body: JSON.stringify(adminData),
@@ -674,7 +674,7 @@ class AdminAPI extends BaseAPI {
     const hashedPassword = PasswordHasher.hashPasswordWithSalt(newPassword);
 
     return this.makeRequest<any>(
-      `/admin/system/admins/${adminId}/password`,
+      `/api/admin/system/admins/${adminId}/password`,
       {
         method: 'PUT',
         body: JSON.stringify({ password: hashedPassword }),
@@ -688,7 +688,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(adminId, '管理员ID');
 
     return this.makeRequest<any>(
-      `/admin/system/admins/${adminId}`,
+      `/api/admin/system/admins/${adminId}`,
       { method: 'DELETE' },
       '删除管理员'
     );
@@ -716,7 +716,7 @@ class AdminAPI extends BaseAPI {
     formData.append('avatar', file);
 
     return this.makeRequest<any>(
-      `/admin/system/upload/avatar`,
+      `/api/admin/system/upload/avatar`,
       {
         method: 'POST',
         body: formData,
@@ -734,7 +734,7 @@ class AdminAPI extends BaseAPI {
   // 获取个人资料
   static async getProfile(): Promise<ApiResponse<any>> {
     return this.makeRequest<any>(
-      `/admin/profile`,
+      `/api/admin/profile`,
       { method: 'GET' },
       '获取个人资料'
     );
@@ -743,7 +743,7 @@ class AdminAPI extends BaseAPI {
   // 获取当前管理员信息
   static async getCurrentAdmin(): Promise<ApiResponse<any>> {
     return this.makeRequest<any>(
-      `/admin/profile`,
+      `/api/admin/profile`,
       { method: 'GET' },
       '获取当前管理员信息'
     );
@@ -763,7 +763,7 @@ class AdminAPI extends BaseAPI {
     const hashedNewPassword = PasswordHasher.hashPasswordWithSalt(passwordData.newPassword);
 
     return this.makeRequest<any>(
-      `/admin/system/admins/${adminId}/password`,
+      `/api/admin/system/admins/${adminId}/password`,
       {
         method: 'PUT',
         body: JSON.stringify({
@@ -780,7 +780,7 @@ class AdminAPI extends BaseAPI {
   // 获取仪表盘统计数据
   static async getDashboardStats(): Promise<ApiResponse<any>> {
     return this.makeRequest<any>(
-      `/admin/dashboard/stats`,
+      `/api/admin/dashboard/stats`,
       { method: 'GET' },
       '获取仪表盘统计数据'
     );
@@ -795,7 +795,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(data.studentId, '学生ID');
 
     return this.makeRequest<any>(
-      `/admin/coach-students`,
+      `/api/admin/coach-students`,
       {
         method: 'POST',
         body: JSON.stringify(data),
@@ -809,7 +809,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(relationId, '关系ID');
 
     return this.makeRequest<any>(
-      `/admin/coach-students/${relationId}`,
+      `/api/admin/coach-students/${relationId}`,
       { method: 'DELETE' },
       '删除教练学生关系'
     );
@@ -829,8 +829,8 @@ class AdminAPI extends BaseAPI {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
 
     const url = queryParams.toString() 
-      ? `/admin/student-registrations?${queryParams.toString()}`
-      : `/admin/student-registrations`;
+      ? `/api/admin/student-registrations?${queryParams.toString()}`
+      : `/api/admin/student-registrations`;
 
     return this.makeRequest<any>(
       url,
@@ -848,7 +848,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(data.action, '审核操作');
 
     return this.makeRequest<any>(
-      `/admin/student-registrations/${requestId}/review`,
+      `/api/admin/student-registrations/${requestId}/review`,
       {
         method: 'POST',
         body: JSON.stringify(data),
@@ -876,7 +876,7 @@ class AdminAPI extends BaseAPI {
     const hashedPassword = PasswordHasher.hashPasswordWithSalt(data.password);
 
     return this.makeRequest<any>(
-      `/admin/student-registrations`,
+      `/api/admin/student-registrations`,
       {
         method: 'POST',
         body: JSON.stringify({

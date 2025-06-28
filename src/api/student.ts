@@ -34,7 +34,7 @@ class StudentAPI extends BaseAPI {
   static async getExams(): Promise<ApiResponse<Exam[]>> {
     try {
       return await this.makeRequest<Exam[]>(
-        `/student/exams`,
+        `/api/student/exams`,
         {
           method: 'GET',
         },
@@ -51,7 +51,7 @@ class StudentAPI extends BaseAPI {
       this.validateRequired(examId, '考试ID');
 
       return await this.makeRequest<Exam>(
-        `/student/exams/${examId}`,
+        `/api/student/exams/${examId}`,
         {
           method: 'GET',
         },
@@ -71,7 +71,7 @@ class StudentAPI extends BaseAPI {
       }
 
       return await this.makeRequest<ExamSubmission>(
-        `/student/exams/${examId}/submit`,
+        `/api/student/exams/${examId}/submit`,
         {
           method: 'POST',
           body: JSON.stringify({ answers }),
@@ -89,7 +89,7 @@ class StudentAPI extends BaseAPI {
       this.validateRequired(examId, '考试ID');
 
       return await this.makeRequest<ExamSubmission>(
-        `/student/exams/${examId}/submission`,
+        `/api/student/exams/${examId}/submission`,
         {
           method: 'GET',
         },
@@ -129,7 +129,7 @@ class StudentAPI extends BaseAPI {
       formData.append('questionNumber', questionNumber.toString());
 
       const token = authService.getToken();
-      const response = await fetch(`/student/upload/answer-image`, {
+      const response = await fetch(`/api/student/upload/answer-image`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -155,7 +155,7 @@ class StudentAPI extends BaseAPI {
       this.validateRequired(data.username, '用户名');
 
       return await this.makeRequest<any>(
-        `/student/profile`,
+        `/api/student/profile`,
         {
           method: 'PUT',
           body: JSON.stringify(data),
@@ -182,7 +182,7 @@ class StudentAPI extends BaseAPI {
       const hashedNewPassword = PasswordHasher.hashPasswordWithSalt(data.newPassword);
 
       return await this.makeRequest<any>(
-        `/student/password`,
+        `/api/student/password`,
         {
           method: 'PUT',
           body: JSON.stringify({
@@ -220,7 +220,7 @@ class StudentAPI extends BaseAPI {
       formData.append('avatar', file);
 
       const token = authService.getToken();
-      const response = await fetch(`/student/upload/avatar`, {
+      const response = await fetch(`/api/student/upload/avatar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -248,7 +248,7 @@ class StudentAPI extends BaseAPI {
       this.validateRequired(data.reason, '变更原因');
 
       return await this.makeRequest<RegionChangeRequest>(
-        `/student/region-change`,
+        `/api/student/region-change`,
         {
           method: 'POST',
           body: JSON.stringify(data),
@@ -264,7 +264,7 @@ class StudentAPI extends BaseAPI {
   static async getRegionChangeStatus(): Promise<ApiResponse<RegionChangeRequest[]>> {
     try {
       return await this.makeRequest<RegionChangeRequest[]>(
-        `/student/region-change/status`,
+        `/api/student/region-change/status`,
         {
           method: 'GET',
         },
@@ -284,7 +284,7 @@ class StudentAPI extends BaseAPI {
       this.validateRequired(fileName, '文件名');
 
       const token = authService.getToken();
-      const response = await fetch(`/student/files/download/${fileId}`, {
+      const response = await fetch(`/api/student/files/download/${fileId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -322,7 +322,7 @@ class StudentAPI extends BaseAPI {
   static async getDashboardData(): Promise<ApiResponse<DashboardData>> {
     try {
       return await this.makeRequest<DashboardData>(
-        `/student/dashboard`,
+        `/api/student/dashboard`,
         {
           method: 'GET',
         },
@@ -345,7 +345,7 @@ class StudentAPI extends BaseAPI {
     try {
       const queryParams = this.buildQueryParams(params);
       return await this.makeRequest<any>(
-        `/student/scores${queryParams}`,
+        `/api/student/scores${queryParams}`,
         {
           method: 'GET',
         },
@@ -362,7 +362,7 @@ class StudentAPI extends BaseAPI {
       this.validateRequired(examId, '考试ID');
       
       return await this.makeRequest<any>(
-        `/student/exams/${examId}/score`,
+        `/api/student/exams/${examId}/score`,
         {
           method: 'GET',
         },
@@ -379,7 +379,7 @@ class StudentAPI extends BaseAPI {
       this.validateRequired(examId, '考试ID');
       
       return await this.makeRequest<any>(
-        `/student/exams/${examId}/ranking`,
+        `/api/student/exams/${examId}/ranking`,
         {
           method: 'GET',
         },
@@ -394,7 +394,7 @@ class StudentAPI extends BaseAPI {
   static async getScoreStatistics(): Promise<ApiResponse<any>> {
     try {
       return await this.makeRequest<any>(
-        `/student/scores/statistics`,
+        `/api/student/scores/statistics`,
         {
           method: 'GET',
         },

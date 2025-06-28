@@ -18,7 +18,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `/grader/exams/${examId}/questions/scores`,
+      `/api/grader/exams/${examId}/questions/scores`,
       { method: 'GET' },
       '获取题目分值配置'
     );
@@ -129,7 +129,7 @@ class GraderAPI extends BaseAPI {
     }
 
     return this.makeRequest<any>(
-      `/grader/tasks/${taskId}/questions/${questionNumber}/score`,
+      `/api/grader/tasks/${taskId}/questions/${questionNumber}/score`,
       {
         method: 'POST',
         body: JSON.stringify({
@@ -149,7 +149,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(questionNumber, '题目编号');
 
     return this.makeRequest<any>(
-      `/grader/tasks/${taskId}/questions/${questionNumber}/history`,
+      `/api/grader/tasks/${taskId}/questions/${questionNumber}/history`,
       { method: 'GET' },
       '获取题目评分历史'
     );
@@ -168,7 +168,7 @@ class GraderAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<PaginatedResponse<any>>(
-      `/grader/tasks${queryParams}`,
+      `/api/grader/tasks${queryParams}`,
       { method: 'GET' },
       '获取阅卷任务'
     );
@@ -179,7 +179,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(taskId, '任务ID');
 
     return this.makeRequest<any>(
-      `/grader/tasks/${taskId}`,
+      `/api/grader/tasks/${taskId}`,
       { method: 'GET' },
       '获取阅卷任务详情'
     );
@@ -195,7 +195,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(taskId, '任务ID');
 
     return this.makeRequest<any>(
-      `/grader/tasks/${taskId}/start`,
+      `/api/grader/tasks/${taskId}/start`,
       { method: 'POST' },
       '开始阅卷任务'
     );
@@ -260,7 +260,7 @@ class GraderAPI extends BaseAPI {
     }
 
     return this.makeRequest<any>(
-      `/grader/tasks/${taskId}/submit`,
+      `/api/grader/tasks/${taskId}/submit`,
       {
         method: 'POST',
         body: JSON.stringify(gradingData),
@@ -310,7 +310,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(progressData, '进度数据');
 
     return this.makeRequest<any>(
-      `/grader/tasks/${taskId}/save-progress`,
+      `/api/grader/tasks/${taskId}/save-progress`,
       {
         method: 'POST',
         body: JSON.stringify(progressData),
@@ -324,7 +324,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(taskId, '任务ID');
 
     return this.makeRequest<any>(
-      `/grader/tasks/${taskId}/abandon`,
+      `/api/grader/tasks/${taskId}/abandon`,
       {
         method: 'POST',
         body: JSON.stringify({ reason }),
@@ -345,7 +345,7 @@ class GraderAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<PaginatedResponse<any>>(
-      `/grader/exams${queryParams}`,
+      `/api/grader/exams${queryParams}`,
       { method: 'GET' },
       '获取考试列表'
     );
@@ -356,7 +356,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `/grader/exams/${examId}`,
+      `/api/grader/exams/${examId}`,
       { method: 'GET' },
       '获取考试详情'
     );
@@ -367,7 +367,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `/grader/exams/${examId}/progress`,
+      `/api/grader/exams/${examId}/progress`,
       { method: 'GET' },
       '获取考试阅卷进度'
     );
@@ -380,7 +380,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(submissionId, '答卷ID');
 
     return this.makeRequest<any>(
-      `/grader/submissions/${submissionId}`,
+      `/api/grader/submissions/${submissionId}`,
       { method: 'GET' },
       '获取答卷详情'
     );
@@ -391,7 +391,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(imageUrl, '图片URL');
 
     return this.makeRequest<any>(
-      `/grader/images?url=${encodeURIComponent(imageUrl)}`,
+      `/api/grader/images?url=${encodeURIComponent(imageUrl)}`,
       { method: 'GET' },
       '获取答案图片'
     );
@@ -409,7 +409,7 @@ class GraderAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<any>(
-      `/grader/statistics${queryParams}`,
+      `/api/grader/statistics${queryParams}`,
       { method: 'GET' },
       '获取阅卷统计'
     );
@@ -427,7 +427,7 @@ class GraderAPI extends BaseAPI {
     const queryParams = this.buildQueryParams(params);
 
     return this.makeRequest<PaginatedResponse<any>>(
-      `/grader/history${queryParams}`,
+      `/api/grader/history${queryParams}`,
       { method: 'GET' },
       '获取阅卷历史'
     );
@@ -438,7 +438,7 @@ class GraderAPI extends BaseAPI {
   // 获取个人信息
   static async getProfile(): Promise<ApiResponse<any>> {
     return this.makeRequest<any>(
-      `/grader/profile`,
+      `/api/grader/profile`,
       { method: 'GET' },
       '获取个人信息'
     );
@@ -460,7 +460,7 @@ class GraderAPI extends BaseAPI {
     }
 
     return this.makeRequest<any>(
-      `/grader/profile`,
+      `/api/grader/profile`,
       {
         method: 'PUT',
         body: JSON.stringify(profileData),
@@ -494,7 +494,7 @@ class GraderAPI extends BaseAPI {
     const hashedNewPassword = PasswordHasher.hashPasswordWithSalt(passwordData.newPassword);
 
     return this.makeRequest<any>(
-      `/grader/change-password`,
+      `/api/grader/change-password`,
       {
         method: 'PUT',
         body: JSON.stringify({
@@ -514,7 +514,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(fileType, '文件类型');
 
     try {
-      const response = await fetch(`/grader/files/${fileId}/download?type=${fileType}`, {
+      const response = await fetch(`/api/grader/files/${fileId}/download?type=${fileType}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });

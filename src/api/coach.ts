@@ -25,7 +25,7 @@ class CoachAPI extends BaseAPI {
       const queryString = this.buildQueryParams(params);
       
       return await this.makeRequest<PaginatedResponse<any>>(
-        `/coach/students${queryString}`,
+        `/api/coach/students${queryString}`,
         {
           method: 'GET',
         },
@@ -44,7 +44,7 @@ class CoachAPI extends BaseAPI {
       this.validateRequired(studentData.username, '学生用户名');
 
       return await this.makeRequest<any>(
-        `/coach/students`,
+        `/api/coach/students`,
         {
           method: 'POST',
           body: JSON.stringify(studentData),
@@ -64,7 +64,7 @@ class CoachAPI extends BaseAPI {
       this.validateRequired(studentId, '学生ID');
 
       return await this.makeRequest<any>(
-        `/coach/students/${studentId}`,
+        `/api/coach/students/${studentId}`,
         {
           method: 'PUT',
           body: JSON.stringify(updateData),
@@ -82,7 +82,7 @@ class CoachAPI extends BaseAPI {
       this.validateRequired(studentId, '学生ID');
 
       return await this.makeRequest<any>(
-        `/coach/students/${studentId}`,
+        `/api/coach/students/${studentId}`,
         {
           method: 'DELETE',
         },
@@ -110,7 +110,7 @@ class CoachAPI extends BaseAPI {
         });
       }
       
-      const response = await fetch(`/coach/exams?${queryParams}`, {
+      const response = await fetch(`/api/coach/exams?${queryParams}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -124,7 +124,7 @@ class CoachAPI extends BaseAPI {
   // 获取考试详情
   static async getExamDetails(examId: string): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/coach/exams/${examId}`, {
+      const response = await fetch(`/api/coach/exams/${examId}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -139,7 +139,7 @@ class CoachAPI extends BaseAPI {
   static async downloadExamFile(examId: string, fileType: 'question' | 'answerSheet' | 'result'): Promise<Blob> {
     try {
       const token = authService.getToken();
-      const response = await fetch(`/coach/exams/${examId}/files/${fileType}`, {
+      const response = await fetch(`/api/coach/exams/${examId}/files/${fileType}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -169,7 +169,7 @@ class CoachAPI extends BaseAPI {
     }>;
   }): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/coach/exams/${examId}/submissions`, {
+      const response = await fetch(`/api/coach/exams/${examId}/submissions`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify(submissionData),
@@ -190,7 +190,7 @@ class CoachAPI extends BaseAPI {
       formData.append('studentUsername', studentUsername);
 
       const token = authService.getToken();
-      const response = await fetch(`/coach/exams/${examId}/upload-answer`, {
+      const response = await fetch(`/api/coach/exams/${examId}/upload-answer`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -212,7 +212,7 @@ class CoachAPI extends BaseAPI {
         queryParams.append('studentUsername', studentUsername);
       }
       
-      const response = await fetch(`/coach/exams/${examId}/submissions?${queryParams}`, {
+      const response = await fetch(`/api/coach/exams/${examId}/submissions?${queryParams}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -228,7 +228,7 @@ class CoachAPI extends BaseAPI {
   // 获取成绩概览
   static async getGradesOverview(): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/coach/grades/overview`, {
+      const response = await fetch(`/api/coach/grades/overview`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -256,7 +256,7 @@ class CoachAPI extends BaseAPI {
         });
       }
       
-      const response = await fetch(`/coach/grades/details?${queryParams}`, {
+      const response = await fetch(`/api/coach/grades/details?${queryParams}`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -272,7 +272,7 @@ class CoachAPI extends BaseAPI {
   // 获取个人信息
   static async getProfile(): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/coach/profile`, {
+      const response = await fetch(`/api/coach/profile`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -290,7 +290,7 @@ class CoachAPI extends BaseAPI {
     avatar?: string;
   }): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/coach/profile`, {
+      const response = await fetch(`/api/coach/profile`, {
         method: 'PUT',
         headers: this.getAuthHeaders(),
         body: JSON.stringify(updateData),
@@ -312,7 +312,7 @@ class CoachAPI extends BaseAPI {
       const hashedOldPassword = PasswordHasher.hashPasswordWithSalt(passwordData.oldPassword);
       const hashedNewPassword = PasswordHasher.hashPasswordWithSalt(passwordData.newPassword);
 
-      const response = await fetch(`/coach/profile/change-password`, {
+      const response = await fetch(`/api/coach/profile/change-password`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({
@@ -334,7 +334,7 @@ class CoachAPI extends BaseAPI {
     reason: string;
   }): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/coach/profile/change-region`, {
+      const response = await fetch(`/api/coach/profile/change-region`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify(requestData),
@@ -353,7 +353,7 @@ class CoachAPI extends BaseAPI {
       formData.append('file', file);
 
       const token = authService.getToken();
-      const response = await fetch(`/coach/profile/upload-avatar`, {
+      const response = await fetch(`/api/coach/profile/upload-avatar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -381,7 +381,7 @@ class CoachAPI extends BaseAPI {
     try {
       const queryParams = this.buildQueryParams(params);
       return await this.makeRequest<any>(
-        `/coach/students/scores${queryParams}`,
+        `/api/coach/students/scores${queryParams}`,
         {
           method: 'GET',
         },
@@ -399,7 +399,7 @@ class CoachAPI extends BaseAPI {
       this.validateRequired(examId, '考试ID');
       
       return await this.makeRequest<any>(
-        `/coach/students/${studentId}/exams/${examId}/score`,
+        `/api/coach/students/${studentId}/exams/${examId}/score`,
         {
           method: 'GET',
         },
@@ -416,7 +416,7 @@ class CoachAPI extends BaseAPI {
       this.validateRequired(examId, '考试ID');
       
       return await this.makeRequest<any>(
-        `/coach/exams/${examId}/scores/statistics`,
+        `/api/coach/exams/${examId}/scores/statistics`,
         {
           method: 'GET',
         },
@@ -436,7 +436,7 @@ class CoachAPI extends BaseAPI {
       const queryParams = this.buildQueryParams(params);
       
       return await this.makeRequest<any>(
-        `/coach/exams/${examId}/ranking${queryParams}`,
+        `/api/coach/exams/${examId}/ranking${queryParams}`,
         {
           method: 'GET',
         },
@@ -453,7 +453,7 @@ class CoachAPI extends BaseAPI {
       this.validateRequired(examId, '考试ID');
       
       return await this.makeRequest<any>(
-        `/coach/exams/${examId}/scores/export`,
+        `/api/coach/exams/${examId}/scores/export`,
         {
           method: 'POST',
           body: JSON.stringify({ format }),
@@ -470,7 +470,7 @@ class CoachAPI extends BaseAPI {
   // 获取仪表板数据
   static async getDashboardStats(): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/coach/dashboard/stats`, {
+      const response = await fetch(`/api/coach/dashboard/stats`, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -495,7 +495,7 @@ class CoachAPI extends BaseAPI {
       this.validateRequired(data.reason, '申请理由');
 
       return await this.makeRequest<any>(
-        `/coach/profile/change-region`,
+        `/api/coach/profile/change-region`,
         {
           method: 'POST',
           body: JSON.stringify(data),
@@ -511,7 +511,7 @@ class CoachAPI extends BaseAPI {
   static async getMyRegionChangeRequests(): Promise<ApiResponse<any>> {
     try {
       return await this.makeRequest<any>(
-        `/coach/profile/change-region-requests`,
+        `/api/coach/profile/change-region-requests`,
         {
           method: 'GET',
         },
