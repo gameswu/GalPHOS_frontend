@@ -7,11 +7,6 @@ GalPHOS系统的学生面板API接口，提供学生用户的考试管理、个�
 
 ## 基础信息
 
-### API基础URL
-```
-http://localhost:3001/api/student
-```
-
 ### 认证要求
 所有学生面板API接口都需要携带有效的JWT Token，且用户角色必须为 `student`。
 
@@ -37,7 +32,7 @@ interface ApiResponse<T> {
 ## 1. 考试管理
 
 ### 1.1 获取考试列表
-**接口**: `GET /exams`
+**接口**: `GET /api/student/exams`
 
 **描述**: 获取当前学生可参与的考试列表
 
@@ -79,7 +74,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.2 获取考试详情
-**接口**: `GET /exams/{examId}`
+**接口**: `GET /api/student/exams/{examId}`
 
 **描述**: 获取指定考试的详细信息
 
@@ -130,7 +125,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.3 提交考试答案
-**接口**: `POST /exams/{examId}/submit`
+**接口**: `POST /api/student/exams/{examId}/submit`
 
 **描述**: 提交或更新考试答案
 
@@ -183,7 +178,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.4 获取考试提交记录
-**接口**: `GET /exams/{examId}/submission`
+**接口**: `GET /api/student/exams/{examId}/submission`
 
 **描述**: 获取当前学生在指定考试中的提交记录
 
@@ -219,7 +214,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.5 上传答题图片
-**接口**: `POST /upload/answer-image`
+**接口**: `POST /api/upload/answer-image`
 
 **描述**: 上传答题图片文件
 
@@ -249,7 +244,7 @@ interface ApiResponse<T> {
 ## 2. 个人资料管理
 
 ### 2.1 更新个人资料
-**接口**: `PUT /profile`
+**接口**: `PUT /api/student/profile`
 
 **描述**: 更新学生个人资料信息
 
@@ -277,7 +272,7 @@ interface ApiResponse<T> {
 ```
 
 ### 2.2 修改密码
-**接口**: `PUT /password`
+**接口**: `PUT /api/student/password`
 
 **描述**: 修改登录密码
 
@@ -298,7 +293,7 @@ interface ApiResponse<T> {
 ```
 
 ### 2.3 上传头像
-**接口**: `POST /upload/avatar`
+**接口**: `POST /api/upload/avatar`
 
 **描述**: 上传用户头像
 
@@ -326,7 +321,7 @@ interface ApiResponse<T> {
 ## 3. 赛区管理
 
 ### 3.1 申请赛区变更
-**接口**: `POST /region-change`
+**接口**: `POST /api/student/region-change`
 
 **描述**: 提交赛区变更申请
 
@@ -360,7 +355,7 @@ interface ApiResponse<T> {
 ```
 
 ### 3.2 获取赛区变更申请状态
-**接口**: `GET /region-change/status`
+**接口**: `GET /api/student/region-change/status`
 
 **描述**: 查询当前用户的赛区变更申请状态
 
@@ -394,7 +389,7 @@ interface ApiResponse<T> {
 ## 4. 文件下载
 
 ### 4.1 下载考试文件
-**接口**: `GET /files/download/{fileId}`
+**接口**: `GET /api/student/files/download/{fileId}`
 
 **描述**: 下载考试相关文件（试题、答案、答题卡等）
 
@@ -414,7 +409,7 @@ GET /api/student/files/download/file001
 ## 5. 统计数据
 
 ### 5.1 获取学生仪表板数据
-**接口**: `GET /dashboard`
+**接口**: `GET /api/student/dashboard`
 
 **描述**: 获取学生仪表板统计数据
 

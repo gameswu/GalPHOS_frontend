@@ -33,11 +33,6 @@
 
 ## 基础信息
 
-### API基础URL
-```
-http://localhost:3001/api/coach
-```
-
 ### 认证方式
 所有请求需要在Header中包含：
 ```
@@ -76,7 +71,7 @@ interface ApiResponse<T> {
 > **重要说明**: 教练管理的学生与独立学生账号有本质区别。教练管理的学生**不是实际的登录账号**，无法独立登录系统，只能通过教练代理进行各种操作。这是一种团体-个人的管理模式。
 
 ### 1.1 获取教练管理的学生列表
-**接口**: `GET /students`
+**接口**: `GET /api/coach/students`
 
 **描述**: 获取当前教练管理的学生列表（非独立账号）
 
@@ -122,7 +117,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.2 添加教练管理的学生
-**接口**: `POST /students`
+**接口**: `POST /api/coach/students`
 
 **描述**: 为当前教练添加新的管理学生（创建非独立账号）
 
@@ -148,7 +143,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.3 更新教练管理学生信息
-**接口**: `PUT /students/{studentId}`
+**接口**: `PUT /api/coach/students/{studentId}`
 
 **描述**: 更新教练管理学生的信息
 
@@ -162,7 +157,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.4 移除教练管理的学生
-**接口**: `DELETE /students/{studentId}`
+**接口**: `DELETE /api/coach/students/{studentId}`
 
 **描述**: 从当前教练的管理列表中移除学生（删除非独立账号）
 
@@ -176,7 +171,7 @@ interface ApiResponse<T> {
 ## 2. 考试管理模块
 
 ### 2.1 获取考试列表
-**接口**: `GET /exams`
+**接口**: `GET /api/coach/exams`
 
 **描述**: 获取可参与和历史考试列表
 
@@ -222,7 +217,7 @@ interface ApiResponse<T> {
 ```
 
 ### 2.2 获取考试详情
-**接口**: `GET /exams/{examId}`
+**接口**: `GET /api/coach/exams/{examId}`
 
 **描述**: 获取考试详细信息和参与情况
 
@@ -396,7 +391,7 @@ interface ApiResponse<T> {
 > **权限说明**: 教练可以查看所有管理学生的成绩，学生本人无法直接查看，需要通过教练获取成绩信息。
 
 ### 4.1 获取学生成绩概览
-**接口**: `GET /grades/overview`
+**接口**: `GET /api/coach/grades/overview`
 
 **描述**: 获取教练管理学生的成绩统计概览
 
@@ -434,7 +429,7 @@ interface ApiResponse<T> {
 ```
 
 ### 4.2 获取详细成绩
-**接口**: `GET /grades/details`
+**接口**: `GET /api/coach/grades/details`
 
 **描述**: 获取学生详细成绩列表
 
@@ -477,7 +472,7 @@ interface ApiResponse<T> {
 ```
 
 ### 4.3 获取学生排名
-**接口**: `GET /grades/ranking/{examId}`
+**接口**: `GET /api/coach/grades/ranking/{examId}`
 
 **描述**: 获取指定考试中学生的排名信息
 
@@ -522,7 +517,7 @@ interface ApiResponse<T> {
 ```
 
 ### 4.4 导出成绩报告
-**接口**: `GET /grades/export/{examId}`
+**接口**: `GET /api/coach/grades/export/{examId}`
 
 **描述**: 导出考试成绩报告（Excel或PDF格式）
 
@@ -546,7 +541,7 @@ interface ApiResponse<T> {
 ```
 
 ### 4.5 获取学生详细成绩
-**接口**: `GET /grades/student/{studentId}/exam/{examId}`
+**接口**: `GET /api/coach/grades/student/{studentId}/exam/{examId}`
 
 **描述**: 获取特定学生在特定考试中的详细成绩
 
@@ -595,7 +590,7 @@ interface ApiResponse<T> {
 ```
 
 ### 4.6 批量获取学生成绩
-**接口**: `GET /grades/batch`
+**接口**: `GET /api/coach/grades/batch`
 
 **描述**: 批量获取多个学生的成绩信息
 
@@ -635,7 +630,7 @@ interface ApiResponse<T> {
 ## 5. 个人设置模块
 
 ### 5.1 获取个人信息
-**接口**: `GET /profile`
+**接口**: `GET /api/coach/profile`
 
 **描述**: 获取教练个人信息
 
@@ -660,7 +655,7 @@ interface ApiResponse<T> {
 ```
 
 ### 5.2 更新个人信息
-**接口**: `PUT /profile`
+**接口**: `PUT /api/coach/profile`
 
 **描述**: 更新教练个人信息
 
@@ -674,7 +669,7 @@ interface ApiResponse<T> {
 ```
 
 ### 5.3 修改密码
-**接口**: `POST /profile/change-password`
+**接口**: `POST /api/coach/profile/change-password`
 
 **描述**: 修改登录密码
 
@@ -687,7 +682,7 @@ interface ApiResponse<T> {
 ```
 
 ### 5.4 申请赛区变更
-**接口**: `POST /profile/change-region`
+**接口**: `POST /api/coach/profile/change-region`
 
 **描述**: 申请变更所属赛区
 
@@ -713,7 +708,7 @@ interface ApiResponse<T> {
 ```
 
 ### 5.5 获取我的赛区变更申请
-**接口**: `GET /profile/change-region-requests`
+**接口**: `GET /api/coach/profile/change-region-requests`
 
 **描述**: 获取当前教练的赛区变更申请记录
 
@@ -739,7 +734,7 @@ interface ApiResponse<T> {
 ```
 
 ### 5.6 上传头像
-**接口**: `POST /profile/upload-avatar`
+**接口**: `POST /api/coach/profile/upload-avatar`
 
 **描述**: 上传头像图片
 
@@ -761,7 +756,7 @@ interface ApiResponse<T> {
 ## 6. 仪表板统计模块
 
 ### 6.1 获取仪表板数据
-**接口**: `GET /dashboard/stats`
+**接口**: `GET /api/coach/dashboard/stats`
 
 **描述**: 获取仪表板统计数据
 

@@ -8,7 +8,6 @@
 
 ## API 基础信息
 
-- **基础URL**: `http://localhost:3001/api/grader`
 - **认证方式**: Bearer Token
 - **数据格式**: JSON
 - **编码**: UTF-8
@@ -27,7 +26,7 @@ interface ApiResponse<T> {
 
 ### 1.1 获取阅卷任务列表
 
-**接口**: `GET /grader/tasks`
+**接口**: `GET /api/grader/tasks`
 
 **参数**:
 - `page`: 页码（可选，默认1）
@@ -53,7 +52,7 @@ interface ApiResponse<T> {
 
 ### 1.2 获取单个阅卷任务详情
 
-**接口**: `GET /grader/tasks/{taskId}`
+**接口**: `GET /api/grader/tasks/{taskId}`
 
 **响应**:
 ```typescript
@@ -66,13 +65,13 @@ interface ApiResponse<T> {
 
 ### 1.3 开始阅卷任务
 
-**接口**: `POST /grader/tasks/{taskId}/start`
+**接口**: `POST /api/grader/tasks/{taskId}/start`
 
 **说明**: 将任务状态从"pending"更改为"grading"，并记录开始时间
 
 ### 1.4 提交阅卷结果
 
-**接口**: `POST /grader/tasks/{taskId}/submit`
+**接口**: `POST /api/grader/tasks/{taskId}/submit`
 
 **请求体**:
 ```typescript
@@ -91,7 +90,7 @@ interface ApiResponse<T> {
 
 ### 1.5 暂存阅卷进度
 
-**接口**: `POST /grader/tasks/{taskId}/save-progress`
+**接口**: `POST /api/grader/tasks/{taskId}/save-progress`
 
 **请求体**:
 ```typescript
@@ -109,7 +108,7 @@ interface ApiResponse<T> {
 
 ### 1.6 放弃阅卷任务
 
-**接口**: `POST /grader/tasks/{taskId}/abandon`
+**接口**: `POST /api/grader/tasks/{taskId}/abandon`
 
 **请求体**:
 ```typescript
@@ -122,7 +121,7 @@ interface ApiResponse<T> {
 
 ### 2.1 获取可阅卷的考试列表
 
-**接口**: `GET /grader/exams`
+**接口**: `GET /api/grader/exams`
 
 **参数**:
 - `page`: 页码（可选）
@@ -133,11 +132,11 @@ interface ApiResponse<T> {
 
 ### 2.2 获取考试详情
 
-**接口**: `GET /grader/exams/{examId}`
+**接口**: `GET /api/grader/exams/{examId}`
 
 ### 2.3 获取考试的阅卷进度
 
-**接口**: `GET /grader/exams/{examId}/progress`
+**接口**: `GET /api/grader/exams/{examId}/progress`
 
 **响应**:
 ```typescript
@@ -159,11 +158,11 @@ interface ApiResponse<T> {
 
 ### 3.1 获取学生答卷详情
 
-**接口**: `GET /grader/submissions/{submissionId}`
+**接口**: `GET /api/grader/submissions/{submissionId}`
 
 ### 3.2 获取答案图片
 
-**接口**: `GET /grader/images`
+**接口**: `GET /api/grader/images`
 
 **参数**:
 - `url`: 图片URL（必需）
@@ -183,7 +182,7 @@ interface ApiResponse<T> {
 
 ### 4.1 获取阅卷统计信息
 
-**接口**: `GET /grader/statistics`
+**接口**: `GET /api/grader/statistics`
 
 **参数**:
 - `startDate`: 开始日期（可选）
@@ -211,7 +210,7 @@ interface ApiResponse<T> {
 
 ### 4.2 获取我的阅卷历史
 
-**接口**: `GET /grader/history`
+**接口**: `GET /api/grader/history`
 
 **参数**:
 - `page`: 页码（可选）
@@ -224,7 +223,7 @@ interface ApiResponse<T> {
 
 ### 5.1 获取个人信息
 
-**接口**: `GET /grader/profile`
+**接口**: `GET /api/grader/profile`
 
 **响应**:
 ```typescript
@@ -255,7 +254,7 @@ interface ApiResponse<T> {
 
 ### 5.2 更新个人信息
 
-**接口**: `PUT /grader/profile`
+**接口**: `PUT /api/grader/profile`
 
 **请求体**:
 ```typescript
@@ -268,7 +267,7 @@ interface ApiResponse<T> {
 
 ### 5.3 修改密码
 
-**接口**: `POST /grader/change-password`
+**接口**: `POST /api/grader/change-password`
 
 **请求体**:
 ```typescript
@@ -282,7 +281,7 @@ interface ApiResponse<T> {
 
 ### 6.1 下载考试文件
 
-**接口**: `GET /grader/files/{fileId}/download`
+**接口**: `GET /api/grader/files/{fileId}/download`
 
 **参数**:
 - `type`: 文件类型（必需：question, answer, answer_sheet）
@@ -291,7 +290,7 @@ interface ApiResponse<T> {
 
 ### 6.2 上传头像
 
-**接口**: `POST /grader/upload-avatar`
+**接口**: `POST /api/grader/upload-avatar`
 
 **请求**: 使用 FormData，字段名为 `avatar`
 
@@ -309,7 +308,7 @@ interface ApiResponse<T> {
 
 ### 7.1 获取通知列表
 
-**接口**: `GET /grader/notifications`
+**接口**: `GET /api/grader/notifications`
 
 **参数**:
 - `page`: 页码（可选）
@@ -338,11 +337,11 @@ interface ApiResponse<T> {
 
 ### 7.2 标记通知为已读
 
-**接口**: `POST /grader/notifications/{notificationId}/read`
+**接口**: `POST /api/grader/notifications/{notificationId}/read`
 
 ### 7.3 标记所有通知为已读
 
-**接口**: `POST /grader/notifications/read-all`
+**接口**: `POST /api/grader/notifications/read-all`
 
 ## 数据模型
 
@@ -473,5 +472,6 @@ if (result.success) {
 ## 版本历史
 
 - v1.0.0: 初始版本，包含基础的阅卷任务管理功能
+- v1.2.0: 微服务架构升级，全局错误通知系统，API路径规范化
 - v1.1.0: 增加统计分析和通知功能
 - v1.2.0: 增加文件处理和个人中心功能

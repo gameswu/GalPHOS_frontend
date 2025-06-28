@@ -514,24 +514,27 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(fileType, '文件类型');
 
     try {
-      const response = await fetch(this.getApiUrl(`/api/grader/files/${fileId}/download?type=${fileType}`), {
+      const url = this.getApiUrl(`/api/grader/files/${fileId}/download?type=${fileType}`);
+      const response = await fetch(url, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const errorMessage = `文件下载失败: HTTP ${response.status}`;
+        this.handleApiError(new Error(errorMessage), '下载文件');
+        return { success: false, message: errorMessage };
       }
 
       // 下载文件
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
+      a.href = downloadUrl;
       a.download = `file_${fileId}.${fileType === 'exam' ? 'pdf' : 'zip'}`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(a);
 
       return { success: true, message: '文件下载成功' };

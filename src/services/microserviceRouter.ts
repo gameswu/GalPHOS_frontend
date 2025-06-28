@@ -36,15 +36,12 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/admin/users/*',
       '/api/admin/coach-students*',
       '/api/admin/student-registrations*',
+      // 所有角色个人资料管理
       '/api/admin/profile*',
-      // 学生个人资料
       '/api/student/profile*',
       '/api/student/password*',
       '/api/student/region-change*',
-      // 教练个人资料
       '/api/coach/profile*',
-      '/api/coach/students*',
-      // 阅卷员个人资料
       '/api/grader/profile*',
       '/api/grader/change-password*'
     ],
@@ -59,16 +56,16 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
     port: 3003,
     paths: [
       // 管理员考试管理
-      '/api/admin/exams*',
-      '/api/admin/questions*',
-      // 学生考试查看
-      '/api/student/exams', // 不包含submit和submission
-      '/api/student/exams/*/score',
-      '/api/student/exams/*/ranking',
-      // 教练考试管理
-      '/api/coach/exams*',
-      // 阅卷员考试查看
-      '/api/grader/exams*'
+      '/api/admin/exams',
+      '/api/admin/exams/*',
+      '/api/admin/exams/*/publish',
+      '/api/admin/exams/*/unpublish',
+      // 学生考试查看（基本信息）
+      '/api/student/exams',
+      // 教练考试管理（基本信息）
+      '/api/coach/exams',
+      // 阅卷员考试查看（基本信息）
+      '/api/grader/exams'
     ],
     description: '考试完整生命周期管理服务',
     healthCheck: '/health'
@@ -80,16 +77,17 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
     baseUrl: process.env.REACT_APP_SUBMISSION_SERVICE_URL || 'http://localhost:3004',
     port: 3004,
     paths: [
-      // 学生提交
+      // 独立学生账号的自主提交
       '/api/student/exams/*/submit*',
       '/api/student/exams/*/submission*',
-      // 教练代理提交和查看提交
+      // 教练代理非独立学生提交（教练权限）
       '/api/coach/exams/*/submissions*',
       '/api/coach/exams/*/upload-answer*',
       // 阅卷员查看提交
-      '/api/grader/submissions*'
+      '/api/grader/submissions*',
+      '/api/grader/exams/*/progress*'
     ],
-    description: '答题卡提交和管理服务',
+    description: '答题卡提交和管理服务 - 区分独立学生自主提交和教练代理提交',
     healthCheck: '/health'
   },
 
@@ -99,13 +97,18 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
     baseUrl: process.env.REACT_APP_GRADING_SERVICE_URL || 'http://localhost:3005',
     port: 3005,
     paths: [
-      // 阅卷任务
-      '/api/grader/tasks*',
       // 管理员阅卷管理
+      '/api/admin/graders*',
       '/api/admin/grading*',
-      '/api/admin/graders*'
+      '/api/admin/exams/*/questions/scores*',
+      '/api/admin/exams/*/questions/*/score*',
+      // 阅卷员任务管理
+      '/api/grader/tasks*',
+      '/api/grader/exams/*/questions/scores*',
+      // 教练管理非独立学生关系（区别于个人资料）
+      '/api/coach/students*'
     ],
-    description: '阅卷任务分配和过程管理服务',
+    description: '阅卷任务分配和过程管理服务 - 包含教练非独立学生管理',
     healthCheck: '/health'
   },
 
@@ -116,13 +119,15 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
     port: 3006,
     paths: [
       // 学生成绩查看
+      '/api/student/exams/*/score*',
+      '/api/student/exams/*/ranking*', 
       '/api/student/scores*',
       '/api/student/dashboard*',
       // 教练成绩管理
       '/api/coach/grades*',
       '/api/coach/dashboard*',
-      // 管理员统计
-      '/api/admin/dashboard*',
+      '/api/coach/students/*/exams/*/score*',
+      '/api/coach/students/scores*',
       // 阅卷员统计
       '/api/grader/statistics*',
       '/api/grader/history*'
@@ -139,9 +144,7 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
     paths: [
       // 管理员区域管理
       '/api/admin/regions*',
-      // 认证时需要的区域信息
-      '/api/regions/provinces-schools*',
-      '/api/regions*'
+      '/api/regions/provinces-schools*'
     ],
     description: '省份学校等地理信息管理服务',
     healthCheck: '/health'
@@ -153,19 +156,18 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
     baseUrl: process.env.REACT_APP_FILE_STORAGE_SERVICE_URL || 'http://localhost:3008',
     port: 3008,
     paths: [
-      // 学生文件操作
-      '/api/student/upload*',
-      '/api/student/files*',
-      // 教练文件操作
-      '/api/coach/*/upload*', // 包含头像上传等
-      '/api/coach/*/files*',
-      // 阅卷员文件操作
-      '/api/grader/files*',
+      // 学生文件管理
+      '/api/student/files/*',
+      // 阅卷图片管理
       '/api/grader/images*',
-      // 管理员文件操作
-      '/api/admin/*/upload*',
-      '/api/admin/exams/*/files*',
-      // 通用文件API
+      // 考试文件导出
+      '/api/coach/exams/*/ranking*',
+      '/api/coach/exams/*/scores/export*',
+      '/api/coach/exams/*/scores/statistics*',
+      // 仪表盘统计数据
+      '/api/admin/dashboard/stats*',
+      '/api/coach/dashboard/stats*',
+      // 通用文件API（预留）
       '/api/upload*',
       '/api/download*',
       '/api/files*'
@@ -338,19 +340,20 @@ export class MicroserviceRouter {
     
     // 根据角色前缀进行二级推断
     if (path.startsWith('/api/student/')) {
-      // 学生相关请求优先级：提交 > 考试 > 成绩 > 用户管理
-      if (path.includes('submit') || path.includes('upload')) return MICROSERVICE_CONFIG.submission;
-      if (path.includes('exam')) return MICROSERVICE_CONFIG.examManagement;
-      if (path.includes('score') || path.includes('dashboard')) return MICROSERVICE_CONFIG.scoreStatistics;
-      return MICROSERVICE_CONFIG.userManagement;
+      // 独立学生账号相关请求优先级：自主提交 > 考试查看 > 成绩查看 > 个人资料管理
+      if (path.includes('submit') || path.includes('submission')) return MICROSERVICE_CONFIG.submission;
+      if (path.includes('exam') && !path.includes('score') && !path.includes('ranking')) return MICROSERVICE_CONFIG.examManagement;
+      if (path.includes('score') || path.includes('ranking') || path.includes('dashboard')) return MICROSERVICE_CONFIG.scoreStatistics;
+      return MICROSERVICE_CONFIG.userManagement; // 个人资料、密码、区域变更等
     }
     
     if (path.startsWith('/api/coach/')) {
-      // 教练相关请求优先级：提交管理 > 考试管理 > 成绩统计 > 用户管理
-      if (path.includes('submission') || path.includes('upload')) return MICROSERVICE_CONFIG.submission;
-      if (path.includes('exam')) return MICROSERVICE_CONFIG.examManagement;
-      if (path.includes('score') || path.includes('statistics')) return MICROSERVICE_CONFIG.scoreStatistics;
-      return MICROSERVICE_CONFIG.userManagement;
+      // 教练相关请求优先级：代理提交管理 > 考试管理 > 成绩统计 > 非独立学生管理 > 用户管理
+      if (path.includes('submission') || path.includes('upload-answer')) return MICROSERVICE_CONFIG.submission;
+      if (path.includes('exam') && !path.includes('submission')) return MICROSERVICE_CONFIG.examManagement;
+      if (path.includes('score') || path.includes('statistics') || path.includes('ranking')) return MICROSERVICE_CONFIG.scoreStatistics;
+      if (path.includes('students')) return MICROSERVICE_CONFIG.grading; // 非独立学生管理
+      return MICROSERVICE_CONFIG.userManagement; // 教练个人资料管理
     }
     
     if (path.startsWith('/api/grader/')) {

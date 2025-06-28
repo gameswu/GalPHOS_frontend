@@ -5,11 +5,6 @@ GalPHOS系统的认证API接口，提供用户登录、注册、管理员登录�
 
 ## 基础信息
 
-### API基础URL
-```
-http://localhost:3001/api/auth
-```
-
 ### Token说明
 - **Token类型**: JWT (JSON Web Token)  
 - **生成时机**: 用户/管理员登录成功后生成
@@ -41,7 +36,7 @@ interface ApiResponse<T> {
 ## 1. 用户登录
 
 ### 1.1 普通用户登录
-**接口**: `POST /login`
+**接口**: `POST /api/auth/login`
 
 **描述**: 教练、学生、阅卷员登录接口
 
@@ -104,7 +99,7 @@ interface ApiResponse<T> {
 
 ### 2. 用户注册
 
-**接口路径：** `POST /auth/register`
+**接口路径：** `POST /api/auth/register`
 
 **请求参数：**
 ```typescript
@@ -152,7 +147,7 @@ interface ApiResponse<T> {
 
 ### 3. 管理员登录
 
-**接口路径：** `POST /auth/admin-login`
+**接口路径：** `POST /api/auth/admin-login`
 
 **请求参数：**
 ```typescript
@@ -200,7 +195,7 @@ interface ApiResponse<T> {
 
 ### 4. Token验证
 
-**接口路径：** `GET /auth/validate`
+**接口路径：** `GET /api/auth/validate`
 
 **请求头：**
 ```
@@ -239,7 +234,7 @@ Content-Type: application/json
 
 ### 5. 用户登出
 
-**接口路径：** `POST /auth/logout`
+**接口路径：** `POST /api/auth/logout`
 
 **请求头：**
 ```

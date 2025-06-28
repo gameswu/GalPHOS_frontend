@@ -244,28 +244,26 @@ const StudentRegistrationManagement: React.FC = () => {
       key: 'username',
     },
     {
-      title: '省份',
-      dataIndex: 'province',
-      key: 'province',
+      title: '省份/学校',
+      key: 'location',
       className: 'mobile-hidden',
+      render: (_: any, record: StudentRegistrationRequest) => (
+        <div>
+          <div style={{ marginBottom: 4 }}>{record.province}</div>
+          <div style={{ color: '#666', fontSize: '12px' }}>{record.school}</div>
+        </div>
+      )
     },
     {
-      title: '学校',
-      dataIndex: 'school',
-      key: 'school',
-    },
-    {
-      title: '申请教练',
-      dataIndex: 'coachUsername',
-      key: 'coachUsername',
+      title: '申请教练/时间',
+      key: 'coachAndTime',
       className: 'mobile-hidden',
-    },
-    {
-      title: '申请时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      className: 'mobile-hidden',
-      render: (time: string) => new Date(time).toLocaleString()
+      render: (_: any, record: StudentRegistrationRequest) => (
+        <div>
+          <div style={{ marginBottom: 4 }}>{record.coachUsername}</div>
+          <div style={{ color: '#666', fontSize: '12px' }}>{new Date(record.createdAt).toLocaleString()}</div>
+        </div>
+      )
     },
     {
       title: '状态',
@@ -372,19 +370,19 @@ const StudentRegistrationManagement: React.FC = () => {
         {currentRequest && (
           <div>
             <Descriptions bordered size="small" style={{ marginBottom: 24 }}>
-              <Descriptions.Item label="学生用户名" span={2}>
+              <Descriptions.Item label="学生用户名" span={3}>
                 {currentRequest.username}
               </Descriptions.Item>
-              <Descriptions.Item label="申请教练">
-                {currentRequest.coachUsername}
-              </Descriptions.Item>
-              <Descriptions.Item label="省份" span={2}>
+              <Descriptions.Item label="省份" span={1}>
                 {currentRequest.province}
               </Descriptions.Item>
-              <Descriptions.Item label="学校">
+              <Descriptions.Item label="学校" span={2}>
                 {currentRequest.school}
               </Descriptions.Item>
-              <Descriptions.Item label="申请时间" span={3}>
+              <Descriptions.Item label="申请教练" span={1}>
+                {currentRequest.coachUsername}
+              </Descriptions.Item>
+              <Descriptions.Item label="申请时间" span={2}>
                 {new Date(currentRequest.createdAt).toLocaleString()}
               </Descriptions.Item>
             </Descriptions>

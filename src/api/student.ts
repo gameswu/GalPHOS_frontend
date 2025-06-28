@@ -209,31 +209,34 @@ class StudentAPI extends BaseAPI {
       this.validateRequired(fileId, '文件ID');
       this.validateRequired(fileName, '文件名');
 
-      const response = await fetch(this.getApiUrl(`/api/student/files/download/${fileId}`), {
+      const url = this.getApiUrl(`/api/student/files/download/${fileId}`);
+      const response = await fetch(url, {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
 
       if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('文件不存在');
-        }
-        throw new Error(`文件下载失败: ${response.statusText}`);
+        const errorMessage = response.status === 404 
+          ? '文件不存在' 
+          : `文件下载失败: HTTP ${response.status}`;
+        this.handleApiError(new Error(errorMessage), '下载考试文件');
+        return;
       }
 
       const blob = await response.blob();
       if (blob.size === 0) {
-        throw new Error('文件为空');
+        this.handleApiError(new Error('文件为空'), '下载考试文件');
+        return;
       }
 
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = downloadUrl;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       this.handleApiError(error, '下载文件');
     }

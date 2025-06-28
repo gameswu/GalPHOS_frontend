@@ -200,19 +200,20 @@ const RegionChangeRequestManagement: React.FC = () => {
       }
     },
     {
-      title: '当前赛区',
-      key: 'currentRegion',
-      width: 200,
+      title: '当前赛区/申请变更为',
+      key: 'regionChange',
+      width: 250,
       className: 'mobile-hidden',
-      render: (_: any, record: RegionChangeRequest) => 
-        `${record.currentProvince || '未设置'} - ${record.currentSchool || '未设置'}`
-    },
-    {
-      title: '申请变更为',
-      key: 'requestedRegion',
-      width: 200,
-      render: (_: any, record: RegionChangeRequest) => 
-        `${record.requestedProvince} - ${record.requestedSchool}`
+      render: (_: any, record: RegionChangeRequest) => (
+        <div>
+          <div style={{ marginBottom: 4 }}>
+            {`${record.currentProvince || '未设置'} - ${record.currentSchool || '未设置'}`}
+          </div>
+          <div style={{ color: '#1890ff', fontSize: '12px' }}>
+            ↓ {`${record.requestedProvince} - ${record.requestedSchool}`}
+          </div>
+        </div>
+      )
     },
     {
       title: '申请时间',

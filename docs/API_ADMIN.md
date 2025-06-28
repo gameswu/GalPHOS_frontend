@@ -7,11 +7,6 @@ GalPHOS管理员面板API接口，提供用户管理、考试管理、阅卷管�
 
 ## 基础信息
 
-### API基础URL
-```
-http://localhost:3001/api/admin
-```
-
 ### 认证方式
 所有请求需要在Header中包含：
 ```
@@ -50,7 +45,7 @@ interface ApiResponse<T> {
 ## 1. 用户管理模块
 
 ### 1.1 获取待审核用户列表
-**接口**: `GET /users/pending`
+**接口**: `GET /api/admin/users/pending`
 
 **描述**: 获取所有待审核的用户申请列表
 
@@ -84,7 +79,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.2 审核用户申请
-**接口**: `POST /users/approve`
+**接口**: `POST /api/admin/users/approve`
 
 **描述**: 审核用户注册申请，可以批准或拒绝
 
@@ -106,7 +101,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.3 获取已审核用户列表
-**接口**: `GET /users/approved`
+**接口**: `GET /api/admin/users/approved`
 
 **描述**: 获取已通过审核的用户列表，支持分页和筛选
 
@@ -144,7 +139,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.4 启用/禁用用户
-**接口**: `POST /users/status`
+**接口**: `POST /api/admin/users/status`
 
 **描述**: 启用或禁用用户账户
 
@@ -165,7 +160,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.5 删除用户
-**接口**: `DELETE /users/{userId}`
+**接口**: `DELETE /api/admin/users/{userId}`
 
 **描述**: 删除指定用户（谨慎操作）
 
@@ -181,7 +176,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.6 获取教练学生关系统计
-**接口**: `GET /coach-students/stats`
+**接口**: `GET /api/admin/coach-students/stats`
 
 **描述**: 获取教练管理的学生统计信息
 
@@ -198,7 +193,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.7 获取教练学生关系列表
-**接口**: `GET /coach-students`
+**接口**: `GET /api/admin/coach-students`
 
 **描述**: 获取教练-学生关系的详细列表
 
@@ -232,7 +227,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.8 创建教练学生关系
-**接口**: `POST /coach-students`
+**接口**: `POST /api/admin/coach-students`
 
 **描述**: 创建教练与学生的管理关系
 
@@ -257,7 +252,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.9 删除教练学生关系
-**接口**: `DELETE /coach-students/{relationshipId}`
+**接口**: `DELETE /api/admin/coach-students/{relationshipId}`
 
 **描述**: 删除教练与学生的管理关系
 
@@ -273,7 +268,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.10 获取学生注册申请列表
-**接口**: `GET /student-registrations`
+**接口**: `GET /api/admin/student-registrations`
 
 **描述**: 获取学生注册申请列表
 
@@ -310,7 +305,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.11 处理学生注册申请
-**接口**: `POST /student-registrations/{requestId}/review`
+**接口**: `POST /api/admin/student-registrations/{requestId}/review`
 
 **描述**: 审核学生注册申请
 
@@ -334,7 +329,7 @@ interface ApiResponse<T> {
 ```
 
 ### 1.12 创建学生注册申请
-**接口**: `POST /student-registrations`
+**接口**: `POST /api/admin/student-registrations`
 
 **描述**: 创建新的学生注册申请（通常由教练或学生发起）
 
@@ -364,7 +359,7 @@ interface ApiResponse<T> {
 ## 2. 赛区管理模块
 
 ### 2.1 获取赛区列表
-**接口**: `GET /regions`
+**接口**: `GET /api/admin/regions`
 
 **描述**: 获取所有省份及其下属学校列表
 
@@ -403,7 +398,7 @@ interface ApiResponse<T> {
 ```
 
 ### 2.2 添加省份
-**接口**: `POST /regions/provinces`
+**接口**: `POST /api/admin/regions/provinces`
 
 **描述**: 添加新的省份/直辖市
 
@@ -450,7 +445,7 @@ interface ApiResponse<T> {
 ```
 
 ### 2.3 添加省份
-**接口**: `POST /regions/provinces`
+**接口**: `POST /api/admin/regions/provinces`
 
 **描述**: 添加新的省份/直辖市
 
@@ -501,7 +496,7 @@ interface ApiResponse<T> {
 ```
 
 ### 2.5 添加学校
-**接口**: `POST /regions/schools`
+**接口**: `POST /api/admin/regions/schools`
 
 **描述**: 为指定省份添加学校
 

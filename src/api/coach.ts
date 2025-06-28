@@ -110,50 +110,52 @@ class CoachAPI extends BaseAPI {
         });
       }
       
-      const response = await fetch(`/api/coach/exams?${queryParams}`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(),
-      });
-      return await response.json();
+      const response = await this.makeRequest<any>(
+        `/api/coach/exams?${queryParams}`,
+        {
+          method: 'GET',
+        },
+        '获取考试列表'
+      );
+      return response;
     } catch (error) {
-      console.error('获取考试列表失败:', error);
-      throw error;
+      return this.handleApiError(error, '获取考试列表');
     }
   }
 
   // 获取考试详情
   static async getExamDetails(examId: string): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/api/coach/exams/${examId}`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(),
-      });
-      return await response.json();
+      const response = await this.makeRequest<any>(
+        `/api/coach/exams/${examId}`,
+        {
+          method: 'GET',
+        },
+        '获取考试详情'
+      );
+      return response;
     } catch (error) {
-      console.error('获取考试详情失败:', error);
-      throw error;
+      return this.handleApiError(error, '获取考试详情');
     }
   }
 
   // 下载考试文件
   static async downloadExamFile(examId: string, fileType: 'question' | 'answerSheet' | 'result'): Promise<Blob> {
     try {
-      const token = authService.getToken();
-      const response = await fetch(`/api/coach/exams/${examId}/files/${fileType}`, {
+      const url = this.getApiUrl(`/api/coach/exams/${examId}/files/${fileType}`);
+      const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: this.getAuthHeaders(),
       });
       
       if (!response.ok) {
-        throw new Error('文件下载失败');
+        const errorMessage = `文件下载失败: HTTP ${response.status}`;
+        this.handleApiError(new Error(errorMessage), '下载考试文件');
       }
       
       return await response.blob();
     } catch (error) {
-      console.error('下载考试文件失败:', error);
-      throw error;
+      return this.handleApiError(error, '下载考试文件');
     }
   }
 
@@ -169,15 +171,16 @@ class CoachAPI extends BaseAPI {
     }>;
   }): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/api/coach/exams/${examId}/submissions`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(submissionData),
-      });
-      return await response.json();
+      return await this.makeRequest<any>(
+        `/api/coach/exams/${examId}/submissions`,
+        {
+          method: 'POST',
+          body: JSON.stringify(submissionData),
+        },
+        '代学生提交答案'
+      );
     } catch (error) {
-      console.error('提交答案失败:', error);
-      throw error;
+      return this.handleApiError(error, '代学生提交答案');
     }
   }
 
@@ -196,14 +199,15 @@ class CoachAPI extends BaseAPI {
         queryParams.append('studentUsername', studentUsername);
       }
       
-      const response = await fetch(`/api/coach/exams/${examId}/submissions?${queryParams}`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(),
-      });
-      return await response.json();
+      return await this.makeRequest<any[]>(
+        `/api/coach/exams/${examId}/submissions?${queryParams}`,
+        {
+          method: 'GET',
+        },
+        '获取提交记录'
+      );
     } catch (error) {
-      console.error('获取提交记录失败:', error);
-      throw error;
+      return this.handleApiError(error, '获取提交记录');
     }
   }
 
@@ -212,14 +216,15 @@ class CoachAPI extends BaseAPI {
   // 获取成绩概览
   static async getGradesOverview(): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/api/coach/grades/overview`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(),
-      });
-      return await response.json();
+      return await this.makeRequest<any>(
+        `/api/coach/grades/overview`,
+        {
+          method: 'GET',
+        },
+        '获取成绩概览'
+      );
     } catch (error) {
-      console.error('获取成绩概览失败:', error);
-      throw error;
+      return this.handleApiError(error, '获取成绩概览');
     }
   }
 
@@ -240,14 +245,15 @@ class CoachAPI extends BaseAPI {
         });
       }
       
-      const response = await fetch(`/api/coach/grades/details?${queryParams}`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(),
-      });
-      return await response.json();
+      return await this.makeRequest<any[]>(
+        `/api/coach/grades/details?${queryParams}`,
+        {
+          method: 'GET',
+        },
+        '获取详细成绩'
+      );
     } catch (error) {
-      console.error('获取详细成绩失败:', error);
-      throw error;
+      return this.handleApiError(error, '获取详细成绩');
     }
   }
 
@@ -256,14 +262,15 @@ class CoachAPI extends BaseAPI {
   // 获取个人信息
   static async getProfile(): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/api/coach/profile`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(),
-      });
-      return await response.json();
+      return await this.makeRequest<any>(
+        `/api/coach/profile`,
+        {
+          method: 'GET',
+        },
+        '获取个人信息'
+      );
     } catch (error) {
-      console.error('获取个人信息失败:', error);
-      throw error;
+      return this.handleApiError(error, '获取个人信息');
     }
   }
 
@@ -274,15 +281,16 @@ class CoachAPI extends BaseAPI {
     avatar?: string;
   }): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/api/coach/profile`, {
-        method: 'PUT',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(updateData),
-      });
-      return await response.json();
+      return await this.makeRequest<any>(
+        `/api/coach/profile`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(updateData),
+        },
+        '更新个人信息'
+      );
     } catch (error) {
-      console.error('更新个人信息失败:', error);
-      throw error;
+      return this.handleApiError(error, '更新个人信息');
     }
   }
 
@@ -296,18 +304,19 @@ class CoachAPI extends BaseAPI {
       const hashedOldPassword = PasswordHasher.hashPasswordWithSalt(passwordData.oldPassword);
       const hashedNewPassword = PasswordHasher.hashPasswordWithSalt(passwordData.newPassword);
 
-      const response = await fetch(`/api/coach/profile/change-password`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify({
-          oldPassword: hashedOldPassword,
-          newPassword: hashedNewPassword
-        }),
-      });
-      return await response.json();
+      return await this.makeRequest<any>(
+        `/api/coach/profile/change-password`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            oldPassword: hashedOldPassword,
+            newPassword: hashedNewPassword
+          }),
+        },
+        '修改密码'
+      );
     } catch (error) {
-      console.error('修改密码失败:', error);
-      throw error;
+      return this.handleApiError(error, '修改密码');
     }
   }
 
@@ -318,15 +327,16 @@ class CoachAPI extends BaseAPI {
     reason: string;
   }): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/api/coach/profile/change-region`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(requestData),
-      });
-      return await response.json();
+      return await this.makeRequest<any>(
+        `/api/coach/profile/change-region`,
+        {
+          method: 'POST',
+          body: JSON.stringify(requestData),
+        },
+        '申请赛区变更'
+      );
     } catch (error) {
-      console.error('申请赛区变更失败:', error);
-      throw error;
+      return this.handleApiError(error, '申请赛区变更');
     }
   }
 
@@ -440,14 +450,15 @@ class CoachAPI extends BaseAPI {
   // 获取仪表板数据
   static async getDashboardStats(): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`/api/coach/dashboard/stats`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(),
-      });
-      return await response.json();
+      return await this.makeRequest<any>(
+        `/api/coach/dashboard/stats`,
+        {
+          method: 'GET',
+        },
+        '获取仪表板数据'
+      );
     } catch (error) {
-      console.error('获取仪表板数据失败:', error);
-      throw error;
+      return this.handleApiError(error, '获取仪表板数据');
     }
   }
 
