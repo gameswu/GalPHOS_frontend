@@ -8,27 +8,185 @@ export interface MicroserviceConfig {
   healthCheck?: string;
 }
 
-// 微服务配置映射
+// 微服务配置映射 - 基于实际API路径分析的精确分配
 export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
-  // 用户认证服务
+  // 1. 用户认证服务 (User Authentication Service)
   auth: {
-    name: 'user-auth-service',
+    name: 'user-authentication-service',
     baseUrl: process.env.REACT_APP_AUTH_SERVICE_URL || 'http://localhost:3001',
     port: 3001,
     paths: [
       '/api/auth/login',
-      '/api/auth/logout', 
       '/api/auth/register',
-      '/api/auth/admin-login',
       '/api/auth/validate',
-      '/api/auth/refresh-token',
-      '/api/auth/provinces-schools'
+      '/api/auth/logout',
+      '/api/auth/admin-login'
     ],
     description: '用户认证与授权服务',
-    healthCheck: '/shealth'
+    healthCheck: '/health'
   },
 
-  // TODO: 添加其他微服务配置
+  // 2. 用户管理服务 (User Management Service)
+  userManagement: {
+    name: 'user-management-service',
+    baseUrl: process.env.REACT_APP_USER_MANAGEMENT_SERVICE_URL || 'http://localhost:3002',
+    port: 3002,
+    paths: [
+      // 管理员用户管理
+      '/api/admin/users/*',
+      '/api/admin/coach-students*',
+      '/api/admin/student-registrations*',
+      '/api/admin/profile*',
+      // 学生个人资料
+      '/api/student/profile*',
+      '/api/student/password*',
+      '/api/student/region-change*',
+      // 教练个人资料
+      '/api/coach/profile*',
+      '/api/coach/students*',
+      // 阅卷员个人资料
+      '/api/grader/profile*',
+      '/api/grader/change-password*'
+    ],
+    description: '用户生命周期管理服务',
+    healthCheck: '/health'
+  },
+
+  // 3. 考试管理服务 (Exam Management Service)
+  examManagement: {
+    name: 'exam-management-service',
+    baseUrl: process.env.REACT_APP_EXAM_MANAGEMENT_SERVICE_URL || 'http://localhost:3003',
+    port: 3003,
+    paths: [
+      // 管理员考试管理
+      '/api/admin/exams*',
+      '/api/admin/questions*',
+      // 学生考试查看
+      '/api/student/exams', // 不包含submit和submission
+      '/api/student/exams/*/score',
+      '/api/student/exams/*/ranking',
+      // 教练考试管理
+      '/api/coach/exams*',
+      // 阅卷员考试查看
+      '/api/grader/exams*'
+    ],
+    description: '考试完整生命周期管理服务',
+    healthCheck: '/health'
+  },
+
+  // 4. 答题提交服务 (Submission Service)
+  submission: {
+    name: 'submission-service',
+    baseUrl: process.env.REACT_APP_SUBMISSION_SERVICE_URL || 'http://localhost:3004',
+    port: 3004,
+    paths: [
+      // 学生提交
+      '/api/student/exams/*/submit*',
+      '/api/student/exams/*/submission*',
+      // 教练代理提交和查看提交
+      '/api/coach/exams/*/submissions*',
+      '/api/coach/exams/*/upload-answer*',
+      // 阅卷员查看提交
+      '/api/grader/submissions*'
+    ],
+    description: '答题卡提交和管理服务',
+    healthCheck: '/health'
+  },
+
+  // 5. 阅卷管理服务 (Grading Service)
+  grading: {
+    name: 'grading-service',
+    baseUrl: process.env.REACT_APP_GRADING_SERVICE_URL || 'http://localhost:3005',
+    port: 3005,
+    paths: [
+      // 阅卷任务
+      '/api/grader/tasks*',
+      // 管理员阅卷管理
+      '/api/admin/grading*',
+      '/api/admin/graders*'
+    ],
+    description: '阅卷任务分配和过程管理服务',
+    healthCheck: '/health'
+  },
+
+  // 6. 成绩统计服务 (Score Statistics Service)
+  scoreStatistics: {
+    name: 'score-statistics-service',
+    baseUrl: process.env.REACT_APP_SCORE_STATISTICS_SERVICE_URL || 'http://localhost:3006',
+    port: 3006,
+    paths: [
+      // 学生成绩查看
+      '/api/student/scores*',
+      '/api/student/dashboard*',
+      // 教练成绩管理
+      '/api/coach/grades*',
+      '/api/coach/dashboard*',
+      // 管理员统计
+      '/api/admin/dashboard*',
+      // 阅卷员统计
+      '/api/grader/statistics*',
+      '/api/grader/history*'
+    ],
+    description: '成绩数据分析和排名计算服务',
+    healthCheck: '/health'
+  },
+
+  // 7. 区域管理服务 (Region Management Service)
+  regionManagement: {
+    name: 'region-management-service',
+    baseUrl: process.env.REACT_APP_REGION_MANAGEMENT_SERVICE_URL || 'http://localhost:3007',
+    port: 3007,
+    paths: [
+      // 管理员区域管理
+      '/api/admin/regions*',
+      // 认证时需要的区域信息
+      '/api/regions/provinces-schools*',
+      '/api/regions*'
+    ],
+    description: '省份学校等地理信息管理服务',
+    healthCheck: '/health'
+  },
+
+  // 8. 文件存储服务 (File Storage Service)
+  fileStorage: {
+    name: 'file-storage-service',
+    baseUrl: process.env.REACT_APP_FILE_STORAGE_SERVICE_URL || 'http://localhost:3008',
+    port: 3008,
+    paths: [
+      // 学生文件操作
+      '/api/student/upload*',
+      '/api/student/files*',
+      // 教练文件操作
+      '/api/coach/*/upload*', // 包含头像上传等
+      '/api/coach/*/files*',
+      // 阅卷员文件操作
+      '/api/grader/files*',
+      '/api/grader/images*',
+      // 管理员文件操作
+      '/api/admin/*/upload*',
+      '/api/admin/exams/*/files*',
+      // 通用文件API
+      '/api/upload*',
+      '/api/download*',
+      '/api/files*'
+    ],
+    description: '文件上传存储和访问管理服务',
+    healthCheck: '/health'
+  },
+
+  // 9. 系统配置服务 (System Configuration Service)
+  systemConfig: {
+    name: 'system-configuration-service',
+    baseUrl: process.env.REACT_APP_SYSTEM_CONFIG_SERVICE_URL || 'http://localhost:3009',
+    port: 3009,
+    paths: [
+      '/api/admin/system*',
+      '/api/config*',
+      '/api/system*'
+    ],
+    description: '系统全局配置管理服务',
+    healthCheck: '/health'
+  }
 };
 
 /**
@@ -56,53 +214,290 @@ export class MicroserviceRouter {
 
   /**
    * 初始化故障转移配置
+   * 基于微服务架构设计的服务依赖关系
    */
   private initFailoverConfig(): void {
-    // 配置服务间的故障转移关系
-    this.failoverConfig.set('student', ['admin']); // 学生服务可故障转移到管理员服务
-    this.failoverConfig.set('coach', ['admin']);   // 教练服务可故障转移到管理员服务
-    this.failoverConfig.set('grader', ['admin']);  // 阅卷服务可故障转移到管理员服务
+    // 配置服务间的故障转移关系 - 基于业务逻辑依赖
+    
+    // 用户管理相关服务可互相故障转移
+    this.failoverConfig.set('userManagement', ['auth']);
+    this.failoverConfig.set('auth', ['userManagement']);
+    
+    // 考试相关服务的故障转移链
+    this.failoverConfig.set('submission', ['examManagement', 'fileStorage']);
+    this.failoverConfig.set('examManagement', ['userManagement']);
+    
+    // 阅卷和成绩服务的故障转移
+    this.failoverConfig.set('grading', ['scoreStatistics', 'userManagement']);
+    this.failoverConfig.set('scoreStatistics', ['grading']);
+    
+    // 文件服务作为基础服务，可临时由系统配置服务处理
+    this.failoverConfig.set('fileStorage', ['systemConfig']);
+    
+    // 区域管理可由用户管理服务代理
+    this.failoverConfig.set('regionManagement', ['userManagement']);
+    
+    // 系统配置服务作为核心服务，由认证服务备份
+    this.failoverConfig.set('systemConfig', ['auth']);
   }
 
   /**
    * 根据API路径路由到对应的微服务
+   * 使用智能匹配算法，支持路径参数和优先级排序
    */
   routeRequest(apiPath: string): MicroserviceConfig {
     // 标准化路径（去除查询参数）
     const normalizedPath = apiPath.split('?')[0];
     
-    // 查找匹配的微服务
-    for (const [serviceName, config] of Object.entries(MICROSERVICE_CONFIG)) {
-      if (this.isPathMatch(normalizedPath, config.paths)) {
-        // 检查服务健康状态
-        if (this.isServiceHealthy(serviceName)) {
-          return config;
-        } else {
-          // 尝试故障转移
-          const fallbackService = this.getFallbackService(serviceName);
-          if (fallbackService) {
-            console.warn(`服务 ${serviceName} 不可用，切换到故障转移服务: ${fallbackService.name}`);
-            return fallbackService;
-          }
+    // 使用智能匹配查找最佳服务
+    const bestMatch = this.findBestMatch(normalizedPath);
+    
+    if (bestMatch) {
+      const { service, serviceName } = bestMatch;
+      
+      // 检查服务健康状态
+      if (this.isServiceHealthy(serviceName)) {
+        return service;
+      } else {
+        // 尝试故障转移
+        const fallbackService = this.getFallbackService(serviceName);
+        if (fallbackService) {
+          console.warn(`服务 ${serviceName} 不可用，切换到故障转移服务: ${fallbackService.name}`);
+          return fallbackService;
         }
+        
+        // 如果故障转移也失败，记录警告但仍返回原服务（可能恢复）
+        console.warn(`服务 ${serviceName} 及其故障转移服务均不可用，尝试使用原服务`);
+        return service;
       }
     }
 
-    // 如果没有找到匹配的服务，默认使用认证服务
+    // 如果没有找到匹配的服务，根据路径特征智能推断
+    const inferredService = this.inferServiceFromPath(normalizedPath);
+    if (inferredService) {
+      console.warn(`未找到精确匹配，根据路径特征推断使用服务: ${inferredService.name}`);
+      return inferredService;
+    }
+
+    // 最后默认使用认证服务
     console.warn(`未找到路径 ${apiPath} 对应的微服务，使用默认认证服务`);
     return MICROSERVICE_CONFIG.auth;
   }
 
   /**
+   * 根据路径特征智能推断服务
+   * 基于微服务职责划分的路径分析
+   */
+  private inferServiceFromPath(path: string): MicroserviceConfig | null {
+    // 1. 认证相关
+    if (path.includes('/auth/') || path.includes('/login') || path.includes('/register')) {
+      return MICROSERVICE_CONFIG.auth;
+    }
+    
+    // 2. 用户管理相关
+    if (path.includes('/admin/users') || path.includes('/coach-students') || 
+        path.includes('/profile') || path.includes('/password') || path.includes('/region-change')) {
+      return MICROSERVICE_CONFIG.userManagement;
+    }
+    
+    // 3. 考试管理相关
+    if (path.includes('/exams') || path.includes('/questions')) {
+      return MICROSERVICE_CONFIG.examManagement;
+    }
+    
+    // 4. 提交相关
+    if (path.includes('/submit') || path.includes('/submission') || path.includes('/upload')) {
+      return MICROSERVICE_CONFIG.submission;
+    }
+    
+    // 5. 阅卷相关
+    if (path.includes('/grader/tasks') || path.includes('/grading') || path.includes('/graders')) {
+      return MICROSERVICE_CONFIG.grading;
+    }
+    
+    // 6. 成绩统计相关
+    if (path.includes('/scores') || path.includes('/ranking') || path.includes('/dashboard') || 
+        path.includes('/statistics') || path.includes('/history')) {
+      return MICROSERVICE_CONFIG.scoreStatistics;
+    }
+    
+    // 7. 区域管理相关
+    if (path.includes('/regions') || path.includes('/provinces-schools')) {
+      return MICROSERVICE_CONFIG.regionManagement;
+    }
+    
+    // 8. 文件存储相关
+    if (path.includes('/files') || path.includes('/upload') || path.includes('/download') || 
+        path.includes('/images')) {
+      return MICROSERVICE_CONFIG.fileStorage;
+    }
+    
+    if (path.includes('/system') || path.includes('/settings') || path.includes('/config')) {
+      return MICROSERVICE_CONFIG.systemConfig;
+    }
+    
+    // 根据角色前缀进行二级推断
+    if (path.startsWith('/api/student/')) {
+      // 学生相关请求优先级：提交 > 考试 > 成绩 > 用户管理
+      if (path.includes('submit') || path.includes('upload')) return MICROSERVICE_CONFIG.submission;
+      if (path.includes('exam')) return MICROSERVICE_CONFIG.examManagement;
+      if (path.includes('score') || path.includes('dashboard')) return MICROSERVICE_CONFIG.scoreStatistics;
+      return MICROSERVICE_CONFIG.userManagement;
+    }
+    
+    if (path.startsWith('/api/coach/')) {
+      // 教练相关请求优先级：提交管理 > 考试管理 > 成绩统计 > 用户管理
+      if (path.includes('submission') || path.includes('upload')) return MICROSERVICE_CONFIG.submission;
+      if (path.includes('exam')) return MICROSERVICE_CONFIG.examManagement;
+      if (path.includes('score') || path.includes('statistics')) return MICROSERVICE_CONFIG.scoreStatistics;
+      return MICROSERVICE_CONFIG.userManagement;
+    }
+    
+    if (path.startsWith('/api/grader/')) {
+      // 阅卷员相关请求优先级：阅卷任务 > 成绩统计 > 文件 > 用户管理
+      if (path.includes('task') || path.includes('submission')) return MICROSERVICE_CONFIG.grading;
+      if (path.includes('statistics') || path.includes('history')) return MICROSERVICE_CONFIG.scoreStatistics;
+      if (path.includes('file') || path.includes('image')) return MICROSERVICE_CONFIG.fileStorage;
+      return MICROSERVICE_CONFIG.userManagement;
+    }
+    
+    if (path.startsWith('/api/admin/')) {
+      // 管理员相关请求优先级：用户管理 > 考试管理 > 阅卷管理 > 系统配置
+      if (path.includes('users') || path.includes('coach-students')) return MICROSERVICE_CONFIG.userManagement;
+      if (path.includes('exam') || path.includes('question')) return MICROSERVICE_CONFIG.examManagement;
+      if (path.includes('grading') || path.includes('graders')) return MICROSERVICE_CONFIG.grading;
+      if (path.includes('system') || path.includes('settings')) return MICROSERVICE_CONFIG.systemConfig;
+      return MICROSERVICE_CONFIG.userManagement; // 默认用户管理
+    }
+    
+    return null;
+  }
+
+  /**
    * 检查路径是否匹配
+   * 支持多种匹配模式：
+   * 1. 精确匹配：/api/auth/login
+   * 2. 通配符匹配：/api/student/*
+   * 3. 路径参数匹配：/api/admin/users/{userId}
+   * 4. 复合路径参数：/api/grader/tasks/{taskId}/questions/{questionNumber}
    */
   private isPathMatch(requestPath: string, servicePaths: string[]): boolean {
     return servicePaths.some(servicePath => {
-      // 支持通配符匹配
-      const pattern = servicePath.replace(/\*/g, '.*');
-      const regex = new RegExp(`^${pattern}`);
-      return regex.test(requestPath);
+      // 1. 精确匹配
+      if (servicePath === requestPath) {
+        return true;
+      }
+
+      // 2. 通配符匹配（* 匹配任意字符）
+      if (servicePath.includes('*')) {
+        const pattern = servicePath.replace(/\*/g, '.*');
+        const regex = new RegExp(`^${pattern}`);
+        return regex.test(requestPath);
+      }
+
+      // 3. 路径参数匹配（处理 {param} 格式）
+      if (servicePath.includes('{') && servicePath.includes('}')) {
+        const pathPattern = this.convertPathParamsToRegex(servicePath);
+        const regex = new RegExp(`^${pathPattern}$`);
+        return regex.test(requestPath);
+      }
+
+      // 4. 前缀匹配（用于 API 路径分组）
+      if (requestPath.startsWith(servicePath)) {
+        return true;
+      }
+
+      return false;
     });
+  }
+
+  /**
+   * 将路径参数模式转换为正则表达式
+   * 例如：/api/users/{userId}/profile -> /api/users/([^/]+)/profile
+   */
+  private convertPathParamsToRegex(pathPattern: string): string {
+    return pathPattern
+      // 转义特殊字符
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      // 将 \{param\} 替换为捕获组
+      .replace(/\\{[^}]+\\}/g, '([^/]+)')
+      // 将 \* 替换为 .*
+      .replace(/\\\*/g, '.*');
+  }
+
+  /**
+   * 智能路径匹配 - 按优先级排序
+   * 优先级：精确匹配 > 路径参数匹配 > 前缀匹配 > 通配符匹配
+   */
+  private findBestMatch(requestPath: string): { service: MicroserviceConfig; serviceName: string } | null {
+    const matches: Array<{ 
+      service: MicroserviceConfig; 
+      serviceName: string; 
+      priority: number; 
+      matchLength: number 
+    }> = [];
+
+    for (const [serviceName, config] of Object.entries(MICROSERVICE_CONFIG)) {
+      for (const servicePath of config.paths) {
+        let priority = 0;
+        let matchLength = 0;
+
+        // 精确匹配 - 最高优先级
+        if (servicePath === requestPath) {
+          priority = 4;
+          matchLength = servicePath.length;
+        }
+        // 路径参数匹配
+        else if (servicePath.includes('{') && servicePath.includes('}')) {
+          const pathPattern = this.convertPathParamsToRegex(servicePath);
+          const regex = new RegExp(`^${pathPattern}$`);
+          if (regex.test(requestPath)) {
+            priority = 3;
+            matchLength = servicePath.length;
+          }
+        }
+        // 前缀匹配
+        else if (requestPath.startsWith(servicePath) && !servicePath.includes('*')) {
+          priority = 2;
+          matchLength = servicePath.length;
+        }
+        // 通配符匹配
+        else if (servicePath.includes('*')) {
+          const pattern = servicePath.replace(/\*/g, '.*');
+          const regex = new RegExp(`^${pattern}`);
+          if (regex.test(requestPath)) {
+            priority = 1;
+            matchLength = servicePath.replace('*', '').length;
+          }
+        }
+
+        if (priority > 0) {
+          matches.push({
+            service: config,
+            serviceName,
+            priority,
+            matchLength
+          });
+        }
+      }
+    }
+
+    if (matches.length === 0) {
+      return null;
+    }
+
+    // 按优先级和匹配长度排序，返回最佳匹配
+    matches.sort((a, b) => {
+      if (a.priority !== b.priority) {
+        return b.priority - a.priority; // 优先级高的在前
+      }
+      return b.matchLength - a.matchLength; // 匹配长度长的在前
+    });
+
+    return {
+      service: matches[0].service,
+      serviceName: matches[0].serviceName
+    };
   }
 
   /**
@@ -192,6 +587,97 @@ export class MicroserviceRouter {
    */
   setServiceStatus(serviceName: string, isHealthy: boolean): void {
     this.serviceHealthStatus.set(serviceName, isHealthy);
+  }
+
+  /**
+   * 构建带路径参数的 API URL
+   * @param pathTemplate 路径模板，如 '/api/users/{userId}/profile'
+   * @param params 路径参数，如 { userId: '123' }
+   * @param queryParams 查询参数，如 { page: 1, size: 10 }
+   */
+  buildApiUrlWithParams(
+    pathTemplate: string, 
+    params: Record<string, string | number> = {}, 
+    queryParams: Record<string, any> = {}
+  ): string {
+    // 替换路径参数
+    let path = pathTemplate;
+    Object.entries(params).forEach(([key, value]) => {
+      path = path.replace(`{${key}}`, String(value));
+    });
+
+    // 添加查询参数
+    const queryString = new URLSearchParams();
+    Object.entries(queryParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryString.append(key, String(value));
+      }
+    });
+
+    const fullPath = queryString.toString() ? `${path}?${queryString.toString()}` : path;
+    
+    // 通过路由器获取完整 URL
+    return this.buildApiUrl(fullPath);
+  }
+
+  /**
+   * 验证路径参数是否完整
+   * @param pathTemplate 路径模板
+   * @param params 提供的参数
+   */
+  validatePathParams(pathTemplate: string, params: Record<string, any>): { isValid: boolean; missing: string[] } {
+    const requiredParams = this.extractPathParams(pathTemplate);
+    const missing = requiredParams.filter(param => !(param in params) || params[param] === undefined);
+    
+    return {
+      isValid: missing.length === 0,
+      missing
+    };
+  }
+
+  /**
+   * 从路径模板中提取参数名
+   * @param pathTemplate 如 '/api/users/{userId}/exams/{examId}'
+   * @returns ['userId', 'examId']
+   */
+  private extractPathParams(pathTemplate: string): string[] {
+    const matches = pathTemplate.match(/\{([^}]+)\}/g);
+    return matches ? matches.map(match => match.slice(1, -1)) : [];
+  }
+
+  /**
+   * 获取服务配置信息
+   * @param serviceName 服务名称
+   */
+  getServiceConfig(serviceName: string): MicroserviceConfig | null {
+    return MICROSERVICE_CONFIG[serviceName] || null;
+  }
+
+  /**
+   * 获取所有服务配置
+   */
+  getAllServiceConfigs(): Record<string, MicroserviceConfig> {
+    return { ...MICROSERVICE_CONFIG };
+  }
+
+  /**
+   * 根据路径获取匹配的服务信息
+   * @param apiPath API 路径
+   */
+  getMatchingServiceInfo(apiPath: string): { serviceName: string; config: MicroserviceConfig } | null {
+    const normalizedPath = apiPath.split('?')[0];
+    const bestMatch = this.findBestMatch(normalizedPath);
+    
+    if (bestMatch) {
+      // 找到对应的服务名称
+      for (const [serviceName, config] of Object.entries(MICROSERVICE_CONFIG)) {
+        if (config === bestMatch.service) {
+          return { serviceName, config };
+        }
+      }
+    }
+    
+    return null;
   }
 }
 
