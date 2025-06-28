@@ -183,25 +183,9 @@ class CoachAPI extends BaseAPI {
 
   // 上传答案图片
   static async uploadAnswerImage(examId: string, file: File, questionNumber: number, studentUsername: string): Promise<ApiResponse<any>> {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('questionNumber', questionNumber.toString());
-      formData.append('studentUsername', studentUsername);
-
-      const token = authService.getToken();
-      const response = await fetch(`/api/coach/exams/${examId}/upload-answer`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('上传答案图片失败:', error);
-      throw error;
-    }
+    // 使用新的文件上传服务
+    const FileUploadService = await import('../services/fileUploadService');
+    return FileUploadService.default.uploadAnswerImageByCoach(file, examId, questionNumber, studentUsername);
   }
 
   // 获取提交记录
@@ -348,23 +332,9 @@ class CoachAPI extends BaseAPI {
 
   // 上传头像
   static async uploadAvatar(file: File): Promise<ApiResponse<any>> {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const token = authService.getToken();
-      const response = await fetch(`/api/coach/profile/upload-avatar`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('上传头像失败:', error);
-      throw error;
-    }
+    // 使用新的文件上传服务
+    const FileUploadService = await import('../services/fileUploadService');
+    return FileUploadService.default.uploadAvatar(file);
   }
 
   // ===================== 成绩管理模块 =====================

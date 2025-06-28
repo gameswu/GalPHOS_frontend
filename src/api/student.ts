@@ -102,49 +102,9 @@ class StudentAPI extends BaseAPI {
 
   // 上传答题图片
   static async uploadAnswerImage(file: File, examId: string, questionNumber: number): Promise<ApiResponse<any>> {
-    try {
-      if (!file) {
-        throw new Error('请选择要上传的文件');
-      }
-      this.validateRequired(examId, '考试ID');
-      if (questionNumber <= 0) {
-        throw new Error('题号必须大于0');
-      }
-
-      // 验证文件类型
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-      if (!allowedTypes.includes(file.type)) {
-        throw new Error('只支持 JPG、PNG、GIF 格式的图片');
-      }
-
-      // 验证文件大小（10MB）
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        throw new Error('文件大小不能超过10MB');
-      }
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('examId', examId);
-      formData.append('questionNumber', questionNumber.toString());
-
-      const token = authService.getToken();
-      const response = await fetch(`/api/student/upload/answer-image`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      return this.handleApiError(error, '上传答题图片');
-    }
+    // 使用新的文件上传服务
+    const FileUploadService = await import('../services/fileUploadService');
+    return FileUploadService.default.uploadAnswerImage(file, examId, questionNumber);
   }
 
   // 2. 个人资料管理 API
@@ -199,43 +159,9 @@ class StudentAPI extends BaseAPI {
 
   // 上传头像
   static async uploadAvatar(file: File): Promise<ApiResponse<any>> {
-    try {
-      if (!file) {
-        throw new Error('请选择要上传的文件');
-      }
-
-      // 验证文件类型
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-      if (!allowedTypes.includes(file.type)) {
-        throw new Error('只支持 JPG、PNG、GIF 格式的图片');
-      }
-
-      // 验证文件大小（5MB）
-      const maxSize = 5 * 1024 * 1024;
-      if (file.size > maxSize) {
-        throw new Error('文件大小不能超过5MB');
-      }
-
-      const formData = new FormData();
-      formData.append('avatar', file);
-
-      const token = authService.getToken();
-      const response = await fetch(`/api/student/upload/avatar`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      return this.handleApiError(error, '上传头像');
-    }
+    // 使用新的文件上传服务
+    const FileUploadService = await import('../services/fileUploadService');
+    return FileUploadService.default.uploadAvatar(file);
   }
 
   // 3. 赛区管理 API
@@ -283,12 +209,9 @@ class StudentAPI extends BaseAPI {
       this.validateRequired(fileId, '文件ID');
       this.validateRequired(fileName, '文件名');
 
-      const token = authService.getToken();
-      const response = await fetch(`/api/student/files/download/${fileId}`, {
+      const response = await fetch(this.getApiUrl(`/api/student/files/download/${fileId}`), {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: this.getAuthHeaders(),
       });
 
       if (!response.ok) {

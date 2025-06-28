@@ -1,6 +1,5 @@
 // 管理员相关API接口
 import { PasswordHasher } from '../utils/passwordHasher';
-import { authService } from '../services/authService';
 import { ApiResponse, BaseAPI, PaginatedResponse } from '../types/api';
 import { 
   Exam,
@@ -328,30 +327,9 @@ class AdminAPI extends BaseAPI {
 
   // 上传考试文件
   static async uploadExamFiles(examId: string, files: FileList): Promise<ApiResponse<any>> {
-    this.validateRequired(examId, '考试ID');
-    this.validateRequired(files, '考试文件');
-
-    if (files.length === 0) {
-      throw new Error('请选择要上传的文件');
-    }
-
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append('files', files[i]);
-    }
-
-    return this.makeRequest<any>(
-      `/api/admin/exams/${examId}/files`,
-      {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${authService.getToken()}`,
-          // 不设置 Content-Type，让浏览器自动设置 multipart/form-data
-        },
-      },
-      '上传考试文件'
-    );
+    // 使用新的文件上传服务
+    const FileUploadService = await import('../services/fileUploadService');
+    return FileUploadService.default.uploadExamFiles(files, examId);
   }
 
   // ===================== 题目分值管理模块 =====================
@@ -444,10 +422,7 @@ class AdminAPI extends BaseAPI {
       {
         method: 'POST',
         body: formData,
-        headers: {
-          'Authorization': `Bearer ${authService.getToken()}`,
-          // 不设置 Content-Type，让浏览器自动设置 multipart/form-data
-        },
+        // BaseAPI会自动添加认证头
       },
       '导入题目分值配置'
     );
@@ -698,35 +673,9 @@ class AdminAPI extends BaseAPI {
   
   // 上传头像
   static async uploadAvatar(file: File): Promise<ApiResponse<any>> {
-    this.validateRequired(file, '头像文件');
-
-    // 验证文件类型
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      throw new Error('只支持 JPG、PNG、GIF 格式的图片');
-    }
-
-    // 验证文件大小 (2MB)
-    const maxSize = 2 * 1024 * 1024;
-    if (file.size > maxSize) {
-      throw new Error('头像文件大小不能超过 2MB');
-    }
-
-    const formData = new FormData();
-    formData.append('avatar', file);
-
-    return this.makeRequest<any>(
-      `/api/admin/system/upload/avatar`,
-      {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${authService.getToken()}`,
-          // 不设置 Content-Type，让浏览器自动设置 multipart/form-data
-        },
-      },
-      '上传头像'
-    );
+    // 使用新的文件上传服务
+    const FileUploadService = await import('../services/fileUploadService');
+    return FileUploadService.default.uploadAvatar(file);
   }
 
   // ===================== 个人资料模块 =====================

@@ -514,7 +514,7 @@ class GraderAPI extends BaseAPI {
     this.validateRequired(fileType, '文件类型');
 
     try {
-      const response = await fetch(`/api/grader/files/${fileId}/download?type=${fileType}`, {
+      const response = await fetch(this.getApiUrl(`/api/grader/files/${fileId}/download?type=${fileType}`), {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
