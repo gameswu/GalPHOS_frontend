@@ -7,24 +7,34 @@ import Student from './pages/Student';
 import Grader from './pages/Grader';
 import Coach from './pages/Coach';
 import ProtectedRoute from './components/ProtectedRoute';
+import MaintenanceAlert from './components/MaintenanceAlert';
 import { NotificationProvider, useNotification } from './contexts/NotificationContext';
-import NotificationContainer from './components/NotificationContainer';
 import { BaseAPI } from './types/api';
+import { systemConfig } from './utils/systemConfig';
 import './App.css';
 
 // App内容组件（需要在NotificationProvider内部使用通知）
 const AppContent: React.FC = () => {
   const notification = useNotification();
 
-  // 初始化全局通知方法
+  // 初始化全局通知方法和系统配置
   useEffect(() => {
     BaseAPI.setGlobalNotificationMethods({
       showError: notification.showError,
+      showSuccess: notification.showSuccess,
+      showWarning: notification.showWarning,
+      showInfo: notification.showInfo,
     });
+
+    // 初始化系统配置（应用默认值）
+    // 这会设置默认的网站名称 "GalPHOS" 和描述
+    systemConfig.updateConfig({});
   }, [notification]);
 
   return (
     <>
+      {/* 全局维护模式公告 */}
+      <MaintenanceAlert />
       <Router>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -52,7 +62,6 @@ const AppContent: React.FC = () => {
           } />
         </Routes>
       </Router>
-      <NotificationContainer />
     </>
   );
 };

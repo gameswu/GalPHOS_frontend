@@ -109,16 +109,39 @@ class StudentAPI extends BaseAPI {
 
   // 2. 个人资料管理 API
 
-  // 更新个人资料
-  static async updateProfile(data: { username: string; avatar?: string }): Promise<ApiResponse<any>> {
+  // 获取个人资料
+  static async getProfile(): Promise<ApiResponse<any>> {
     try {
-      this.validateRequired(data.username, '用户名');
+      return await this.makeRequest<any>(
+        `/api/student/profile`,
+        {
+          method: 'GET',
+        },
+        '获取个人资料'
+      );
+    } catch (error) {
+      return this.handleApiError(error, '获取个人资料');
+    }
+  }
+
+  // 更新个人资料
+  static async updateProfile(profileData: { 
+    username?: string; 
+    name?: string;
+    phone?: string;
+    avatar?: string;
+  }): Promise<ApiResponse<any>> {
+    try {
+      // 验证手机号格式
+      if (profileData.phone && !/^1[3-9]\d{9}$/.test(profileData.phone)) {
+        throw new Error('手机号格式不正确');
+      }
 
       return await this.makeRequest<any>(
         `/api/student/profile`,
         {
           method: 'PUT',
-          body: JSON.stringify(data),
+          body: JSON.stringify(profileData),
         },
         '更新个人资料'
       );
@@ -244,18 +267,18 @@ class StudentAPI extends BaseAPI {
 
   // 5. 统计数据 API
 
-  // 获取学生仪表板数据
-  static async getDashboardData(): Promise<ApiResponse<DashboardData>> {
+  // 获取仪表板数据
+  static async getDashboardStats(): Promise<ApiResponse<DashboardData>> {
     try {
       return await this.makeRequest<DashboardData>(
         `/api/student/dashboard`,
         {
           method: 'GET',
         },
-        '获取学生仪表板数据'
+        '获取仪表板数据'
       );
     } catch (error) {
-      return this.handleApiError(error, '获取学生仪表板数据');
+      return this.handleApiError(error, '获取仪表板数据');
     }
   }
 

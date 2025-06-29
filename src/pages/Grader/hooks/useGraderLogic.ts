@@ -276,11 +276,10 @@ export const useGraderLogic = () => {
   // 修改密码
   const changePassword = useCallback(async (data: { oldPassword: string; newPassword: string }) => {
     try {
-      // 转换为API期望的格式
+      // 使用统一的API参数格式
       const passwordData = {
-        currentPassword: data.oldPassword,
-        newPassword: data.newPassword,
-        confirmPassword: data.newPassword
+        oldPassword: data.oldPassword,
+        newPassword: data.newPassword
       };
 
       const response = await GraderAPI.changePassword(passwordData);

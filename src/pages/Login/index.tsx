@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Form, message } from 'antd';
 import LoginUI from './LoginUI';
 import AuthAPI from '../../api/auth';
+import RegionAPI from '../../api/region';
 import { authService } from '../../services/authService';
 
 // 统一的类型定义 - 登录表单移除赛区字段
@@ -46,8 +47,7 @@ interface School {
   name: string;
 }
 
-// 省份和学校数据（通过API获取）
-const mockProvinceData: Province[] = [];
+
 
 // 自定义Hook
 const useLogin = () => {
@@ -56,7 +56,7 @@ const useLogin = () => {
   const [registerForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
-  const [provinces, setProvinces] = useState<Province[]>(mockProvinceData);
+  const [provinces, setProvinces] = useState<Province[]>([]);
   const [selectedProvince, setSelectedProvince] = useState<string>('');
   const [availableSchools, setAvailableSchools] = useState<School[]>([]);
   
@@ -189,15 +189,16 @@ const useLogin = () => {
   // 加载省份和学校数据
   const loadProvincesData = async () => {
     try {
-      const response = await AuthAPI.getProvincesAndSchools();
-      if (response.success) {
+      const response = await RegionAPI.getProvincesAndSchools();
+      if (response.success && response.data) {
         setProvinces(response.data);
       } else {
-        message.error(response.message || '加载省份数据失败');
+        console.error('获取省份数据失败:', response.message);
+        message.warning('获取省份数据失败，请刷新页面重试');
       }
     } catch (error) {
       console.error('加载省份数据失败:', error);
-      message.error('加载省份数据失败');
+      message.warning('加载省份数据失败，请检查网络连接');
     }
   };
 

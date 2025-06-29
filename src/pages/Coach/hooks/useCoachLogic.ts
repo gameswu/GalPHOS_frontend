@@ -20,17 +20,6 @@ export interface Student {
   createdAt: string;
 }
 
-// 模拟数据
-const mockStudents: Student[] = [
-  // 这里可以添加模拟数据用于开发调试
-  // 实际使用时应该通过API获取数据
-];
-
-const mockExams: Exam[] = [
-  // 这里可以添加模拟数据用于开发调试
-  // 实际使用时应该通过API获取数据
-];
-
 export const useCoachLogic = () => {
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);

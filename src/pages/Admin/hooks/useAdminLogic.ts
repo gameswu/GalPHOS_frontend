@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { message } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../../../contexts/NotificationContext';
 import AdminAPI from '../../../api/admin';
 import { authService } from '../../../services/authService';
 import type { 
@@ -51,6 +51,7 @@ export interface ApprovedUser {
 
 export const useAdminLogic = () => {
   const navigate = useNavigate();
+  const notification = useNotification();
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [approvedUsers, setApprovedUsers] = useState<ApprovedUser[]>([]);
   const [regions, setRegions] = useState<Province[]>([]);
@@ -83,14 +84,14 @@ export const useAdminLogic = () => {
       const isAuthenticated = await authService.isAuthenticated();
       
       if (!isAuthenticated) {
-        message.error('请先登录');
+        notification.showError('请先登录');
         navigate('/admin-login');
         return;
       }
       
       const user = authService.getCurrentUser();
       if (!user || !authService.isAdmin()) {
-        message.error('权限不足');
+        notification.showError('权限不足');
         navigate('/login');
         return;
       }
@@ -120,12 +121,12 @@ export const useAdminLogic = () => {
       if (response.success && response.data) {
         setPendingUsers(response.data);
       } else {
-        message.error(response.message || '获取待审核用户失败');
+        notification.showError(response.message || '获取待审核用户失败');
         setPendingUsers([]);
       }
     } catch (error) {
       console.error('加载待审核用户失败:', error);
-      message.error('网络错误，无法获取待审核用户');
+      notification.showError('网络错误，无法获取待审核用户');
       setPendingUsers([]);
     } finally {
       setLoading(false);
@@ -140,12 +141,12 @@ export const useAdminLogic = () => {
       if (response.success && response.data) {
         setApprovedUsers(response.data.users || []);
       } else {
-        message.error(response.message || '获取已审核用户失败');
+        notification.showError(response.message || '获取已审核用户失败');
         setApprovedUsers([]);
       }
     } catch (error) {
       console.error('加载已审核用户失败:', error);
-      message.error('网络错误，无法获取已审核用户');
+      notification.showError('网络错误，无法获取已审核用户');
       setApprovedUsers([]);
     } finally {
       setLoading(false);
@@ -160,12 +161,12 @@ export const useAdminLogic = () => {
       if (response.success && response.data) {
         setRegions(response.data);
       } else {
-        message.error(response.message || '获取赛区数据失败');
+        notification.showError(response.message || '获取赛区数据失败');
         setRegions([]);
       }
     } catch (error) {
       console.error('加载赛区数据失败:', error);
-      message.error('网络错误，无法获取赛区数据');
+      notification.showError('网络错误，无法获取赛区数据');
       setRegions([]);
     } finally {
       setLoading(false);
@@ -180,12 +181,12 @@ export const useAdminLogic = () => {
       if (response.success && response.data) {
         setExams(response.data);
       } else {
-        message.error(response.message || '获取考试数据失败');
+        notification.showError(response.message || '获取考试数据失败');
         setExams([]);
       }
     } catch (error) {
       console.error('加载考试数据失败:', error);
-      message.error('网络错误，无法获取考试数据');
+      notification.showError('网络错误，无法获取考试数据');
       setExams([]);
     } finally {
       setLoading(false);
@@ -200,12 +201,12 @@ export const useAdminLogic = () => {
       if (response.success && response.data) {
         setGraders(response.data);
       } else {
-        message.error(response.message || '获取阅卷者数据失败');
+        notification.showError(response.message || '获取阅卷者数据失败');
         setGraders([]);
       }
     } catch (error) {
       console.error('加载阅卷者数据失败:', error);
-      message.error('网络错误，无法获取阅卷者数据');
+      notification.showError('网络错误，无法获取阅卷者数据');
       setGraders([]);
     } finally {
       setLoading(false);
@@ -220,12 +221,12 @@ export const useAdminLogic = () => {
       if (response.success && response.data) {
         setGradingTasks(Array.isArray(response.data) ? response.data : (response.data as any).tasks || []);
       } else {
-        message.error(response.message || '获取阅卷任务失败');
+        notification.showError(response.message || '获取阅卷任务失败');
         setGradingTasks([]);
       }
     } catch (error) {
       console.error('加载阅卷任务失败:', error);
-      message.error('网络错误，无法获取阅卷任务');
+      notification.showError('网络错误，无法获取阅卷任务');
       setGradingTasks([]);
     } finally {
       setLoading(false);
@@ -257,16 +258,16 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.approveUser(userId, 'approve');
       if (response.success) {
-        message.success('用户审核通过');
+        notification.showSuccess('用户审核通过');
         // 重新加载数据
         await loadPendingUsers();
         await loadApprovedUsers();
       } else {
-        message.error(response.message || '审核失败');
+        notification.showError(response.message || '审核失败');
       }
     } catch (error) {
       console.error('审核用户失败:', error);
-      message.error('网络错误，审核失败');
+      notification.showError('网络错误，审核失败');
     } finally {
       setLoading(false);
     }
@@ -278,15 +279,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.approveUser(userId, 'reject', reason);
       if (response.success) {
-        message.success('用户审核拒绝');
+        notification.showSuccess('用户审核拒绝');
         // 重新加载数据
         await loadPendingUsers();
       } else {
-        message.error(response.message || '操作失败');
+        notification.showError(response.message || '操作失败');
       }
     } catch (error) {
       console.error('审核拒绝失败:', error);
-      message.error('网络错误，操作失败');
+      notification.showError('网络错误，操作失败');
     } finally {
       setLoading(false);
     }
@@ -298,15 +299,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.updateUserStatus(userId, 'disabled');
       if (response.success) {
-        message.success('用户已禁用');
+        notification.showSuccess('用户已禁用');
         // 重新加载数据
         await loadApprovedUsers();
       } else {
-        message.error(response.message || '操作失败');
+        notification.showError(response.message || '操作失败');
       }
     } catch (error) {
       console.error('禁用用户失败:', error);
-      message.error('网络错误，操作失败');
+      notification.showError('网络错误，操作失败');
     } finally {
       setLoading(false);
     }
@@ -318,15 +319,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.updateUserStatus(userId, 'active');
       if (response.success) {
-        message.success('用户已启用');
+        notification.showSuccess('用户已启用');
         // 重新加载数据
         await loadApprovedUsers();
       } else {
-        message.error(response.message || '操作失败');
+        notification.showError(response.message || '操作失败');
       }
     } catch (error) {
       console.error('启用用户失败:', error);
-      message.error('网络错误，操作失败');
+      notification.showError('网络错误，操作失败');
     } finally {
       setLoading(false);
     }
@@ -338,15 +339,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.deleteUser(userId);
       if (response.success) {
-        message.success('用户已删除');
+        notification.showSuccess('用户已删除');
         // 重新加载数据
         await loadApprovedUsers();
       } else {
-        message.error(response.message || '删除失败');
+        notification.showError(response.message || '删除失败');
       }
     } catch (error) {
       console.error('删除用户失败:', error);
-      message.error('网络错误，删除失败');
+      notification.showError('网络错误，删除失败');
     } finally {
       setLoading(false);
     }
@@ -358,15 +359,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.addProvince(provinceName);
       if (response.success) {
-        message.success('省份添加成功');
+        notification.showSuccess('省份添加成功');
         // 重新加载赛区数据
         await loadRegions();
       } else {
-        message.error(response.message || '添加省份失败');
+        notification.showError(response.message || '添加省份失败');
       }
     } catch (error) {
       console.error('添加省份失败:', error);
-      message.error('网络错误，添加省份失败');
+      notification.showError('网络错误，添加省份失败');
     } finally {
       setLoading(false);
     }
@@ -378,15 +379,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.addSchool(provinceId, schoolName);
       if (response.success) {
-        message.success('学校添加成功');
+        notification.showSuccess('学校添加成功');
         // 重新加载赛区数据
         await loadRegions();
       } else {
-        message.error(response.message || '添加学校失败');
+        notification.showError(response.message || '添加学校失败');
       }
     } catch (error) {
       console.error('添加学校失败:', error);
-      message.error('网络错误，添加学校失败');
+      notification.showError('网络错误，添加学校失败');
     } finally {
       setLoading(false);
     }
@@ -398,15 +399,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.updateSchool(schoolId, { name: schoolName });
       if (response.success) {
-        message.success('学校更新成功');
+        notification.showSuccess('学校更新成功');
         // 重新加载赛区数据
         await loadRegions();
       } else {
-        message.error(response.message || '更新学校失败');
+        notification.showError(response.message || '更新学校失败');
       }
     } catch (error) {
       console.error('更新学校失败:', error);
-      message.error('网络错误，更新学校失败');
+      notification.showError('网络错误，更新学校失败');
     } finally {
       setLoading(false);
     }
@@ -418,15 +419,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.deleteSchool(schoolId);
       if (response.success) {
-        message.success('学校删除成功');
+        notification.showSuccess('学校删除成功');
         // 重新加载赛区数据
         await loadRegions();
       } else {
-        message.error(response.message || '删除学校失败');
+        notification.showError(response.message || '删除学校失败');
       }
     } catch (error) {
       console.error('删除学校失败:', error);
-      message.error('网络错误，删除学校失败');
+      notification.showError('网络错误，删除学校失败');
     } finally {
       setLoading(false);
     }
@@ -438,15 +439,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.deleteProvince(provinceId);
       if (response.success) {
-        message.success('省份删除成功');
+        notification.showSuccess('省份删除成功');
         // 重新加载赛区数据
         await loadRegions();
       } else {
-        message.error(response.message || '删除省份失败');
+        notification.showError(response.message || '删除省份失败');
       }
     } catch (error) {
       console.error('删除省份失败:', error);
-      message.error('网络错误，删除省份失败');
+      notification.showError('网络错误，删除省份失败');
     } finally {
       setLoading(false);
     }
@@ -466,17 +467,17 @@ export const useAdminLogic = () => {
         maxScore: 100 // 默认100分
       });
       if (response.success && response.data) {
-        message.success('考试创建成功');
+        notification.showSuccess('考试创建成功');
         // 重新加载考试数据
         await loadExams();
         return response.data.id;
       } else {
-        message.error(response.message || '创建考试失败');
+        notification.showError(response.message || '创建考试失败');
         throw new Error(response.message || '创建考试失败');
       }
     } catch (error) {
       console.error('创建考试失败:', error);
-      message.error('网络错误，创建考试失败');
+      notification.showError('网络错误，创建考试失败');
       throw error;
     } finally {
       setLoading(false);
@@ -496,16 +497,16 @@ export const useAdminLogic = () => {
         duration: examData.duration
       });
       if (response.success) {
-        message.success('考试更新成功');
+        notification.showSuccess('考试更新成功');
         // 重新加载考试数据
         await loadExams();
       } else {
-        message.error(response.message || '更新考试失败');
+        notification.showError(response.message || '更新考试失败');
         throw new Error(response.message || '更新考试失败');
       }
     } catch (error) {
       console.error('更新考试失败:', error);
-      message.error('网络错误，更新考试失败');
+      notification.showError('网络错误，更新考试失败');
       throw error;
     } finally {
       setLoading(false);
@@ -518,15 +519,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.publishExam(examId);
       if (response.success) {
-        message.success('考试已发布');
+        notification.showSuccess('考试已发布');
         // 重新加载考试数据
         await loadExams();
       } else {
-        message.error(response.message || '发布考试失败');
+        notification.showError(response.message || '发布考试失败');
       }
     } catch (error) {
       console.error('发布考试失败:', error);
-      message.error('网络错误，发布考试失败');
+      notification.showError('网络错误，发布考试失败');
     } finally {
       setLoading(false);
     }
@@ -538,15 +539,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.unpublishExam(examId);
       if (response.success) {
-        message.success('考试已撤回');
+        notification.showSuccess('考试已撤回');
         // 重新加载考试数据
         await loadExams();
       } else {
-        message.error(response.message || '撤回考试失败');
+        notification.showError(response.message || '撤回考试失败');
       }
     } catch (error) {
       console.error('撤回考试失败:', error);
-      message.error('网络错误，撤回考试失败');
+      notification.showError('网络错误，撤回考试失败');
     } finally {
       setLoading(false);
     }
@@ -558,15 +559,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.deleteExam(examId);
       if (response.success) {
-        message.success('考试删除成功');
+        notification.showSuccess('考试删除成功');
         // 重新加载考试数据
         await loadExams();
       } else {
-        message.error(response.message || '删除考试失败');
+        notification.showError(response.message || '删除考试失败');
       }
     } catch (error) {
       console.error('删除考试失败:', error);
-      message.error('网络错误，删除考试失败');
+      notification.showError('网络错误，删除考试失败');
     } finally {
       setLoading(false);
     }
@@ -575,15 +576,35 @@ export const useAdminLogic = () => {
   // 文件上传
   const uploadFile = useCallback(async (file: File, type: 'question' | 'answer' | 'answerSheet'): Promise<ExamFile> => {
     try {
-      // 对于考试文件上传，我们需要examId，这里暂时模拟返回
-      // 实际使用时应该传入examId参数
+      // 使用文件上传服务的通用文件上传方法
+      const FileUploadService = await import('../../../services/fileUploadService');
+      const result = await FileUploadService.default.uploadFile(file, {
+        category: 'exam-file',
+        relatedId: '', // examId暂时为空，实际使用时需要传入
+        allowedTypes: [
+          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+          'application/pdf', 'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'text/plain'
+        ],
+        maxSize: 50 * 1024 * 1024 // 50MB
+      });
+      
+      if (!result.success || !result.data) {
+        throw new Error(result.message || '文件上传失败');
+      }
+      
+      const uploadedFile = result.data;
       const examFile: ExamFile = {
-        id: `${type}_${Date.now()}`,
-        name: file.name,
-        url: `/files/${file.name}`,
-        size: file.size,
-        uploadTime: new Date().toISOString()
+        id: uploadedFile.fileId,
+        name: uploadedFile.fileName,
+        url: uploadedFile.fileUrl,
+        size: uploadedFile.fileSize,
+        uploadTime: uploadedFile.uploadTime
       };
+      
       return examFile;
     } catch (error) {
       console.error('文件上传失败:', error);
@@ -601,15 +622,15 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.assignGradingTask(examId, questionNumber, graderIds);
       if (response.success) {
-        message.success('阅卷任务分配成功');
+        notification.showSuccess('阅卷任务分配成功');
         // 重新加载阅卷任务数据
         await loadGradingTasks();
       } else {
-        message.error(response.message || '分配阅卷任务失败');
+        notification.showError(response.message || '分配阅卷任务失败');
       }
     } catch (error) {
       console.error('分配阅卷任务失败:', error);
-      message.error('网络错误，分配阅卷任务失败');
+      notification.showError('网络错误，分配阅卷任务失败');
     } finally {
       setLoading(false);
     }
@@ -622,12 +643,12 @@ export const useAdminLogic = () => {
       if (response.success && response.data) {
         return response.data;
       } else {
-        message.error(response.message || '获取阅卷进度失败');
+        notification.showError(response.message || '获取阅卷进度失败');
         return null;
       }
     } catch (error) {
       console.error('获取阅卷进度失败:', error);
-      message.error('网络错误，获取阅卷进度失败');
+      notification.showError('网络错误，获取阅卷进度失败');
       return null;
     }
   }, []);
@@ -637,12 +658,12 @@ export const useAdminLogic = () => {
     try {
       setLoading(true);
       // 这里需要根据实际API调整
-      message.success('阅卷进度更新成功');
+      notification.showSuccess('阅卷进度更新成功');
       // 重新加载阅卷任务数据
       await loadGradingTasks();
     } catch (error) {
       console.error('更新阅卷进度失败:', error);
-      message.error('网络错误，更新阅卷进度失败');
+      notification.showError('网络错误，更新阅卷进度失败');
     } finally {
       setLoading(false);
     }
@@ -656,7 +677,7 @@ export const useAdminLogic = () => {
   // 退出登录
   const handleLogout = useCallback(() => {
     authService.clearAuthData();
-    message.success('退出登录成功');
+    notification.showSuccess('退出登录成功');
     navigate('/admin-login');
   }, [navigate]);
 
@@ -668,12 +689,12 @@ export const useAdminLogic = () => {
       if (response.success && response.data) {
         setAdminUsers(response.data);
       } else {
-        message.error(response.message || '获取管理员数据失败');
+        notification.showError(response.message || '获取管理员数据失败');
         setAdminUsers([]);
       }
     } catch (error) {
       console.error('加载管理员数据失败:', error);
-      message.error('网络错误，无法获取管理员数据');
+      notification.showError('网络错误，无法获取管理员数据');
       setAdminUsers([]);
     } finally {
       setLoading(false);
@@ -688,12 +709,12 @@ export const useAdminLogic = () => {
       if (response.success && response.data) {
         setSystemSettings(response.data);
       } else {
-        message.error(response.message || '获取系统设置失败');
+        notification.showError(response.message || '获取系统设置失败');
         setSystemSettings(null);
       }
     } catch (error) {
       console.error('加载系统设置失败:', error);
-      message.error('网络错误，无法获取系统设置');
+      notification.showError('网络错误，无法获取系统设置');
       setSystemSettings(null);
     } finally {
       setLoading(false);
@@ -721,7 +742,7 @@ export const useAdminLogic = () => {
     try {
       setLoading(true);
       if (!currentAdmin) {
-        message.error('未找到当前管理员信息');
+        notification.showError('未找到当前管理员信息');
         return;
       }
       
@@ -731,13 +752,13 @@ export const useAdminLogic = () => {
       });
       
       if (response.success) {
-        message.success('密码修改成功');
+        notification.showSuccess('密码修改成功');
       } else {
-        message.error(response.message || '密码修改失败');
+        notification.showError(response.message || '密码修改失败');
       }
     } catch (error) {
       console.error('修改密码失败:', error);
-      message.error('网络错误，密码修改失败');
+      notification.showError('网络错误，密码修改失败');
     } finally {
       setLoading(false);
     }
@@ -754,7 +775,7 @@ export const useAdminLogic = () => {
       });
       
       if (response.success) {
-        message.success('管理员信息更新成功');
+        notification.showSuccess('管理员信息更新成功');
         // 重新加载管理员数据
         await loadAdminUsers();
         // 如果更新的是当前管理员，重新加载当前管理员信息
@@ -762,11 +783,11 @@ export const useAdminLogic = () => {
           await loadCurrentAdmin();
         }
       } else {
-        message.error(response.message || '更新管理员信息失败');
+        notification.showError(response.message || '更新管理员信息失败');
       }
     } catch (error) {
       console.error('更新管理员信息失败:', error);
-      message.error('网络错误，更新管理员信息失败');
+      notification.showError('网络错误，更新管理员信息失败');
     } finally {
       setLoading(false);
     }
@@ -783,15 +804,15 @@ export const useAdminLogic = () => {
       });
       
       if (response.success) {
-        message.success('管理员创建成功');
+        notification.showSuccess('管理员创建成功');
         // 重新加载管理员数据
         await loadAdminUsers();
       } else {
-        message.error(response.message || '创建管理员失败');
+        notification.showError(response.message || '创建管理员失败');
       }
     } catch (error) {
       console.error('创建管理员失败:', error);
-      message.error('网络错误，创建管理员失败');
+      notification.showError('网络错误，创建管理员失败');
     } finally {
       setLoading(false);
     }
@@ -802,21 +823,21 @@ export const useAdminLogic = () => {
     try {
       setLoading(true);
       if (adminId === currentAdmin?.id) {
-        message.error('不能删除自己的账户');
+        notification.showError('不能删除自己的账户');
         return;
       }
       
       const response = await AdminAPI.deleteAdmin(adminId);
       if (response.success) {
-        message.success('管理员删除成功');
+        notification.showSuccess('管理员删除成功');
         // 重新加载管理员数据
         await loadAdminUsers();
       } else {
-        message.error(response.message || '删除失败');
+        notification.showError(response.message || '删除失败');
       }
     } catch (error) {
       console.error('删除管理员失败:', error);
-      message.error('网络错误，删除失败');
+      notification.showError('网络错误，删除失败');
     } finally {
       setLoading(false);
     }
@@ -826,29 +847,39 @@ export const useAdminLogic = () => {
   const updateSystemSettings = useCallback(async (settings: Partial<SystemSettings>) => {
     try {
       setLoading(true);
-      // 转换类型以匹配API接口
+      // 完整的字段映射以匹配API接口
       const apiSettings = {
         systemName: settings.siteName,
-        systemLogo: undefined, // 可以扩展
-        allowRegistration: undefined, // 可以扩展
-        examDuration: undefined, // 可以扩展
-        gradingDeadline: undefined, // 可以扩展
+        siteName: settings.siteName,
+        siteDescription: settings.siteDescription,
+        systemLogo: settings.systemLogo,
+        allowRegistration: settings.allowRegistration,
+        examDuration: settings.examDuration,
+        gradingDeadline: settings.gradingDeadline,
         maintenanceMode: settings.systemMaintenance,
-        announcement: settings.maintenanceMessage
+        announcement: settings.announcement,
+        maxUploadSize: settings.maxUploadSize,
+        allowedFileTypes: settings.allowedFileTypes
       };
       
       const response = await AdminAPI.updateSystemSettings(apiSettings);
       
       if (response.success) {
-        message.success('系统设置更新成功');
+        notification.showSuccess('系统设置更新成功');
         // 重新加载系统设置
         await loadSystemSettings();
+        
+        // 实时更新全局系统配置
+        const { systemConfig } = await import('../../../utils/systemConfig');
+        systemConfig.updateConfig(settings);
+        
+        notification.showSuccess('系统设置已生效');
       } else {
-        message.error(response.message || '更新系统设置失败');
+        notification.showError(response.message || '更新系统设置失败');
       }
     } catch (error) {
       console.error('更新系统设置失败:', error);
-      message.error('网络错误，更新系统设置失败');
+      notification.showError('网络错误，更新系统设置失败');
     } finally {
       setLoading(false);
     }
@@ -877,7 +908,7 @@ export const useAdminLogic = () => {
       if (response.success && response.data) {
         setCoachStudentsStats(response.data);
       } else {
-        message.error(response.message || '获取教练学生统计失败');
+        notification.showError(response.message || '获取教练学生统计失败');
         // 如果API失败，回退到localStorage方式
         const fallbackStats = getCoachStudentsStatsFromLocalStorage();
         setCoachStudentsStats(fallbackStats);
@@ -914,6 +945,30 @@ export const useAdminLogic = () => {
         totalCoachStudents: 0,
         coachStudentsByCoach: {}
       };
+    }
+  }, []);
+
+  // 修改个人密码（统一接口）
+  const changePassword = useCallback(async (data: { oldPassword: string; newPassword: string }) => {
+    try {
+      setLoading(true);
+      const response = await AdminAPI.changePassword({
+        oldPassword: data.oldPassword,
+        newPassword: data.newPassword
+      });
+      
+      if (response.success) {
+        notification.showSuccess('密码修改成功');
+      } else {
+        notification.showError(response.message || '密码修改失败');
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error('修改个人密码失败:', error);
+      notification.showError('密码修改失败');
+      throw error;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -964,6 +1019,7 @@ export const useAdminLogic = () => {
     loadGraders,
     loadGradingTasks,
     // 系统设置方法
+    changePassword,
     changeAdminPassword,
     updateAdminInfo,
     createAdmin,

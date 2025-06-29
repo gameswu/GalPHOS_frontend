@@ -243,7 +243,30 @@ interface ApiResponse<T> {
 
 ## 2. 个人资料管理
 
-### 2.1 更新个人资料
+### 2.1 获取个人资料
+**接口**: `GET /api/student/profile`
+
+**描述**: 获取学生个人资料信息
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    username: "student001",
+    name: "张三",
+    phone: "13812345678", 
+    email: "zhangsan@example.com",
+    role: "student",
+    province: "北京市",
+    school: "清华大学",
+    avatar: "https://example.com/avatars/avatar.jpg"
+  },
+  message: "获取个人资料成功"
+}
+```
+
+### 2.2 更新个人资料
 **接口**: `PUT /api/student/profile`
 
 **描述**: 更新学生个人资料信息
@@ -251,7 +274,10 @@ interface ApiResponse<T> {
 **请求体**:
 ```typescript
 {
-  username: "new_username",
+  name?: "张三",
+  phone?: "13812345678",
+  email?: "zhangsan@example.com", 
+  username?: "new_username",
   avatar?: "https://example.com/avatars/new_avatar.jpg"
 }
 ```
@@ -262,6 +288,9 @@ interface ApiResponse<T> {
   success: true,
   data: {
     username: "new_username",
+    name: "张三",
+    phone: "13812345678",
+    email: "zhangsan@example.com",
     role: "student",
     province: "北京市",
     school: "清华大学",
@@ -271,7 +300,7 @@ interface ApiResponse<T> {
 }
 ```
 
-### 2.2 修改密码
+### 2.3 修改密码
 **接口**: `PUT /api/student/password`
 
 **描述**: 修改登录密码
@@ -292,7 +321,7 @@ interface ApiResponse<T> {
 }
 ```
 
-### 2.3 上传头像
+### 2.4 上传头像
 **接口**: `POST /api/upload/avatar`
 
 **描述**: 上传用户头像
@@ -409,7 +438,7 @@ GET /api/student/files/download/file001
 ## 5. 统计数据
 
 ### 5.1 获取学生仪表板数据
-**接口**: `GET /api/student/dashboard`
+**接口**: `GET /api/student/dashboard/stats`
 
 **描述**: 获取学生仪表板统计数据
 

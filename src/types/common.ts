@@ -528,6 +528,14 @@ export interface SystemSettings {
   allowedFileTypes: string[];
   systemMaintenance: boolean;
   maintenanceMessage: string;
+  // 新增字段以匹配API
+  systemName?: string;
+  systemLogo?: string;
+  allowRegistration?: boolean;
+  examDuration?: number;
+  gradingDeadline?: number;
+  maintenanceMode?: boolean;
+  announcement?: string;
 }
 
 // 密码修改数据

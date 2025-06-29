@@ -263,7 +263,7 @@ Content-Type: application/json
 
 ### 6. 获取省份学校数据
 
-**接口路径：** `GET /regions/provinces-schools`
+**接口路径：** `GET /api/regions/provinces-schools`
 
 **响应格式：**
 ```typescript

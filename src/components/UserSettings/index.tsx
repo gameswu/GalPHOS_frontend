@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   Form, 
@@ -25,6 +25,7 @@ import {
 } from '@ant-design/icons';
 import type { UploadChangeParam } from 'antd/es/upload';
 import type { RcFile, UploadFile, UploadProps } from 'antd/es/upload/interface';
+import RegionAPI, { Province as RegionProvince, School as RegionSchool } from '../../api/region';
 import './UserSettings.css';
 
 interface UserInfo {
@@ -55,37 +56,6 @@ interface UserSettingsProps {
   showRegionChange?: boolean; // 控制是否显示赛区变更功能
 }
 
-// 模拟省份和学校数据
-const mockProvinceData: Province[] = [
-  {
-    id: '1',
-    name: '北京市',
-    schools: [
-      { id: '1-1', name: '北京市第一中学' },
-      { id: '1-2', name: '北京市第二中学' },
-      { id: '1-3', name: '清华大学附属中学' }
-    ]
-  },
-  {
-    id: '2',
-    name: '上海市',
-    schools: [
-      { id: '2-1', name: '上海中学' },
-      { id: '2-2', name: '华东师范大学第二附属中学' },
-      { id: '2-3', name: '复旦大学附属中学' }
-    ]
-  },
-  {
-    id: '3',
-    name: '广东省',
-    schools: [
-      { id: '3-1', name: '华南师范大学附属中学' },
-      { id: '3-2', name: '深圳中学' },
-      { id: '3-3', name: '广州市第六中学' }
-    ]
-  }
-];
-
 const UserSettings: React.FC<UserSettingsProps> = ({
   userInfo,
   onUpdateProfile,
@@ -105,11 +75,37 @@ const UserSettings: React.FC<UserSettingsProps> = ({
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [regionModalVisible, setRegionModalVisible] = useState(false);
   
-  const [provinces] = useState<Province[]>(mockProvinceData);
+  const [provinces, setProvinces] = useState<Province[]>([]);
   const [availableSchools, setAvailableSchools] = useState<School[]>([]);
   const [selectedProvince, setSelectedProvince] = useState<string>('');
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
   
   const [avatar, setAvatar] = useState<string>(userInfo.avatar || '');
+
+  // 加载省份和学校数据
+  useEffect(() => {
+    const loadProvinceData = async () => {
+      setLoadingProvinces(true);
+      try {
+        const response = await RegionAPI.getProvincesAndSchools();
+        if (response.success && response.data) {
+          setProvinces(response.data);
+        } else {
+          message.error(response.message || '获取省份数据失败');
+          // 如果API失败，使用备用数据
+          setProvinces([]);
+        }
+      } catch (error) {
+        console.error('加载省份数据失败:', error);
+        message.error('加载省份数据失败');
+        setProvinces([]);
+      } finally {
+        setLoadingProvinces(false);
+      }
+    };
+
+    loadProvinceData();
+  }, []);
 
   // 处理头像上传
   const handleAvatarChange: UploadProps['onChange'] = (info: UploadChangeParam<UploadFile>) => {
@@ -117,9 +113,14 @@ const UserSettings: React.FC<UserSettingsProps> = ({
       return;
     }
     if (info.file.status === 'done') {
-      // 获取上传后的文件URL
-      const url = info.file.response?.url || URL.createObjectURL(info.file.originFileObj as RcFile);
-      setAvatar(url);
+      // 获取服务器返回的文件URL，避免使用blob URL
+      if (info.file.response?.data?.fileUrl) {
+        setAvatar(info.file.response.data.fileUrl);
+      } else {
+        // 如果服务器没有返回URL，临时使用blob URL进行预览
+        const previewUrl = URL.createObjectURL(info.file.originFileObj as RcFile);
+        setAvatar(previewUrl);
+      }
     }
   };
 
@@ -252,11 +253,27 @@ const UserSettings: React.FC<UserSettingsProps> = ({
                   showUploadList={false}
                   beforeUpload={beforeUpload}
                   onChange={handleAvatarChange}
-                  customRequest={({ file, onSuccess }) => {
-                    // 模拟上传成功
-                    setTimeout(() => {
-                      onSuccess && onSuccess({});
-                    }, 1000);
+                  customRequest={async ({ file, onSuccess, onError, onProgress }) => {
+                    try {
+                      // 使用文件上传服务进行真实的文件上传
+                      const FileUploadService = await import('../../services/fileUploadService');
+                      const result = await FileUploadService.default.uploadAvatar(
+                        file as RcFile,
+                        // 转换进度回调格式
+                        onProgress ? (progress: number) => {
+                          onProgress({ percent: progress }, file);
+                        } : undefined
+                      );
+                      
+                      if (result.success) {
+                        onSuccess && onSuccess(result, file);
+                      } else {
+                        onError && onError(new Error(result.message || '上传失败'));
+                      }
+                    } catch (error) {
+                      console.error('头像上传失败:', error);
+                      onError && onError(error as Error);
+                    }
                   }}
                 >
                   {avatar ? (

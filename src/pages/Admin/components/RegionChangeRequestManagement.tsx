@@ -3,7 +3,6 @@ import {
   Card, 
   Table, 
   Button, 
-  Space, 
   Tag, 
   Modal, 
   Form, 
@@ -182,52 +181,47 @@ const RegionChangeRequestManagement: React.FC = () => {
       title: '申请人',
       dataIndex: 'username',
       key: 'username',
-      width: 120,
-    },
-    {
-      title: '角色',
-      dataIndex: 'role',
-      key: 'role',
-      width: 80,
-      className: 'mobile-hidden',
-      render: (role: string) => {
+      width: 100,
+      render: (username: string, record: RegionChangeRequest) => {
         const roleMap = {
           student: '学生',
           grader: '阅卷者',
           coach: '教练'
         };
-        return roleMap[role as keyof typeof roleMap] || role;
+        const roleText = roleMap[record.role as keyof typeof roleMap] || record.role;
+        return (
+          <div>
+            <div style={{ fontWeight: 500 }}>{username}</div>
+            <div style={{ fontSize: '12px', color: '#666' }}>({roleText})</div>
+          </div>
+        );
       }
     },
     {
-      title: '当前赛区/申请变更为',
-      key: 'regionChange',
-      width: 250,
-      className: 'mobile-hidden',
+      title: '赛区变更申请',
+      key: 'regionChangeInfo',
+      width: 350,
       render: (_: any, record: RegionChangeRequest) => (
-        <div>
+        <div style={{ fontSize: '13px' }}>
           <div style={{ marginBottom: 4 }}>
-            {`${record.currentProvince || '未设置'} - ${record.currentSchool || '未设置'}`}
+            <span style={{ color: '#666' }}>当前：</span>
+            <span>{`${record.currentProvince || '未设置'} - ${record.currentSchool || '未设置'}`}</span>
           </div>
-          <div style={{ color: '#1890ff', fontSize: '12px' }}>
-            ↓ {`${record.requestedProvince} - ${record.requestedSchool}`}
+          <div style={{ marginBottom: 4 }}>
+            <span style={{ color: '#666' }}>变更为：</span>
+            <span style={{ color: '#1890ff' }}>{`${record.requestedProvince} - ${record.requestedSchool}`}</span>
+          </div>
+          <div style={{ color: '#999', fontSize: '12px' }}>
+            申请时间：{record.createdAt ? new Date(record.createdAt).toLocaleString() : '-'}
           </div>
         </div>
       )
     },
     {
-      title: '申请时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 160,
-      className: 'mobile-hidden',
-      render: (time: string) => time ? new Date(time).toLocaleString() : '-'
-    },
-    {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 90,
       render: (status: string) => {
         const statusConfig = {
           pending: { color: 'orange', text: '待审核' },
@@ -241,15 +235,17 @@ const RegionChangeRequestManagement: React.FC = () => {
     {
       title: '审核信息',
       key: 'reviewInfo',
-      width: 180,
+      width: 160,
       render: (_: any, record: RegionChangeRequest) => {
         if (record.status === 'pending') {
-          return <Tag color="orange">待审核</Tag>;
+          return <span style={{ color: '#faad14' }}>待审核</span>;
         }
         return (
           <div style={{ fontSize: '12px' }}>
             <div>审核者：{record.reviewedBy || '-'}</div>
-            <div>审核时间：{record.reviewedAt ? new Date(record.reviewedAt).toLocaleString() : '-'}</div>
+            <div style={{ color: '#999' }}>
+              {record.reviewedAt ? new Date(record.reviewedAt).toLocaleString() : '-'}
+            </div>
           </div>
         );
       }
@@ -257,17 +253,16 @@ const RegionChangeRequestManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 120,
+      width: 80,
       render: (_: any, record: RegionChangeRequest) => (
-        <Space size="small" className="responsive-buttons">
-          <Button 
-            size="small" 
-            icon={<EyeOutlined />}
-            onClick={() => handleReview(record)}
-          >
-            {record.status === 'pending' ? '审核' : '查看'}
-          </Button>
-        </Space>
+        <Button 
+          size="small" 
+          type="link"
+          icon={<EyeOutlined />}
+          onClick={() => handleReview(record)}
+        >
+          {record.status === 'pending' ? '审核' : '查看'}
+        </Button>
       ),
     },
   ];
@@ -281,30 +276,27 @@ const RegionChangeRequestManagement: React.FC = () => {
   return (
     <div>
       {/* 统计卡片 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        <Card size="small">
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#1890ff' }}>{totalRequests}</div>
-            <div style={{ color: '#666' }}>总申请数</div>
-          </div>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+        gap: 16, 
+        marginBottom: 24 
+      }}>
+        <Card size="small" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 20, fontWeight: 'bold', color: '#1890ff' }}>{totalRequests}</div>
+          <div style={{ color: '#666', fontSize: '13px' }}>总申请数</div>
         </Card>
-        <Card size="small">
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#faad14' }}>{pendingRequests}</div>
-            <div style={{ color: '#666' }}>待审核</div>
-          </div>
+        <Card size="small" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 20, fontWeight: 'bold', color: '#faad14' }}>{pendingRequests}</div>
+          <div style={{ color: '#666', fontSize: '13px' }}>待审核</div>
         </Card>
-        <Card size="small">
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>{approvedRequests}</div>
-            <div style={{ color: '#666' }}>已批准</div>
-          </div>
+        <Card size="small" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 20, fontWeight: 'bold', color: '#52c41a' }}>{approvedRequests}</div>
+          <div style={{ color: '#666', fontSize: '13px' }}>已批准</div>
         </Card>
-        <Card size="small">
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#f5222d' }}>{rejectedRequests}</div>
-            <div style={{ color: '#666' }}>已拒绝</div>
-          </div>
+        <Card size="small" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 20, fontWeight: 'bold', color: '#f5222d' }}>{rejectedRequests}</div>
+          <div style={{ color: '#666', fontSize: '13px' }}>已拒绝</div>
         </Card>
       </div>
 
@@ -325,7 +317,8 @@ const RegionChangeRequestManagement: React.FC = () => {
             rowKey="id"
             pagination={{ pageSize: 10 }}
             className="responsive-table"
-            scroll={{ x: 1000 }}
+            scroll={{ x: 780 }}
+            size="small"
           />
         </div>
       </Card>

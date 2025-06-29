@@ -76,7 +76,12 @@ class AuthService {
         return { valid: false, error: 'NO_TOKEN' };
       }
 
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001/api'}/auth/validate`, {
+      // 使用微服务路由器获取正确的API URL
+      const microserviceRouterModule = await import('./microserviceRouter');
+      const microserviceRouter = microserviceRouterModule.microserviceRouter;
+      const url = microserviceRouter.buildApiUrl('/api/auth/validate');
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

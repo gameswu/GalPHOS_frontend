@@ -36,16 +36,17 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/admin/users/*',
       '/api/admin/coach-students*',
       '/api/admin/student-registrations*',
-      // 所有角色个人资料管理
+      // 所有角色个人资料管理（统一规范 v1.2.0）
       '/api/admin/profile*',
+      '/api/admin/password*',      // 新增统一密码修改接口
       '/api/student/profile*',
       '/api/student/password*',
-      '/api/student/region-change*',
       '/api/coach/profile*',
+      '/api/coach/password*',      // 统一路径：原 /api/coach/profile/change-password
       '/api/grader/profile*',
-      '/api/grader/change-password*'
+      '/api/grader/password*'      // 统一路径：原 /api/grader/change-password
     ],
-    description: '用户生命周期管理服务',
+    description: '用户生命周期管理服务 - v1.2.0统一个人资料和密码管理API',
     healthCheck: '/health'
   },
 
@@ -122,17 +123,20 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/student/exams/*/score*',
       '/api/student/exams/*/ranking*', 
       '/api/student/scores*',
-      '/api/student/dashboard*',
+      '/api/student/dashboard/stats*',    // 统一仪表板路径 v1.2.0
       // 教练成绩管理
       '/api/coach/grades*',
-      '/api/coach/dashboard*',
+      '/api/coach/dashboard/stats*',      // 统一仪表板路径 v1.2.0
       '/api/coach/students/*/exams/*/score*',
       '/api/coach/students/scores*',
       // 阅卷员统计
       '/api/grader/statistics*',
-      '/api/grader/history*'
+      '/api/grader/dashboard/stats*',     // 新增阅卷员仪表板 v1.2.0
+      '/api/grader/history*',
+      // 管理员统计数据
+      '/api/admin/dashboard/stats*'       // 统一仪表板路径 v1.2.0
     ],
-    description: '成绩数据分析和排名计算服务',
+    description: '成绩数据分析和排名计算服务 - v1.2.0统一所有角色仪表板API',
     healthCheck: '/health'
   },
 
@@ -144,9 +148,16 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
     paths: [
       // 管理员区域管理
       '/api/admin/regions*',
-      '/api/regions/provinces-schools*'
+      // 学生区域变更申请（统一规范 v1.2.0）
+      '/api/student/region-change*',
+      // 教练区域变更申请（统一规范 v1.2.0）
+      '/api/coach/region-change*',  // 统一路径：原 /api/coach/profile/change-region*
+      // 通用区域数据查询
+      '/api/regions/provinces-schools*',
+      '/api/regions/provinces*',
+      '/api/regions/schools*'
     ],
-    description: '省份学校等地理信息管理服务',
+    description: '省份学校等地理信息管理服务 - v1.2.0统一地区变更API',
     healthCheck: '/health'
   },
 
@@ -164,15 +175,12 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/coach/exams/*/ranking*',
       '/api/coach/exams/*/scores/export*',
       '/api/coach/exams/*/scores/statistics*',
-      // 仪表盘统计数据
-      '/api/admin/dashboard/stats*',
-      '/api/coach/dashboard/stats*',
-      // 通用文件API（预留）
-      '/api/upload*',
+      // 通用文件API（统一头像上传 v1.2.0）
+      '/api/upload*',        // 包含 /api/upload/avatar
       '/api/download*',
       '/api/files*'
     ],
-    description: '文件上传存储和访问管理服务',
+    description: '文件上传存储和访问管理服务 - v1.2.0统一头像上传接口',
     healthCheck: '/health'
   },
 
@@ -298,7 +306,7 @@ export class MicroserviceRouter {
     
     // 2. 用户管理相关
     if (path.includes('/admin/users') || path.includes('/coach-students') || 
-        path.includes('/profile') || path.includes('/password') || path.includes('/region-change')) {
+        path.includes('/profile') || path.includes('/password')) {
       return MICROSERVICE_CONFIG.userManagement;
     }
     
@@ -340,19 +348,21 @@ export class MicroserviceRouter {
     
     // 根据角色前缀进行二级推断
     if (path.startsWith('/api/student/')) {
-      // 独立学生账号相关请求优先级：自主提交 > 考试查看 > 成绩查看 > 个人资料管理
+      // 独立学生账号相关请求优先级：自主提交 > 考试查看 > 成绩查看 > 地区变更 > 个人资料管理
       if (path.includes('submit') || path.includes('submission')) return MICROSERVICE_CONFIG.submission;
       if (path.includes('exam') && !path.includes('score') && !path.includes('ranking')) return MICROSERVICE_CONFIG.examManagement;
       if (path.includes('score') || path.includes('ranking') || path.includes('dashboard')) return MICROSERVICE_CONFIG.scoreStatistics;
-      return MICROSERVICE_CONFIG.userManagement; // 个人资料、密码、区域变更等
+      if (path.includes('region-change')) return MICROSERVICE_CONFIG.regionManagement;
+      return MICROSERVICE_CONFIG.userManagement; // 个人资料、密码等
     }
     
     if (path.startsWith('/api/coach/')) {
-      // 教练相关请求优先级：代理提交管理 > 考试管理 > 成绩统计 > 非独立学生管理 > 用户管理
+      // 教练相关请求优先级：代理提交管理 > 考试管理 > 成绩统计 > 非独立学生管理 > 地区变更 > 用户管理
       if (path.includes('submission') || path.includes('upload-answer')) return MICROSERVICE_CONFIG.submission;
       if (path.includes('exam') && !path.includes('submission')) return MICROSERVICE_CONFIG.examManagement;
       if (path.includes('score') || path.includes('statistics') || path.includes('ranking')) return MICROSERVICE_CONFIG.scoreStatistics;
       if (path.includes('students')) return MICROSERVICE_CONFIG.grading; // 非独立学生管理
+      if (path.includes('region-change')) return MICROSERVICE_CONFIG.regionManagement;
       return MICROSERVICE_CONFIG.userManagement; // 教练个人资料管理
     }
     
@@ -684,5 +694,53 @@ export class MicroserviceRouter {
   }
 }
 
-// 导出单例实例
+/**
+ * 废弃API路径映射表 - v1.2.0 API规范统一化
+ * 用于向后兼容，将旧路径自动重定向到新路径
+ */
+export const DEPRECATED_PATH_MAPPING: Record<string, string> = {
+  // 密码修改API路径变更
+  '/api/coach/profile/change-password': '/api/coach/password',
+  '/api/grader/change-password': '/api/grader/password',
+  
+  // 地区变更API路径变更  
+  '/api/coach/profile/change-region': '/api/coach/region-change',
+  '/api/coach/profile/change-region-requests': '/api/coach/region-change/status',
+  
+  // 仪表板API路径变更
+  '/api/student/dashboard': '/api/student/dashboard/stats',
+  
+  // 头像上传API路径统一
+  '/api/coach/profile/upload-avatar': '/api/upload/avatar',
+  '/api/grader/upload-avatar': '/api/upload/avatar',
+  '/api/admin/profile/upload-avatar': '/api/upload/avatar'
+};
+
+/**
+ * 检查并转换废弃的API路径
+ * @param path 原始API路径
+ * @returns 转换后的新路径或原路径
+ */
+export function convertDeprecatedPath(path: string): string {
+  // 检查是否为废弃路径
+  if (DEPRECATED_PATH_MAPPING[path]) {
+    console.warn(`[API路径警告] 使用了废弃的API路径: ${path}，建议迁移到新路径: ${DEPRECATED_PATH_MAPPING[path]}`);
+    return DEPRECATED_PATH_MAPPING[path];
+  }
+  
+  // 检查带参数的废弃路径（使用正则匹配）
+  for (const [deprecatedPattern, newPattern] of Object.entries(DEPRECATED_PATH_MAPPING)) {
+    const deprecatedRegex = new RegExp('^' + deprecatedPattern.replace(/\*/g, '.*') + '$');
+    if (deprecatedRegex.test(path)) {
+      const newPath = path.replace(deprecatedRegex, newPattern);
+      console.warn(`[API路径警告] 使用了废弃的API路径模式: ${path}，建议迁移到新路径: ${newPath}`);
+      return newPath;
+    }
+  }
+  
+  return path;
+}
+
+// 导出默认的微服务路由器实例
 export const microserviceRouter = MicroserviceRouter.getInstance();
+export default microserviceRouter;

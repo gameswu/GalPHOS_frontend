@@ -35,6 +35,9 @@ export class BaseAPI {
   // 设置全局通知方法（在App初始化时调用）
   public static setGlobalNotificationMethods(methods: {
     showError?: NotificationFunction;
+    showSuccess?: NotificationFunction;
+    showWarning?: NotificationFunction;
+    showInfo?: NotificationFunction;
   }): void {
     globalNotificationMethods = methods;
   }

@@ -219,28 +219,58 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
         message.error(`请上传第${i}题的答案`);
         return;
       }
-      
-      // 模拟文件上传到服务器并获取URL
-      const imageUrl = URL.createObjectURL(file);
-      answers.push({
-        questionId: `q_${currentExam.id}_${i}`, // 生成题目ID
-        questionNumber: i,
-        answer: '', // 图片答案，暂时为空字符串
-        maxScore: 100, // 默认满分，实际应该从题目配置获取
-        imageUrl,
-        uploadTime: new Date().toISOString()
-      });
     }
 
     setSubmitting(true);
     try {
+      // 先上传所有答案图片，获取真实的文件URL
+      const FileUploadService = await import('../services/fileUploadService');
+      
+      for (let i = 1; i <= totalQuestions; i++) {
+        const file = answerFiles[i];
+        
+        // 根据用户角色选择不同的上传方法
+        let uploadResult;
+        if (userRole === 'coach') {
+          // 教练代理上传
+          uploadResult = await FileUploadService.default.uploadAnswerImageByCoach(
+            file,
+            currentExam.id,
+            i,
+            selectedStudent
+          );
+        } else {
+          // 学生自主上传
+          uploadResult = await FileUploadService.default.uploadAnswerImage(
+            file,
+            currentExam.id,
+            i
+          );
+        }
+        
+        if (!uploadResult.success) {
+          throw new Error(`第${i}题答案上传失败: ${uploadResult.message}`);
+        }
+        
+        answers.push({
+          questionId: `q_${currentExam.id}_${i}`,
+          questionNumber: i,
+          answer: '',
+          maxScore: 100,
+          imageUrl: uploadResult.data!.fileUrl, // 使用真实的文件URL
+          uploadTime: uploadResult.data!.uploadTime
+        });
+      }
+      
+      // 提交答案
       await submitExamAnswers(currentExam.id, answers, userRole === 'coach' ? selectedStudent : undefined);
       setSubmissionModalVisible(false);
       setCurrentExam(null);
       setAnswerFiles({});
       setSelectedStudent('');
     } catch (error) {
-      // 错误已在submitExamAnswers中处理
+      console.error('答案提交失败:', error);
+      message.error('答案提交失败，请重试');
     } finally {
       setSubmitting(false);
     }

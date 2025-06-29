@@ -426,7 +426,7 @@ interface ApiResponse<T> {
 
 ### 2.2 获取省份列表
 
-**接口路径：** `GET /admin/regions/provinces`
+**接口路径：** `GET /api/admin/regions/provinces`
 
 **描述**: 获取所有省份列表（不包含学校信息）
 
@@ -473,7 +473,7 @@ interface ApiResponse<T> {
 
 ### 2.4 获取省份下的学校列表
 
-**接口路径：** `GET /admin/regions/schools`
+**接口路径：** `GET /api/admin/regions/schools`
 
 **描述**: 获取指定省份下的学校列表
 
@@ -526,7 +526,7 @@ interface ApiResponse<T> {
 
 ### 2.6 更新学校
 
-**接口路径：** `PUT /admin/regions/schools/{schoolId}`
+**接口路径：** `PUT /api/admin/regions/schools/{schoolId}`
 
 **描述**: 更新学校信息
 
@@ -559,7 +559,7 @@ interface ApiResponse<T> {
 
 ### 2.7 删除学校
 
-**接口路径：** `DELETE /admin/regions/schools/{schoolId}`
+**接口路径：** `DELETE /api/admin/regions/schools/{schoolId}`
 
 **描述**: 删除指定学校
 
@@ -576,7 +576,7 @@ interface ApiResponse<T> {
 
 ### 2.8 删除省份
 
-**接口路径：** `DELETE /admin/regions/provinces/{provinceId}`
+**接口路径：** `DELETE /api/admin/regions/provinces/{provinceId}`
 
 **描述**: 删除指定省份（注意：删除省份会同时删除该省份下的所有学校）
 
@@ -593,7 +593,7 @@ interface ApiResponse<T> {
 
 ### 2.9 获取赛区变更申请
 
-**接口路径：** `GET /admin/regions/change-requests`
+**接口路径：** `GET /api/admin/regions/change-requests`
 
 **描述**: 获取所有赛区变更申请列表
 
@@ -633,7 +633,7 @@ interface ApiResponse<T> {
 
 ### 2.10 处理赛区变更申请
 
-**接口路径：** `POST /admin/regions/change-requests/{requestId}`
+**接口路径：** `POST /api/admin/regions/change-requests/{requestId}`
 
 **描述**: 审核赛区变更申请
 
@@ -669,7 +669,7 @@ interface ApiResponse<T> {
 
 ### 3.1 获取考试列表
 
-**接口路径：** `GET /admin/exams`
+**接口路径：** `GET /api/admin/exams`
 
 **响应格式：**
 ```typescript
@@ -695,7 +695,7 @@ interface ApiResponse<T> {
 
 ### 3.2 创建考试
 
-**接口路径：** `POST /admin/exams`
+**接口路径：** `POST /api/admin/exams`
 
 **请求参数：**
 ```typescript
@@ -711,7 +711,7 @@ interface ApiResponse<T> {
 
 ### 3.3 更新考试
 
-**接口路径：** `PUT /admin/exams/{examId}`
+**接口路径：** `PUT /api/admin/exams/{examId}`
 
 **请求参数：**
 ```typescript
@@ -727,19 +727,19 @@ interface ApiResponse<T> {
 
 ### 3.4 发布考试
 
-**接口路径：** `POST /admin/exams/{examId}/publish`
+**接口路径：** `POST /api/admin/exams/{examId}/publish`
 
 ### 3.5 取消发布考试
 
-**接口路径：** `POST /admin/exams/{examId}/unpublish`
+**接口路径：** `POST /api/admin/exams/{examId}/unpublish`
 
 ### 3.6 删除考试
 
-**接口路径：** `DELETE /admin/exams/{examId}`
+**接口路径：** `DELETE /api/admin/exams/{examId}`
 
 ### 3.7 上传考试文件
 
-**接口路径：** `POST /admin/exams/{examId}/files`
+**接口路径：** `POST /api/admin/exams/{examId}/files`
 
 **请求参数（FormData）：**
 ```typescript
@@ -765,7 +765,7 @@ interface ApiResponse<T> {
 
 ### 3.8 设置题目分值
 
-**接口路径：** `POST /admin/exams/{examId}/question-scores`
+**接口路径：** `POST /api/admin/exams/{examId}/question-scores`
 
 **描述**: 为考试设置题目分值配置
 
@@ -798,7 +798,7 @@ interface ApiResponse<T> {
 
 ### 3.9 获取题目分值
 
-**接口路径：** `GET /admin/exams/{examId}/question-scores`
+**接口路径：** `GET /api/admin/exams/{examId}/question-scores`
 
 **描述**: 获取考试的题目分值配置
 
@@ -819,7 +819,7 @@ interface ApiResponse<T> {
 
 ### 3.10 更新单个题目分值
 
-**接口路径：** `PUT /admin/exams/{examId}/question-scores/{questionNumber}`
+**接口路径：** `PUT /api/admin/exams/{examId}/question-scores/{questionNumber}`
 
 **请求参数：**
 ```typescript
@@ -831,11 +831,11 @@ interface ApiResponse<T> {
 
 ### 3.11 删除题目分值
 
-**接口路径：** `DELETE /admin/exams/{examId}/question-scores/{questionNumber}`
+**接口路径：** `DELETE /api/admin/exams/{examId}/question-scores/{questionNumber}`
 
 ### 3.12 导入题目分值
 
-**接口路径：** `POST /admin/exams/{examId}/question-scores/import`
+**接口路径：** `POST /api/admin/exams/{examId}/question-scores/import`
 
 **请求参数（FormData）：**
 ```typescript
@@ -864,7 +864,7 @@ interface ApiResponse<T> {
 
 ### 4.1 获取阅卷者列表
 
-**接口路径：** `GET /admin/graders`
+**接口路径：** `GET /api/admin/graders`
 
 **响应格式：**
 ```typescript
@@ -884,7 +884,7 @@ interface ApiResponse<T> {
 
 ### 4.2 获取阅卷任务列表
 
-**接口路径：** `GET /admin/grading/tasks`
+**接口路径：** `GET /api/admin/grading/tasks`
 
 **请求参数（Query）：**
 ```typescript
@@ -897,7 +897,7 @@ interface ApiResponse<T> {
 
 ### 4.3 分配阅卷任务
 
-**接口路径：** `POST /admin/grading/assign`
+**接口路径：** `POST /api/admin/grading/assign`
 
 **请求参数：**
 ```typescript
@@ -910,7 +910,7 @@ interface ApiResponse<T> {
 
 ### 4.4 获取阅卷进度
 
-**接口路径：** `GET /admin/grading/progress/{examId}`
+**接口路径：** `GET /api/admin/grading/progress/{examId}`
 
 **响应格式：**
 ```typescript
@@ -938,7 +938,7 @@ interface ApiResponse<T> {
 
 ### 5.1 获取系统设置
 
-**接口路径：** `GET /admin/system/settings`
+**接口路径：** `GET /api/admin/system/settings`
 
 **响应格式：**
 ```typescript
@@ -946,40 +946,48 @@ interface ApiResponse<T> {
   success: boolean,
   data: {
     systemName: string,
+    siteName: string,
+    siteDescription: string,
     systemLogo: string,
     allowRegistration: boolean,
     examDuration: number,
     gradingDeadline: number,
     maintenanceMode: boolean,
-    announcement: string
+    announcement: string,
+    maxUploadSize: number,
+    allowedFileTypes: string[]
   }
 }
 ```
 
 ### 5.2 更新系统设置
 
-**接口路径：** `PUT /admin/system/settings`
+**接口路径：** `PUT /api/admin/system/settings`
 
 **请求参数：**
 ```typescript
 {
   systemName?: string,
+  siteName?: string,
+  siteDescription?: string,
   systemLogo?: string,
   allowRegistration?: boolean,
   examDuration?: number,
   gradingDeadline?: number,
   maintenanceMode?: boolean,
-  announcement?: string
+  announcement?: string,
+  maxUploadSize?: number,
+  allowedFileTypes?: string[]
 }
 ```
 
 ### 5.3 获取管理员列表
 
-**接口路径：** `GET /admin/system/admins`
+**接口路径：** `GET /api/admin/system/admins`
 
 ### 5.4 创建管理员
 
-**接口路径：** `POST /admin/system/admins`
+**接口路径：** `POST /api/admin/system/admins`
 
 **请求参数：**
 ```typescript
@@ -992,7 +1000,7 @@ interface ApiResponse<T> {
 
 ### 5.5 更新管理员信息
 
-**接口路径：** `PUT /admin/system/admins/{adminId}`
+**接口路径：** `PUT /api/admin/system/admins/{adminId}`
 
 **请求参数：**
 ```typescript
@@ -1005,7 +1013,7 @@ interface ApiResponse<T> {
 
 ### 5.6 修改管理员密码
 
-**接口路径：** `POST /admin/system/admins/{adminId}/password`
+**接口路径：** `PUT /api/admin/system/admins/{adminId}/password`
 
 **请求参数：**
 ```typescript
@@ -1017,11 +1025,11 @@ interface ApiResponse<T> {
 
 ### 5.7 删除管理员
 
-**接口路径：** `DELETE /admin/system/admins/{adminId}`
+**接口路径：** `DELETE /api/admin/system/admins/{adminId}`
 
 ### 5.8 上传头像
 
-**接口路径：** `POST /admin/system/upload/avatar`
+**接口路径：** `POST /api/upload/avatar`
 
 **请求参数（FormData）：**
 ```typescript
@@ -1045,7 +1053,7 @@ interface ApiResponse<T> {
 
 ### 5.9 获取个人资料
 
-**接口路径：** `GET /admin/profile`
+**接口路径：** `GET /api/admin/profile`
 
 **描述**: 获取当前管理员的个人资料信息
 
@@ -1056,7 +1064,6 @@ interface ApiResponse<T> {
   data: {
     id: string,
     username: string,
-    name?: string,
     avatar?: string,
     role: string,
     createdAt: string,
@@ -1065,9 +1072,38 @@ interface ApiResponse<T> {
 }
 ```
 
-### 5.10 修改个人密码
+### 5.10 更新个人资料
 
-**接口路径：** `POST /admin/profile/password`
+**接口路径：** `PUT /api/admin/profile`
+
+**描述**: 更新当前管理员的个人资料信息
+
+**请求参数：**
+```typescript
+{
+  avatar?: string
+}
+```
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    id: string,
+    username: string,
+    avatar?: string,
+    role: string,
+    createdAt: string,
+    lastLoginAt: string
+  },
+  message: "个人资料更新成功"
+}
+```
+
+### 5.11 修改个人密码
+
+**接口路径：** `PUT /api/admin/password`
 
 **描述**: 当前管理员修改自己的密码
 
@@ -1093,7 +1129,7 @@ interface ApiResponse<T> {
 
 ### 6.1 获取仪表盘数据
 
-**接口路径：** `GET /admin/dashboard/stats`
+**接口路径：** `GET /api/admin/dashboard/stats`
 
 **响应格式：**
 ```typescript

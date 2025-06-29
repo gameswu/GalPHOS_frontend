@@ -232,10 +232,15 @@ interface ApiResponse<T> {
   data: {
     id: string,
     username: string,
+    name?: string,
+    phone?: string,
+    email?: string,
     avatar?: string,
     role: 'grader',
     province?: string,
     school?: string,
+    bio?: string,          // 阅卷员简介
+    expertise?: string[],  // 阅卷员专长
     subjects?: string[],
     certification?: {
       level: string,
@@ -259,21 +264,34 @@ interface ApiResponse<T> {
 **请求体**:
 ```typescript
 {
+  name?: string,
+  phone?: string,
+  email?: string,
   username?: string,
   avatar?: string,
-  school?: string
+  school?: string,
+  bio?: string,          // 阅卷员简介
+  expertise?: string[]   // 阅卷员专长
 }
 ```
 
 ### 5.3 修改密码
 
-**接口**: `POST /api/grader/change-password`
+**接口**: `PUT /api/grader/password`
 
 **请求体**:
 ```typescript
 {
   oldPassword: string,  // 哈希后的旧密码
   newPassword: string   // 哈希后的新密码
+}
+```
+
+**响应**:
+```typescript
+{
+  success: true,
+  message: "密码修改成功"
 }
 ```
 
@@ -290,7 +308,7 @@ interface ApiResponse<T> {
 
 ### 6.2 上传头像
 
-**接口**: `POST /api/grader/upload-avatar`
+**接口**: `POST /api/upload/avatar`
 
 **请求**: 使用 FormData，字段名为 `avatar`
 
@@ -303,6 +321,49 @@ interface ApiResponse<T> {
   }
 }
 ```
+
+## 6.5. 仪表板统计模块
+
+### 6.5.1 获取阅卷员仪表板数据
+**接口**: `GET /api/grader/dashboard/stats`
+
+**描述**: 获取阅卷员仪表板统计数据
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    totalTasks: 5,              // 总任务数量
+    completedTasks: 3,          // 已完成任务数量
+    pendingTasks: 2,            // 待处理任务数量
+    averageScore: 78.5,         // 平均给分
+    efficiency: 85.2,           // 阅卷效率(%)
+    accuracy: 92.8,             // 阅卷准确性(%)
+    recentTasks: [              // 最近阅卷记录
+      {
+        id: "task003",
+        examTitle: "2024年春季物理竞赛",
+        questionNumber: 5,
+        gradedAt: "2024-03-18T15:30:00Z",
+        status: "completed",
+        score: 85
+      },
+      {
+        id: "task002", 
+        examTitle: "2024年春季化学竞赛",
+        questionNumber: 3,
+        gradedAt: "2024-03-15T16:45:00Z",
+        status: "completed",
+        score: 72
+      }
+    ]
+  },
+  message: "获取仪表板数据成功"
+}
+```
+
+---
 
 ## 7. 系统通知模块
 

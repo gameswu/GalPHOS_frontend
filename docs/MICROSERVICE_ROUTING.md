@@ -11,16 +11,16 @@
 | 端口 | 服务名称 | 服务标识 | 职责描述 | API数量 |
 |------|----------|----------|----------|---------|
 | 3001 | User Authentication Service | `auth` | 用户认证与授权服务 | 5个 |
-| 3002 | User Management Service | `userManagement` | 用户生命周期管理服务 | 20个 |
+| 3002 | User Management Service | `userManagement` | 用户生命周期管理服务 | 22个 |
 | 3003 | Exam Management Service | `examManagement` | 考试完整生命周期管理服务 | 8个 |
 | 3004 | Submission Service | `submission` | 答题卡提交和管理服务 | 6个 |
 | 3005 | Grading Service | `grading` | 阅卷任务分配和过程管理服务 | 18个 |
-| 3006 | Score Statistics Service | `scoreStatistics` | 成绩数据分析和排名计算服务 | 9个 |
-| 3007 | Region Management Service | `regionManagement` | 省份学校等地理信息管理服务 | 7个 |
-| 3008 | File Storage Service | `fileStorage` | 文件上传存储和访问管理服务 | 7个 |
+| 3006 | Score Statistics Service | `scoreStatistics` | 成绩数据分析和排名计算服务 | 12个 |
+| 3007 | Region Management Service | `regionManagement` | 省份学校等地理信息管理服务 | 17个 |
+| 3008 | File Storage Service | `fileStorage` | 文件上传存储和访问管理服务 | 8个 |
 | 3009 | System Configuration Service | `systemConfig` | 系统全局配置管理服务 | 4个 |
 
-**总计**: 84个API接口
+**总计**: 100个API接口
 
 ## API 路径分配策略
 
@@ -97,24 +97,20 @@
 # 所有角色个人资料管理
 /api/admin/profile                  # 管理员个人资料
 /api/student/profile               # 学生个人资料
-/api/student/password              # 学生密码修改
-/api/student/region-change         # 学生区域变更申请
-/api/student/region-change/status  # 学生区域变更状态
-/api/coach/profile                 # 教练个人信息
-/api/coach/profile/change-password # 教练密码修改
-/api/coach/profile/change-region   # 教练区域变更
-/api/coach/profile/change-region-requests # 教练区域变更申请
-/api/grader/profile                # 阅卷员个人信息
-/api/grader/change-password        # 阅卷员密码修改
+/api/student/password              # 学生密码修改 (PUT)
+/api/coach/profile                 # 教练个人信息 (GET, PUT)
+/api/coach/password                # 教练密码修改 (PUT) 
+/api/grader/profile                # 阅卷员个人信息 (GET, PUT)
+/api/grader/password               # 阅卷员密码修改 (PUT)
 ```
 
 **功能说明**：
 - 用户CRUD操作
-- 个人资料管理（所有角色）
+- **统一的个人资料管理**（所有角色，GET/PUT）
+- **统一的密码修改功能**（所有角色，PUT方法）
 - 教练学生关系管理
 - 学生注册申请审核
-- 用户区域变更申请管理
-- 统一的用户身份信息管理
+- 用户状态生命周期管理
 
 ### 3. 考试管理服务 (localhost:3003)
 
@@ -209,57 +205,77 @@
 
 ### 6. 成绩统计服务 (localhost:3006)
 
-**负责成绩数据分析和排名计算，共9个API端点**
+**负责成绩数据分析和排名计算，共12个API端点**
 
 ```
-# 学生成绩查看
+# 学生成绩查看和仪表板（统一规范 v1.2.0）
 /api/student/exams/{examId}/score      # 学生考试成绩
 /api/student/exams/{examId}/ranking    # 学生考试排名
 /api/student/scores                    # 学生历史成绩
-/api/student/scores/statistics         # 学生成绩统计
-/api/student/dashboard                 # 学生仪表盘
+/api/student/dashboard/stats           # 学生仪表板统计数据
 
-# 教练成绩管理
+# 教练成绩管理和仪表板（统一规范 v1.2.0）
 /api/coach/grades/overview             # 教练成绩概览
 /api/coach/grades/details              # 教练成绩详情
 /api/coach/students/scores             # 教练学生成绩
 /api/coach/students/{studentId}/exams/{examId}/score # 教练查看学生成绩
+/api/coach/dashboard/stats             # 教练仪表板统计数据
+
+# 阅卷员统计和仪表板（新增 v1.2.0）
+/api/grader/statistics                 # 阅卷员统计数据
+/api/grader/dashboard/stats            # 阅卷员仪表板统计数据
+/api/grader/history                    # 阅卷员历史记录
+
+# 管理员仪表板（统一规范 v1.2.0）
+/api/admin/dashboard/stats             # 管理员仪表板统计数据
 ```
 
 **功能说明**：
 - 成绩计算与统计分析
 - 排名生成与更新
 - 多维度数据分析
-- 仪表盘数据聚合
+- **统一仪表盘数据聚合**：所有角色使用 `/dashboard/stats` 路径
 
 ### 7. 区域管理服务 (localhost:3007)
 
-**负责省份学校等地理信息管理，共6个API端点**
+**负责省份学校等地理信息管理，共17个API端点**
 
 ```
 # 管理员区域管理
-/api/admin/regions                     # 区域信息管理
-/api/admin/regions/provinces           # 省份管理
-/api/admin/regions/provinces/{provinceId} # 省份详情操作
-/api/admin/regions/schools             # 学校管理
-/api/admin/regions/schools/{schoolId}  # 学校详情操作
+/api/admin/regions                        # 区域信息管理 (GET)
+/api/admin/regions/provinces              # 省份管理 (GET, POST)
+/api/admin/regions/provinces/{provinceId} # 省份详情操作 (DELETE)
+/api/admin/regions/schools                # 学校管理 (GET, POST) 
+/api/admin/regions/schools/{schoolId}     # 学校详情操作 (PUT, DELETE)
 
 # 区域变更申请管理
-/api/admin/regions/change-requests     # 区域变更申请列表
-/api/admin/regions/change-requests/{requestId} # 区域变更申请处理
+/api/admin/regions/change-requests        # 区域变更申请列表 (GET)
+/api/admin/regions/change-requests/{requestId} # 区域变更申请处理 (POST)
 
-/api/regions/provinces-schools        # 省份学校信息查询（临时路由）
+# 学生区域变更功能
+/api/student/region-change                # 学生申请区域变更 (POST)
+/api/student/region-change/status         # 学生查看申请状态 (GET)
+
+# 教练区域变更功能（统一规范 v1.2.0）
+/api/coach/region-change                  # 教练申请区域变更 (POST)
+/api/coach/region-change/status           # 教练查看申请状态 (GET)
+
+# 通用区域数据查询
+/api/regions/provinces-schools            # 省份学校信息查询（前端组件使用）(GET)
+/api/regions/provinces                    # 省份列表查询 (GET)
+/api/regions/schools                      # 学校列表查询（按省份筛选）(GET)
 ```
 
 **功能说明**：
 - 省份学校信息维护
 - 区域层级关系管理
 - 地理信息数据管理
-- 区域变更申请处理（管理员侧）
+- **区域变更申请处理**：管理员侧审核功能
+- **统一地区变更API**：学生和教练使用相同的路径格式
 
 ### 8. 文件存储服务 (localhost:3008)
 
-**负责文件上传存储和访问管理，共7个API端点**
+**负责文件上传存储和访问管理，共8个API端点**
 
 ```
 # 学生文件管理
@@ -273,15 +289,15 @@
 /api/coach/exams/{examId}/scores/export # 教练成绩导出
 /api/coach/exams/{examId}/scores/statistics # 教练成绩统计
 
-# 仪表盘数据
-/api/admin/dashboard/stats             # 管理员仪表盘统计
-/api/coach/dashboard/stats             # 教练仪表盘统计
+# 通用文件上传（统一规范 v1.2.0）
+/api/upload/avatar                     # 统一头像上传接口
+/api/upload/*                          # 其他文件上传
+/api/files/*                           # 文件管理
 ```
 
-**注意**：当前文件存储相关API分散在各个服务中，建议未来统一迁移到专门的文件存储服务。
-
 **功能说明**：
-- 文件上传下载管理
+- **统一文件上传管理**：所有角色使用相同的头像上传接口
+- 文件存储与访问控制
 - 文件权限控制
 - 文件生命周期管理
 - 头像、答题卡等各类文件
@@ -458,12 +474,36 @@ const allConfigs = microserviceRouter.getAllServiceConfigs();
 
 - **文档版本**: 1.2.0
 - **架构版本**: 基于 docs/README.md 微服务设计
-- **API覆盖**: 完整映射所有80个前端API接口
-- **更新日期**: 2025年6月28日
+- **API覆盖**: 完整映射所有100个前端API接口
+- **更新日期**: 2025年6月30日
+- **主要更新**: API规范统一化 - 个人资料、密码修改、仪表板、地区变更接口统一
 
 ## 文档说明
 
-本文档替代了原有的 `API_COVERAGE_REPORT.md` 和 `API_DOCS_UPDATE_REPORT.md`，成为微服务架构下API接口映射的唯一权威文档。每个微服务部分详细列出了：
+本文档替代了原有的 `API_COVERAGE_REPORT.md` 和 `API_DOCS_UPDATE_REPORT.md`，成为微服务架构下API接口映射的唯一权威文档。
+
+### v1.2.0 更新内容：
+
+1. **个人资料管理API统一化**：
+   - 所有角色使用 `GET/PUT /api/{role}/profile`
+   - 支持统一的基础字段：name, phone, email, avatar
+
+2. **密码修改API统一化**：
+   - 所有角色使用 `PUT /api/{role}/password`
+   - 统一参数：oldPassword + newPassword
+
+3. **仪表板API统一化**：
+   - 所有角色使用 `GET /api/{role}/dashboard/stats`
+   - 统一方法名：getDashboardStats()
+
+4. **地区变更API统一化**：
+   - 学生和教练使用 `/api/{role}/region-change*`
+   - 统一方法：requestRegionChange() 和 getRegionChangeStatus()
+
+5. **头像上传API统一化**：
+   - 所有角色使用 `POST /api/upload/avatar`
+
+### 每个微服务部分详细列出了：
 
 1. **实际API端点**: 基于前端代码实际使用的API路径
 2. **功能分组**: 按业务逻辑对API进行分类说明
@@ -475,3 +515,4 @@ const allConfigs = microserviceRouter.getAllServiceConfigs();
 - ✅ 微服务映射准确无误
 - ✅ 前端路由配置正确
 - ✅ 错误处理100%覆盖
+- ✅ API规范统一化完成

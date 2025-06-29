@@ -1,21 +1,13 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-
-export interface Notification {
-  id: string;
-  type: 'error';
-  title?: string;
-  message: string;
-  duration?: number; // 毫秒，0 表示不自动消失
-  timestamp: number;
-}
+import React, { createContext, useContext, useCallback, useEffect } from 'react';
+import { notification } from 'antd';
+import type { NotificationPlacement } from 'antd/es/notification/interface';
 
 interface NotificationContextType {
-  notifications: Notification[];
-  addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void;
-  removeNotification: (id: string) => void;
-  clearAllNotifications: () => void;
   // 便捷方法
   showError: (message: string, title?: string, duration?: number) => void;
+  showSuccess: (message: string, title?: string, duration?: number) => void;
+  showWarning: (message: string, title?: string, duration?: number) => void;
+  showInfo: (message: string, title?: string, duration?: number) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -33,50 +25,56 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
-    const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const newNotification: Notification = {
-      ...notification,
-      id,
-      timestamp: Date.now(),
-      duration: notification.duration ?? 0, // 错误消息默认不自动消失
-    };
-
-    setNotifications(prev => [...prev, newNotification]);
-
-    // 自动移除通知
-    if (newNotification.duration && newNotification.duration > 0) {
-      setTimeout(() => {
-        removeNotification(id);
-      }, newNotification.duration);
-    }
-  }, []);
-
-  const removeNotification = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
-  }, []);
-
-  const clearAllNotifications = useCallback(() => {
-    setNotifications([]);
+  // 配置全局通知样式和位置
+  useEffect(() => {
+    // 设置通知从左上角弹出
+    notification.config({
+      placement: 'topLeft' as NotificationPlacement,
+      top: 24,
+      duration: 4.5, // 默认显示时长
+      maxCount: 5, // 最多同时显示5个通知
+      rtl: false,
+    });
   }, []);
 
   const showError = useCallback((message: string, title?: string, duration?: number) => {
-    addNotification({
-      type: 'error',
-      title: title || '错误',
-      message,
+    notification.error({
+      message: title || '错误',
+      description: message,
       duration: duration ?? 0, // 错误消息默认不自动消失
+      placement: 'topLeft',
     });
-  }, [addNotification]);
+  }, []);
+
+  const showSuccess = useCallback((message: string, title?: string, duration?: number) => {
+    // 成功消息不显示通知
+    // 可以在这里添加console.log用于调试
+    // console.log('Success:', message);
+  }, []);
+
+  const showWarning = useCallback((message: string, title?: string, duration?: number) => {
+    notification.warning({
+      message: title || '警告',
+      description: message,
+      duration: duration ?? 4.5,
+      placement: 'topLeft',
+    });
+  }, []);
+
+  const showInfo = useCallback((message: string, title?: string, duration?: number) => {
+    notification.info({
+      message: title || '信息',
+      description: message,
+      duration: duration ?? 4.5,
+      placement: 'topLeft',
+    });
+  }, []);
 
   const value: NotificationContextType = {
-    notifications,
-    addNotification,
-    removeNotification,
-    clearAllNotifications,
     showError,
+    showSuccess,
+    showWarning,
+    showInfo,
   };
 
   return (

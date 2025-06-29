@@ -471,34 +471,26 @@ class GraderAPI extends BaseAPI {
 
   // 修改密码
   static async changePassword(passwordData: {
-    currentPassword: string;
+    oldPassword: string;
     newPassword: string;
-    confirmPassword: string;
   }): Promise<ApiResponse<any>> {
-    this.validateRequired(passwordData.currentPassword, '当前密码');
+    this.validateRequired(passwordData.oldPassword, '当前密码');
     this.validateRequired(passwordData.newPassword, '新密码');
-    this.validateRequired(passwordData.confirmPassword, '确认密码');
 
-    // 验证新密码和确认密码是否一致
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      throw new Error('新密码和确认密码不一致');
-    }
-
-    // 验证密码强度
     if (passwordData.newPassword.length < 6) {
-      throw new Error('密码长度至少6位');
+      throw new Error('新密码长度不能少于6位');
     }
 
     // 密码哈希处理
-    const hashedCurrentPassword = PasswordHasher.hashPasswordWithSalt(passwordData.currentPassword);
+    const hashedOldPassword = PasswordHasher.hashPasswordWithSalt(passwordData.oldPassword);
     const hashedNewPassword = PasswordHasher.hashPasswordWithSalt(passwordData.newPassword);
 
     return this.makeRequest<any>(
-      `/api/grader/change-password`,
+      `/api/grader/password`,
       {
         method: 'PUT',
         body: JSON.stringify({
-          currentPassword: hashedCurrentPassword,
+          oldPassword: hashedOldPassword,
           newPassword: hashedNewPassword,
         }),
       },

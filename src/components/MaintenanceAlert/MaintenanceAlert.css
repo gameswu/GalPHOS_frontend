@@ -1,0 +1,54 @@
+/* 维护模式公告组件样式 */
+.maintenance-alert-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  width: 100%;
+}
+
+.maintenance-alert {
+  border-radius: 0 !important;
+  border: none !important;
+  margin-bottom: 0 !important;
+  background: linear-gradient(90deg, #ff7875, #ff9c6e) !important;
+  color: #fff !important;
+  font-weight: 500;
+}
+
+.maintenance-alert .ant-alert-content {
+  padding: 8px 0;
+}
+
+.maintenance-marquee {
+  width: 100%;
+}
+
+.maintenance-text {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  margin-right: 100px; /* 为了实现连续滚动效果 */
+  white-space: nowrap;
+}
+
+/* 确保页面内容向下偏移，不被公告遮挡 */
+.maintenance-alert-container + * {
+  margin-top: 40px !important;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .maintenance-text {
+    font-size: 13px;
+    margin-right: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .maintenance-text {
+    font-size: 12px;
+    margin-right: 60px;
+  }
+}

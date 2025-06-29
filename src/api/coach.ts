@@ -275,17 +275,28 @@ class CoachAPI extends BaseAPI {
   }
 
   // 更新个人信息
-  static async updateProfile(updateData: {
+  static async updateProfile(profileData: {
     name?: string;
     phone?: string;
+    email?: string;
     avatar?: string;
   }): Promise<ApiResponse<any>> {
     try {
+      // 验证手机号格式
+      if (profileData.phone && !/^1[3-9]\d{9}$/.test(profileData.phone)) {
+        throw new Error('手机号格式不正确');
+      }
+
+      // 验证邮箱格式
+      if (profileData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
+        throw new Error('邮箱格式不正确');
+      }
+
       return await this.makeRequest<any>(
         `/api/coach/profile`,
         {
           method: 'PUT',
-          body: JSON.stringify(updateData),
+          body: JSON.stringify(profileData),
         },
         '更新个人信息'
       );
@@ -300,14 +311,21 @@ class CoachAPI extends BaseAPI {
     newPassword: string;
   }): Promise<ApiResponse<any>> {
     try {
+      this.validateRequired(passwordData.oldPassword, '当前密码');
+      this.validateRequired(passwordData.newPassword, '新密码');
+
+      if (passwordData.newPassword.length < 6) {
+        throw new Error('新密码长度不能少于6位');
+      }
+
       // 对密码进行哈希处理
       const hashedOldPassword = PasswordHasher.hashPasswordWithSalt(passwordData.oldPassword);
       const hashedNewPassword = PasswordHasher.hashPasswordWithSalt(passwordData.newPassword);
 
       return await this.makeRequest<any>(
-        `/api/coach/profile/change-password`,
+        `/api/coach/password`,
         {
-          method: 'POST',
+          method: 'PUT',
           body: JSON.stringify({
             oldPassword: hashedOldPassword,
             newPassword: hashedNewPassword
@@ -327,8 +345,12 @@ class CoachAPI extends BaseAPI {
     reason: string;
   }): Promise<ApiResponse<any>> {
     try {
+      this.validateRequired(requestData.province, '省份');
+      this.validateRequired(requestData.school, '学校');
+      this.validateRequired(requestData.reason, '申请理由');
+
       return await this.makeRequest<any>(
-        `/api/coach/profile/change-region`,
+        `/api/coach/region-change`,
         {
           method: 'POST',
           body: JSON.stringify(requestData),
@@ -463,43 +485,23 @@ class CoachAPI extends BaseAPI {
   }
 
   // ===================== 赛区变更申请模块 =====================
+  // 注意：教练地区变更API与学生保持一致的路径和方法命名规范
+  // 路径：/api/coach/region-change* （统一规范）
+  // 微服务路由：区域管理服务 (port 3007)
+  // 详细文档：docs/API_REGION.md
 
-  // 申请赛区变更
-  static async submitRegionChangeRequest(data: {
-    province: string;
-    school: string;
-    reason: string;
-  }): Promise<ApiResponse<any>> {
-    try {
-      this.validateRequired(data.province, '省份');
-      this.validateRequired(data.school, '学校');
-      this.validateRequired(data.reason, '申请理由');
-
-      return await this.makeRequest<any>(
-        `/api/coach/profile/change-region`,
-        {
-          method: 'POST',
-          body: JSON.stringify(data),
-        },
-        '提交赛区变更申请'
-      );
-    } catch (error) {
-      return this.handleApiError(error, '提交赛区变更申请');
-    }
-  }
-
-  // 获取我的赛区变更申请记录
-  static async getMyRegionChangeRequests(): Promise<ApiResponse<any>> {
+  // 获取赛区变更申请状态
+  static async getRegionChangeStatus(): Promise<ApiResponse<any>> {
     try {
       return await this.makeRequest<any>(
-        `/api/coach/profile/change-region-requests`,
+        `/api/coach/region-change/status`,
         {
           method: 'GET',
         },
-        '获取赛区变更申请记录'
+        '获取赛区变更申请状态'
       );
     } catch (error) {
-      return this.handleApiError(error, '获取赛区变更申请记录');
+      return this.handleApiError(error, '获取赛区变更申请状态');
     }
   }
 }

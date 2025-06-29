@@ -472,14 +472,38 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                         <Option value=".png">PNG</Option>
                       </Select>
                     </Form.Item>
+
+                    <Form.Item
+                      label="允许用户注册"
+                      name="allowRegistration"
+                      valuePropName="checked"
+                    >
+                      <Switch />
+                    </Form.Item>
                   </Card>
                 </Col>
 
                 <Col span={12}>
-                  <Card size="small" title="维护设置">
+                  <Card size="small" title="考试设置">
+                    <Form.Item
+                      label="默认考试时长 (分钟)"
+                      name="examDuration"
+                    >
+                      <InputNumber min={30} max={300} style={{ width: '100%' }} placeholder="默认180分钟" />
+                    </Form.Item>
+
+                    <Form.Item
+                      label="阅卷截止时间 (小时)"
+                      name="gradingDeadline"
+                    >
+                      <InputNumber min={24} max={168} style={{ width: '100%' }} placeholder="默认72小时" />
+                    </Form.Item>
+                  </Card>
+
+                  <Card size="small" title="维护设置" style={{ marginTop: 16 }}>
                     <Form.Item
                       label="系统维护模式"
-                      name="systemMaintenance"
+                      name="maintenanceMode"
                       valuePropName="checked"
                     >
                       <Switch />
@@ -490,6 +514,13 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       name="maintenanceMessage"
                     >
                       <TextArea rows={4} placeholder="请输入维护提示信息" />
+                    </Form.Item>
+
+                    <Form.Item
+                      label="系统公告"
+                      name="announcement"
+                    >
+                      <TextArea rows={3} placeholder="请输入系统公告（支持轮播显示）" />
                     </Form.Item>
                   </Card>
                 </Col>

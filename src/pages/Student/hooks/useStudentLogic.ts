@@ -37,7 +37,7 @@ export const useStudentLogic = () => {
   // 加载仪表板数据
   const loadDashboardData = useCallback(async () => {
     try {
-      const result = await StudentAPI.getDashboardData();
+      const result = await StudentAPI.getDashboardStats();
       if (result.success && result.data) {
         setDashboardData(result.data);
       }

@@ -698,6 +698,51 @@ class AdminAPI extends BaseAPI {
     );
   }
 
+  // 更新个人资料（管理员只支持更新头像）
+  static async updateProfile(profileData: {
+    avatar?: string;
+  }): Promise<ApiResponse<any>> {
+    this.validateRequired(profileData, '个人资料');
+
+    return this.makeRequest<any>(
+      `/api/admin/profile`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(profileData),
+      },
+      '更新个人资料'
+    );
+  }
+
+  // 修改个人密码
+  static async changePassword(passwordData: {
+    oldPassword: string;
+    newPassword: string;
+  }): Promise<ApiResponse<any>> {
+    this.validateRequired(passwordData.oldPassword, '当前密码');
+    this.validateRequired(passwordData.newPassword, '新密码');
+
+    if (passwordData.newPassword.length < 6) {
+      throw new Error('新密码长度不能少于6位');
+    }
+
+    // 密码哈希处理
+    const hashedOldPassword = PasswordHasher.hashPasswordWithSalt(passwordData.oldPassword);
+    const hashedNewPassword = PasswordHasher.hashPasswordWithSalt(passwordData.newPassword);
+
+    return this.makeRequest<any>(
+      `/api/admin/password`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          oldPassword: hashedOldPassword,
+          newPassword: hashedNewPassword,
+        }),
+      },
+      '修改个人密码'
+    );
+  }
+
   // 修改管理员密码
   static async changeAdminPassword(adminId: string, passwordData: {
     oldPassword: string;

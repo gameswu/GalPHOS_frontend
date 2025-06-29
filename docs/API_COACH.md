@@ -643,6 +643,7 @@ interface ApiResponse<T> {
     username: "coach001",
     name: "李老师",
     phone: "13800138000",
+    email: "li.teacher@example.com",
     province: "北京市",
     school: "北京第一中学",
     avatar?: "https://example.com/avatar.jpg",
@@ -664,12 +665,13 @@ interface ApiResponse<T> {
 {
   name?: "李老师",
   phone?: "13800138001",
+  email?: "li.teacher@example.com",
   avatar?: "https://example.com/new_avatar.jpg"
 }
 ```
 
 ### 5.3 修改密码
-**接口**: `POST /api/coach/profile/change-password`
+**接口**: `PUT /api/coach/password`
 
 **描述**: 修改登录密码
 
@@ -678,11 +680,16 @@ interface ApiResponse<T> {
 {
   oldPassword: "hashed_old_password", // 前端SHA-256+盐值哈希
   newPassword: "hashed_new_password"  // 前端SHA-256+盐值哈希
+**响应**:
+```typescript
+{
+  success: true,
+  message: "密码修改成功"
 }
 ```
 
 ### 5.4 申请赛区变更
-**接口**: `POST /api/coach/profile/change-region`
+**接口**: `POST /api/coach/region-change`
 
 **描述**: 申请变更所属赛区
 
@@ -708,7 +715,7 @@ interface ApiResponse<T> {
 ```
 
 ### 5.5 获取我的赛区变更申请
-**接口**: `GET /api/coach/profile/change-region-requests`
+**接口**: `GET /api/coach/region-change/status`
 
 **描述**: 获取当前教练的赛区变更申请记录
 
@@ -734,7 +741,8 @@ interface ApiResponse<T> {
 ```
 
 ### 5.6 上传头像
-**接口**: `POST /api/coach/profile/upload-avatar`
+### 5.6 上传头像
+**接口**: `POST /api/upload/avatar`
 
 **描述**: 上传头像图片
 
