@@ -825,16 +825,9 @@ const AdminContent: React.FC<AdminContentProps> = ({
     case 'system-settings':
       return (
         <SystemSettings
-          adminUsers={adminUsers}
           systemSettings={systemSettings}
-          currentAdmin={currentAdmin}
           loading={loading}
-          onChangePassword={onChangeAdminPassword}
-          onUpdateAdminInfo={onUpdateAdminInfo}
-          onCreateAdmin={onCreateAdmin}
-          onDeleteAdmin={onDeleteAdmin}
           onUpdateSystemSettings={onUpdateSystemSettings}
-          onUploadAvatar={onUploadAvatar}
         />
       );
     

@@ -13,7 +13,7 @@ const MaintenanceAlert: React.FC = () => {
   }
 
   // 获取维护公告内容，如果没有则使用默认消息
-  const announcementText = systemConfig.announcement || '系统正在维护中，请稍后再试。';
+  const announcementText = systemConfig.maintenanceMessage || '系统正在维护中，请稍后再试。';
 
   return (
     <div className="maintenance-alert-container">

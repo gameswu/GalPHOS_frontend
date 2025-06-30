@@ -552,21 +552,12 @@ class AdminAPI extends BaseAPI {
     );
   }
 
-  // 更新系统设置
+  // 更新系统设置（简化版 v1.3.0）
   static async updateSystemSettings(settings: {
-    siteName?: string;
-    systemName?: string;
-    siteDescription?: string;
-    maxFileSize?: number;
-    allowedFileTypes?: string[];
-    examDurationLimit?: number;
-    examDuration?: number;
-    autoGradingEnabled?: boolean;
-    allowRegistration?: boolean;
-    gradingDeadline?: number;
     maintenanceMode?: boolean;
-    announcement?: string;
-    systemLogo?: string;
+    maintenanceMessage?: string;
+    systemAnnouncements?: string[];
+    announcementEnabled?: boolean;
   }): Promise<ApiResponse<any>> {
     this.validateRequired(settings, '系统设置');
 

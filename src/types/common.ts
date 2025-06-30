@@ -520,22 +520,20 @@ export interface AdminUser {
   createdBy: string;
 }
 
-// 系统设置
+// 系统设置（简化版 v1.3.0）
 export interface SystemSettings {
-  siteName: string;
-  siteDescription: string;
-  maxUploadSize: number; // MB
-  allowedFileTypes: string[];
-  systemMaintenance: boolean;
-  maintenanceMessage: string;
-  // 新增字段以匹配API
-  systemName?: string;
-  systemLogo?: string;
-  allowRegistration?: boolean;
-  examDuration?: number;
-  gradingDeadline?: number;
-  maintenanceMode?: boolean;
-  announcement?: string;
+  // 维护模式相关
+  maintenanceMode: boolean;           // 维护模式开关
+  maintenanceMessage: string;         // 维护模式消息
+  
+  // 系统公告
+  systemAnnouncements: string[];      // 系统公告列表（轮播显示）
+  announcementEnabled: boolean;       // 公告显示开关
+  
+  // 系统信息（只读，用于显示）
+  systemName: string;                 // 系统名称
+  version: string;                    // 系统版本
+  buildTime: string;                  // 构建时间
 }
 
 // 密码修改数据

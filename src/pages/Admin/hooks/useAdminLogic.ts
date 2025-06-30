@@ -843,23 +843,16 @@ export const useAdminLogic = () => {
     }
   }, [currentAdmin, loadAdminUsers]);
 
-  // 更新系统设置
+  // 更新系统设置（简化版 v1.3.0）
   const updateSystemSettings = useCallback(async (settings: Partial<SystemSettings>) => {
     try {
       setLoading(true);
-      // 完整的字段映射以匹配API接口
+      // 简化的字段映射，只保留核心维护和公告功能
       const apiSettings = {
-        systemName: settings.siteName,
-        siteName: settings.siteName,
-        siteDescription: settings.siteDescription,
-        systemLogo: settings.systemLogo,
-        allowRegistration: settings.allowRegistration,
-        examDuration: settings.examDuration,
-        gradingDeadline: settings.gradingDeadline,
-        maintenanceMode: settings.systemMaintenance,
-        announcement: settings.announcement,
-        maxUploadSize: settings.maxUploadSize,
-        allowedFileTypes: settings.allowedFileTypes
+        maintenanceMode: settings.maintenanceMode,
+        maintenanceMessage: settings.maintenanceMessage,
+        systemAnnouncements: settings.systemAnnouncements,
+        announcementEnabled: settings.announcementEnabled
       };
       
       const response = await AdminAPI.updateSystemSettings(apiSettings);

@@ -49,7 +49,7 @@ export const menuItems = [
   {
     key: 'system-settings',
     icon: <SettingOutlined />,
-    label: '系统设置',
+    label: '系统配置',
   },
 ];
 
@@ -63,7 +63,7 @@ export const getTitleByKey = (key: string): string => {
     'region-change-requests': '赛区变更申请',
     'exam-management': '考试管理',
     'grading-management': '阅卷管理',
-    'system-settings': '系统设置'
+    'system-settings': '系统配置'
   };
   return titleMap[key as keyof typeof titleMap] || '管理后台';
 };
