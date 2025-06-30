@@ -19,12 +19,14 @@ const AppContent: React.FC = () => {
 
   // 初始化全局通知方法和系统配置
   useEffect(() => {
+    console.log('设置全局通知方法...'); // 调试信息
     BaseAPI.setGlobalNotificationMethods({
       showError: notification.showError,
       showSuccess: notification.showSuccess,
       showWarning: notification.showWarning,
       showInfo: notification.showInfo,
     });
+    console.log('全局通知方法设置完成'); // 调试信息
 
     // 初始化系统配置（应用默认值）
     // 这会设置默认的网站名称 "GalPHOS" 和描述

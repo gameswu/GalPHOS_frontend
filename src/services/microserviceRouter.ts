@@ -311,12 +311,12 @@ export class MicroserviceRouter {
     }
     
     // 3. 考试管理相关
-    if (path.includes('/exams') || path.includes('/questions')) {
+    if (path.includes('/exams') && !path.includes('/submit') && !path.includes('/submission') && !path.includes('/upload-answer')) {
       return MICROSERVICE_CONFIG.examManagement;
     }
     
-    // 4. 提交相关
-    if (path.includes('/submit') || path.includes('/submission') || path.includes('/upload')) {
+    // 4. 提交相关（优先处理特定的提交上传）
+    if (path.includes('/submit') || path.includes('/submission') || path.includes('/upload-answer')) {
       return MICROSERVICE_CONFIG.submission;
     }
     
@@ -332,13 +332,13 @@ export class MicroserviceRouter {
     }
     
     // 7. 区域管理相关
-    if (path.includes('/regions') || path.includes('/provinces-schools')) {
+    if (path.includes('/regions') || path.includes('/provinces-schools') || path.includes('/region-change')) {
       return MICROSERVICE_CONFIG.regionManagement;
     }
     
-    // 8. 文件存储相关
-    if (path.includes('/files') || path.includes('/upload') || path.includes('/download') || 
-        path.includes('/images')) {
+    // 8. 文件存储相关（通用文件上传，排除特定提交上传）
+    if (path.includes('/files') || path.includes('/download') || path.includes('/images') ||
+        (path.includes('/upload') && !path.includes('/upload-answer'))) {
       return MICROSERVICE_CONFIG.fileStorage;
     }
     
@@ -348,37 +348,41 @@ export class MicroserviceRouter {
     
     // 根据角色前缀进行二级推断
     if (path.startsWith('/api/student/')) {
-      // 独立学生账号相关请求优先级：自主提交 > 考试查看 > 成绩查看 > 地区变更 > 个人资料管理
+      // 独立学生账号相关请求优先级：自主提交 > 考试查看 > 成绩查看 > 地区变更 > 文件下载 > 个人资料管理
       if (path.includes('submit') || path.includes('submission')) return MICROSERVICE_CONFIG.submission;
       if (path.includes('exam') && !path.includes('score') && !path.includes('ranking')) return MICROSERVICE_CONFIG.examManagement;
       if (path.includes('score') || path.includes('ranking') || path.includes('dashboard')) return MICROSERVICE_CONFIG.scoreStatistics;
       if (path.includes('region-change')) return MICROSERVICE_CONFIG.regionManagement;
+      if (path.includes('files/download')) return MICROSERVICE_CONFIG.fileStorage;
       return MICROSERVICE_CONFIG.userManagement; // 个人资料、密码等
     }
     
     if (path.startsWith('/api/coach/')) {
-      // 教练相关请求优先级：代理提交管理 > 考试管理 > 成绩统计 > 非独立学生管理 > 地区变更 > 用户管理
+      // 教练相关请求优先级：代理提交管理 > 考试管理 > 成绩统计 > 非独立学生管理 > 地区变更 > 文件导出 > 用户管理
       if (path.includes('submission') || path.includes('upload-answer')) return MICROSERVICE_CONFIG.submission;
-      if (path.includes('exam') && !path.includes('submission')) return MICROSERVICE_CONFIG.examManagement;
-      if (path.includes('score') || path.includes('statistics') || path.includes('ranking')) return MICROSERVICE_CONFIG.scoreStatistics;
-      if (path.includes('students')) return MICROSERVICE_CONFIG.grading; // 非独立学生管理
+      if (path.includes('exam') && !path.includes('submission') && !path.includes('scores') && !path.includes('ranking')) return MICROSERVICE_CONFIG.examManagement;
+      if (path.includes('score') || path.includes('statistics') || path.includes('ranking') || path.includes('dashboard') || path.includes('grades')) return MICROSERVICE_CONFIG.scoreStatistics;
+      if (path.includes('students') && !path.includes('scores')) return MICROSERVICE_CONFIG.grading; // 非独立学生管理
       if (path.includes('region-change')) return MICROSERVICE_CONFIG.regionManagement;
+      if (path.includes('exams') && (path.includes('export') || path.includes('statistics'))) return MICROSERVICE_CONFIG.fileStorage;
       return MICROSERVICE_CONFIG.userManagement; // 教练个人资料管理
     }
     
     if (path.startsWith('/api/grader/')) {
       // 阅卷员相关请求优先级：阅卷任务 > 成绩统计 > 文件 > 用户管理
       if (path.includes('task') || path.includes('submission')) return MICROSERVICE_CONFIG.grading;
-      if (path.includes('statistics') || path.includes('history')) return MICROSERVICE_CONFIG.scoreStatistics;
+      if (path.includes('statistics') || path.includes('history') || path.includes('dashboard')) return MICROSERVICE_CONFIG.scoreStatistics;
       if (path.includes('file') || path.includes('image')) return MICROSERVICE_CONFIG.fileStorage;
       return MICROSERVICE_CONFIG.userManagement;
     }
     
     if (path.startsWith('/api/admin/')) {
-      // 管理员相关请求优先级：用户管理 > 考试管理 > 阅卷管理 > 系统配置
-      if (path.includes('users') || path.includes('coach-students')) return MICROSERVICE_CONFIG.userManagement;
-      if (path.includes('exam') || path.includes('question')) return MICROSERVICE_CONFIG.examManagement;
-      if (path.includes('grading') || path.includes('graders')) return MICROSERVICE_CONFIG.grading;
+      // 管理员相关请求优先级：用户管理 > 考试管理 > 阅卷管理 > 区域管理 > 系统配置
+      if (path.includes('users') || path.includes('coach-students') || path.includes('student-registrations')) return MICROSERVICE_CONFIG.userManagement;
+      if (path.includes('exam') && !path.includes('grading') && !path.includes('questions/scores')) return MICROSERVICE_CONFIG.examManagement;
+      if (path.includes('grading') || path.includes('graders') || path.includes('questions/scores')) return MICROSERVICE_CONFIG.grading;
+      if (path.includes('regions') || path.includes('change-requests')) return MICROSERVICE_CONFIG.regionManagement;
+      if (path.includes('dashboard')) return MICROSERVICE_CONFIG.scoreStatistics;
       if (path.includes('system') || path.includes('settings')) return MICROSERVICE_CONFIG.systemConfig;
       return MICROSERVICE_CONFIG.userManagement; // 默认用户管理
     }

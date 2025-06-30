@@ -32,16 +32,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       placement: 'topLeft' as NotificationPlacement,
       top: 24,
       duration: 4.5, // 默认显示时长
-      maxCount: 5, // 最多同时显示5个通知
+      maxCount: 3, // 最多同时显示3个通知
       rtl: false,
     });
   }, []);
 
   const showError = useCallback((message: string, title?: string, duration?: number) => {
+    console.log('NotificationContext.showError调用:', message, title); // 调试信息
     notification.error({
       message: title || '错误',
       description: message,
-      duration: duration ?? 0, // 错误消息默认不自动消失
+      duration: duration ?? 4.5,
       placement: 'topLeft',
     });
   }, []);

@@ -57,7 +57,7 @@ export const useGraderLogic = () => {
     try {
       const [tasksResponse, statsResponse] = await Promise.all([
         GraderAPI.getGradingTasks({ page: 1, limit: 100 }),
-        GraderAPI.getGradingStatistics()
+        GraderAPI.getDashboardStats()
       ]);
       
       if (tasksResponse.success && tasksResponse.data) {
@@ -65,7 +65,23 @@ export const useGraderLogic = () => {
       }
       
       if (statsResponse.success && statsResponse.data) {
-        setStatistics(statsResponse.data);
+        // 将 getDashboardStats 的返回数据映射到 GradingStatistics 格式
+        const dashboardStats = statsResponse.data;
+        const mappedStats: GradingStatistics = {
+          totalTasks: dashboardStats.totalTasks,
+          completedTasks: dashboardStats.completedTasks,
+          pendingTasks: dashboardStats.pendingTasks,
+          abandonedTasks: 0, // getDashboardStats 未提供，默认为 0
+          gradingTasks: dashboardStats.totalTasks - dashboardStats.completedTasks - dashboardStats.pendingTasks,
+          averageScore: dashboardStats.averageScore,
+          totalGradingTime: 0, // getDashboardStats 未提供，默认为 0
+          averageGradingTime: 0, // getDashboardStats 未提供，默认为 0
+          todayCompleted: 0, // getDashboardStats 未提供，默认为 0
+          weekCompleted: 0, // getDashboardStats 未提供，默认为 0
+          monthCompleted: 0, // getDashboardStats 未提供，默认为 0
+          efficiency: undefined // getDashboardStats 未提供
+        };
+        setStatistics(mappedStats);
       }
       
       message.success('阅卷任务统计加载成功');

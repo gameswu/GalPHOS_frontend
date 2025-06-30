@@ -271,7 +271,7 @@ class StudentAPI extends BaseAPI {
   static async getDashboardStats(): Promise<ApiResponse<DashboardData>> {
     try {
       return await this.makeRequest<DashboardData>(
-        `/api/student/dashboard`,
+        `/api/student/dashboard/stats`,
         {
           method: 'GET',
         },

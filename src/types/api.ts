@@ -69,8 +69,12 @@ export class BaseAPI {
     }
 
     // 显示全局错误通知
+    console.log('globalNotificationMethods:', globalNotificationMethods); // 调试信息
     if (globalNotificationMethods.showError) {
+      console.log('显示错误通知:', errorMessage, operation); // 调试信息
       globalNotificationMethods.showError(errorMessage, operation);
+    } else {
+      console.warn('globalNotificationMethods.showError未设置'); // 调试信息
     }
 
     if (error.response?.status === 401 || (error.message && error.message.includes('401'))) {
@@ -106,7 +110,10 @@ export class BaseAPI {
 
       return await response.json();
     } catch (error) {
-      return this.handleApiError(error, operation);
+      this.handleApiError(error, operation);
+      // 这行永远不会执行，因为handleApiError会抛出异常
+      // 但为了满足TypeScript，我们需要返回一个值
+      throw error;
     }
   }
 

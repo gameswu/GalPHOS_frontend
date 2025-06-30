@@ -498,6 +498,39 @@ class GraderAPI extends BaseAPI {
     );
   }
 
+  // ===================== 仪表板统计数据模块 =====================
+
+  // 获取阅卷员仪表板统计数据（统一规范 v1.2.0）
+  static async getDashboardStats(): Promise<ApiResponse<{
+    totalTasks: number;
+    completedTasks: number;
+    pendingTasks: number;
+    totalScores: number;
+    averageScore: number;
+    recentActivities: Array<{
+      type: string;
+      description: string;
+      timestamp: string;
+    }>;
+  }>> {
+    return this.makeRequest<{
+      totalTasks: number;
+      completedTasks: number;
+      pendingTasks: number;
+      totalScores: number;
+      averageScore: number;
+      recentActivities: Array<{
+        type: string;
+        description: string;
+        timestamp: string;
+      }>;
+    }>(
+      `/api/grader/dashboard/stats`,
+      { method: 'GET' },
+      '获取阅卷员仪表板统计数据'
+    );
+  }
+
   // ===================== 文件下载模块 =====================
   
   // 下载考试相关文件
