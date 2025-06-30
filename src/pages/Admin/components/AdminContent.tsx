@@ -86,7 +86,7 @@ interface AdminContentProps {
   onAssignGradingTask: (examId: string, questionNumber: number, graderIds: string[]) => Promise<void>;
   onGetGradingProgress: (examId: string) => any;
   onUpdateGradingProgress: (taskId: string) => Promise<void>;
-  onChangeAdminPassword: (passwordData: PasswordChangeData) => Promise<void>;
+  onChangeAdminPassword: (adminId: string, passwordData: PasswordChangeData) => Promise<void>;
   onUpdateAdminInfo: (adminId: string, updateData: Partial<AdminUser>) => Promise<void>;
   onCreateAdmin: (adminData: AdminCreateData) => Promise<void>;
   onDeleteAdmin: (adminId: string) => Promise<void>;
@@ -826,8 +826,15 @@ const AdminContent: React.FC<AdminContentProps> = ({
       return (
         <SystemSettings
           systemSettings={systemSettings}
+          adminUsers={adminUsers}
+          currentAdmin={currentAdmin}
           loading={loading}
           onUpdateSystemSettings={onUpdateSystemSettings}
+          onCreateAdmin={onCreateAdmin}
+          onUpdateAdminInfo={onUpdateAdminInfo}
+          onDeleteAdmin={onDeleteAdmin}
+          onChangeAdminPassword={onChangeAdminPassword}
+          onUploadAvatar={onUploadAvatar}
         />
       );
     

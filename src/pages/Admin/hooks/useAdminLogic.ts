@@ -738,15 +738,11 @@ export const useAdminLogic = () => {
   }, []);
 
   // 修改管理员密码
-  const changeAdminPassword = useCallback(async (passwordData: PasswordChangeData) => {
+  const changeAdminPassword = useCallback(async (adminId: string, passwordData: PasswordChangeData) => {
     try {
       setLoading(true);
-      if (!currentAdmin) {
-        notification.showError('未找到当前管理员信息');
-        return;
-      }
       
-      const response = await AdminAPI.changeAdminPassword(currentAdmin.id, {
+      const response = await AdminAPI.changeAdminPassword(adminId, {
         oldPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       });
