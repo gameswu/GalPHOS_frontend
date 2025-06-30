@@ -35,7 +35,9 @@ import {
   UserOutlined,
   UploadOutlined,
   LockOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  GithubOutlined,
+  HeartOutlined
 } from '@ant-design/icons';
 import type { 
   SystemSettings as SystemSettingsType,
@@ -43,7 +45,6 @@ import type {
   AdminCreateData,
   PasswordChangeData
 } from '../../../types/common';
-import AdminAPI from '../../../api/admin';
 import './SystemSettings.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -58,9 +59,9 @@ interface SystemSettingsProps {
   loading: boolean;
   onUpdateSystemSettings: (settings: Partial<SystemSettingsType>) => Promise<void>;
   onCreateAdmin: (adminData: AdminCreateData) => Promise<void>;
-  onUpdateAdminInfo: (adminId: string, adminData: any) => Promise<void>;
+  onUpdateAdmin: (adminId: string, adminData: Partial<AdminUser>) => Promise<void>;
   onDeleteAdmin: (adminId: string) => Promise<void>;
-  onChangeAdminPassword: (adminId: string, passwordData: PasswordChangeData) => Promise<void>;
+  onResetAdminPassword: (adminId: string, newPassword: string) => Promise<void>;
   onUploadAvatar: (file: File) => Promise<string>;
 }
 
@@ -68,7 +69,15 @@ interface SystemSettingsProps {
 const SYSTEM_INFO = {
   systemName: 'GalPHOS 考试管理系统',
   version: 'v1.3.0',
-  buildTime: '2025-6-30 18:31:00',
+  buildTime: '2025-7-1 01:15:00',
+  developer: 'gameswu, X-02Y, laoli006',
+  repository: 'https://github.com/gameswu/GalPHOS_frontend',
+  supporters: [
+    '小夜',
+    'SuddeИ',
+    '岭华廷阳',
+    '东方地灵殿全体'
+  ],
   description: '基于微服务架构的现代化考试管理平台',
   features: [
     '多角色权限管理',
@@ -77,13 +86,7 @@ const SYSTEM_INFO = {
     '实时数据监控',
     '微服务架构',
     '响应式界面设计'
-  ],
-  technicalStack: {
-    frontend: 'React 18 + TypeScript + Ant Design',
-    backend: '微服务架构 (Node.js)',
-    database: 'MongoDB + Redis',
-    deployment: 'Docker + Kubernetes'
-  }
+  ]
 };
 
 const SystemSettings: React.FC<SystemSettingsProps> = ({
@@ -93,9 +96,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
   loading,
   onUpdateSystemSettings,
   onCreateAdmin,
-  onUpdateAdminInfo,
+  onUpdateAdmin,
   onDeleteAdmin,
-  onChangeAdminPassword,
+  onResetAdminPassword,
   onUploadAvatar
 }) => {
   const [form] = Form.useForm();
@@ -111,28 +114,122 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
   const [selectedAdminId, setSelectedAdminId] = useState<string>('');
   const [avatarUploading, setAvatarUploading] = useState(false);
 
-  // 初始化表单数据
+  // 初始化当前管理员信息表单
   useEffect(() => {
-    if (systemSettings) {
-      form.setFieldsValue({
-        maintenanceMode: systemSettings.maintenanceMode,
-        maintenanceMessage: systemSettings.maintenanceMessage,
-        announcementEnabled: systemSettings.announcementEnabled
+    if (currentAdmin) {
+      profileForm.setFieldsValue({
+        username: currentAdmin.username,
+        name: currentAdmin.name,
+        role: currentAdmin.role
       });
     }
-  }, [systemSettings, form]);
+  }, [currentAdmin, profileForm]);
 
-  // 保存维护设置
-  const handleSaveMaintenanceSettings = async (values: any) => {
+  // 管理员个人信息更新
+  const handleUpdateProfile = async (values: any) => {
     try {
-      await onUpdateSystemSettings({
-        maintenanceMode: values.maintenanceMode,
-        maintenanceMessage: values.maintenanceMessage,
-        announcementEnabled: values.announcementEnabled
+      if (!currentAdmin) return;
+      await onUpdateAdmin(currentAdmin.id, {
+        name: values.name
       });
-      message.success('维护设置保存成功');
+      message.success('个人信息更新成功');
     } catch (error) {
-      message.error('维护设置保存失败');
+      message.error('个人信息更新失败');
+    }
+  };
+
+  // 管理员管理相关函数
+  const handleCreateAdmin = async (values: any) => {
+    try {
+      await onCreateAdmin({
+        username: values.username,
+        password: values.password,
+        name: values.name,
+        role: 'admin'
+      });
+      message.success('管理员创建成功');
+      setAdminModalVisible(false);
+      adminForm.resetFields();
+    } catch (error) {
+      message.error('管理员创建失败');
+    }
+  };
+
+  const handleUpdateAdmin = async (values: any) => {
+    if (!editingAdmin) return;
+    
+    try {
+      await onUpdateAdmin(editingAdmin.id, {
+        name: values.name,
+        status: values.status
+      });
+      message.success('管理员信息更新成功');
+      setAdminModalVisible(false);
+      setEditingAdmin(null);
+      adminForm.resetFields();
+    } catch (error) {
+      message.error('管理员信息更新失败');
+    }
+  };
+
+  const handleDeleteAdmin = async (adminId: string) => {
+    try {
+      await onDeleteAdmin(adminId);
+      message.success('管理员删除成功');
+    } catch (error) {
+      message.error('管理员删除失败');
+    }
+  };
+
+  const handleChangePassword = async (values: any) => {
+    try {
+      await onResetAdminPassword(selectedAdminId, values.newPassword);
+      message.success('密码修改成功');
+      setPasswordModalVisible(false);
+      setSelectedAdminId('');
+      passwordForm.resetFields();
+    } catch (error) {
+      message.error('密码修改失败');
+    }
+  };
+
+  // 管理员操作
+  const handleEditAdmin = (admin: AdminUser) => {
+    setEditingAdmin(admin);
+    adminForm.setFieldsValue({
+      username: admin.username,
+      name: admin.name,
+      status: admin.status
+    });
+    setAdminModalVisible(true);
+  };
+
+  const handleAddAdmin = () => {
+    setEditingAdmin(null);
+    adminForm.resetFields();
+    setAdminModalVisible(true);
+  };
+
+  // 重置密码
+  const handleResetPassword = (adminId: string) => {
+    setSelectedAdminId(adminId);
+    passwordForm.resetFields();
+    setPasswordModalVisible(true);
+  };
+
+  // 头像上传
+  const handleAvatarUpload = async (file: File) => {
+    try {
+      setAvatarUploading(true);
+      const avatarUrl = await onUploadAvatar(file);
+      if (currentAdmin) {
+        await onUpdateAdmin(currentAdmin.id, { avatar: avatarUrl });
+        message.success('头像上传成功');
+      }
+    } catch (error) {
+      message.error('头像上传失败');
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
@@ -197,221 +294,214 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
     setAnnouncementModalVisible(true);
   };
 
-  // 管理员管理相关函数
-  const handleCreateAdmin = async (values: any) => {
+  // 切换公告显示状态
+  const handleToggleAnnouncement = async (enabled: boolean) => {
     try {
-      await onCreateAdmin({
-        username: values.username,
-        email: values.email,
-        password: values.password,
-        confirmPassword: values.confirmPassword,
-        role: values.role,
-        permissions: values.permissions || []
+      await onUpdateSystemSettings({
+        announcementEnabled: enabled
       });
-      message.success('管理员创建成功');
-      setAdminModalVisible(false);
-      adminForm.resetFields();
+      message.success(enabled ? '公告显示已开启' : '公告显示已关闭');
     } catch (error) {
-      message.error('管理员创建失败');
+      message.error('公告显示状态切换失败');
     }
-  };
-
-  const handleUpdateAdmin = async (values: any) => {
-    if (!editingAdmin) return;
-    
-    try {
-      await onUpdateAdminInfo(editingAdmin.id, {
-        email: values.email,
-        role: values.role,
-        permissions: values.permissions || []
-      });
-      message.success('管理员信息更新成功');
-      setAdminModalVisible(false);
-      setEditingAdmin(null);
-      adminForm.resetFields();
-    } catch (error) {
-      message.error('管理员信息更新失败');
-    }
-  };
-
-  const handleDeleteAdmin = async (adminId: string) => {
-    try {
-      await onDeleteAdmin(adminId);
-      message.success('管理员删除成功');
-    } catch (error) {
-      message.error('管理员删除失败');
-    }
-  };
-
-  const handleChangePassword = async (values: any) => {
-    try {
-      await onChangeAdminPassword(selectedAdminId, {
-        currentPassword: values.currentPassword,
-        newPassword: values.newPassword,
-        confirmPassword: values.confirmPassword
-      });
-      message.success('密码修改成功');
-      setPasswordModalVisible(false);
-      setSelectedAdminId('');
-      passwordForm.resetFields();
-    } catch (error) {
-      message.error('密码修改失败');
-    }
-  };
-
-  const handleAvatarUpload = async (file: File) => {
-    setAvatarUploading(true);
-    try {
-      const avatarUrl = await onUploadAvatar(file);
-      await onUpdateAdminInfo(currentAdmin?.id || '', { avatar: avatarUrl });
-      message.success('头像上传成功');
-    } catch (error) {
-      message.error('头像上传失败');
-    } finally {
-      setAvatarUploading(false);
-    }
-  };
-
-  const handleUpdateProfile = async (values: any) => {
-    if (!currentAdmin) return;
-    
-    try {
-      await onUpdateAdminInfo(currentAdmin.id, {
-        email: values.email,
-        nickname: values.nickname
-      });
-      message.success('个人信息更新成功');
-    } catch (error) {
-      message.error('个人信息更新失败');
-    }
-  };
-
-  // 编辑管理员
-  const handleEditAdmin = (admin: AdminUser) => {
-    setEditingAdmin(admin);
-    adminForm.setFieldsValue({
-      username: admin.username,
-      email: admin.email,
-      role: admin.role,
-      permissions: admin.permissions || []
-    });
-    setAdminModalVisible(true);
-  };
-
-  // 添加管理员
-  const handleAddAdmin = () => {
-    setEditingAdmin(null);
-    adminForm.resetFields();
-    setAdminModalVisible(true);
-  };
-
-  // 重置密码
-  const handleResetPassword = (adminId: string) => {
-    setSelectedAdminId(adminId);
-    passwordForm.resetFields();
-    setPasswordModalVisible(true);
   };
 
   return (
-    <div className="system-settings-simplified">
-      <Tabs defaultActiveKey="maintenance" size="large">
-        {/* 维护设置 */}
+    <div className="system-settings">
+      <Tabs defaultActiveKey="admin" size="large">
+        {/* 管理员 Tab */}
         <TabPane
           tab={
             <span>
-              <ExclamationCircleOutlined />
-              维护设置
+              <TeamOutlined />
+              管理员
             </span>
           }
-          key="maintenance"
+          key="admin"
         >
-          <Card>
+          {/* 个人资料卡片 */}
+          <Card style={{ marginBottom: 24 }}>
             <Title level={4}>
-              <ExclamationCircleOutlined style={{ marginRight: 8 }} />
-              系统维护设置
+              <UserOutlined style={{ marginRight: 8 }} />
+              个人资料
             </Title>
-            <Paragraph type="secondary">
-              当开启维护模式时，普通用户将无法访问系统，并显示维护消息和系统公告轮播。
-            </Paragraph>
-
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleSaveMaintenanceSettings}
-              initialValues={{
-                maintenanceMode: false,
-                maintenanceMessage: '系统正在维护中，请稍后再试...',
-                announcementEnabled: true
-              }}
-            >
-              <Row gutter={24}>
-                <Col span={12}>
-                  <Form.Item
-                    label="维护模式"
-                    name="maintenanceMode"
-                    valuePropName="checked"
+            
+            <Row gutter={24}>
+              <Col span={6}>
+                <div style={{ textAlign: 'center' }}>
+                  <Avatar 
+                    size={120} 
+                    src={currentAdmin?.avatar} 
+                    icon={<UserOutlined />}
+                    style={{ marginBottom: 16 }}
+                  />
+                  <br />
+                  <Upload
+                    accept="image/*"
+                    showUploadList={false}
+                    beforeUpload={(file) => {
+                      handleAvatarUpload(file);
+                      return false;
+                    }}
                   >
-                    <Switch
-                      checkedChildren="开启"
-                      unCheckedChildren="关闭"
-                      onChange={(checked) => {
-                        if (checked) {
-                          Modal.confirm({
-                            title: '确认开启维护模式？',
-                            content: '开启后，除管理员外的所有用户将无法访问系统',
-                            icon: <ExclamationCircleOutlined />,
-                            okText: '确认开启',
-                            cancelText: '取消',
-                            onOk: () => {},
-                            onCancel: () => {
-                              form.setFieldsValue({ maintenanceMode: false });
-                            }
-                          });
-                        }
-                      }}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label="公告显示"
-                    name="announcementEnabled"
-                    valuePropName="checked"
-                  >
-                    <Switch
-                      checkedChildren="开启"
-                      unCheckedChildren="关闭"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
+                    <Button 
+                      icon={<UploadOutlined />} 
+                      loading={avatarUploading}
+                      size="small"
+                    >
+                      更换头像
+                    </Button>
+                  </Upload>
+                </div>
+              </Col>
+              <Col span={18}>
+                <Form
+                  form={profileForm}
+                  layout="vertical"
+                  onFinish={handleUpdateProfile}
+                >
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item label="用户名" name="username">
+                        <Input disabled />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item label="角色" name="role">
+                        <Select disabled>
+                          <Option value="super_admin">超级管理员</Option>
+                          <Option value="admin">普通管理员</Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                  </Row>
 
-              <Form.Item
-                label="维护消息"
-                name="maintenanceMessage"
-                rules={[
-                  { required: true, message: '请输入维护消息' },
-                  { max: 200, message: '维护消息不能超过200字符' }
-                ]}
-              >
-                <TextArea
-                  rows={3}
-                  placeholder="请输入系统维护时显示给用户的消息..."
-                  showCount
-                  maxLength={200}
-                />
-              </Form.Item>
+                  <Row gutter={16}>
+                    <Col span={24}>
+                      <Form.Item label="显示名称" name="name">
+                        <Input placeholder="请输入显示名称" />
+                      </Form.Item>
+                    </Col>
+                  </Row>
 
-              <Form.Item>
-                <Button type="primary" htmlType="submit" loading={loading}>
-                  保存维护设置
-                </Button>
-              </Form.Item>
-            </Form>
+                  <Form.Item>
+                    <Space>
+                      <Button type="primary" htmlType="submit" loading={loading}>
+                        保存个人信息
+                      </Button>
+                      <Button 
+                        icon={<LockOutlined />}
+                        onClick={() => {
+                          if (currentAdmin) {
+                            handleResetPassword(currentAdmin.id);
+                          }
+                        }}
+                      >
+                        修改密码
+                      </Button>
+                    </Space>
+                  </Form.Item>
+                </Form>
+              </Col>
+            </Row>
           </Card>
+
+          {/* 管理员管理卡片 - 仅超级管理员可见 */}
+          {currentAdmin?.role === 'super_admin' && (
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Title level={4} style={{ margin: 0 }}>
+                  <TeamOutlined style={{ marginRight: 8 }} />
+                  管理员管理
+                </Title>
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAddAdmin}>
+                  添加管理员
+                </Button>
+              </div>
+
+              <Table
+                dataSource={adminUsers}
+                rowKey="id"
+                pagination={false}
+              >
+                <Table.Column
+                  title="头像"
+                  dataIndex="avatar"
+                  render={(avatar: string) => (
+                    <Avatar src={avatar} icon={<UserOutlined />} />
+                  )}
+                />
+                <Table.Column title="用户名" dataIndex="username" />
+                <Table.Column title="显示名称" dataIndex="name" />
+                <Table.Column
+                  title="角色"
+                  dataIndex="role"
+                  render={(role: string) => (
+                    <Tag color={role === 'super_admin' ? 'red' : 'blue'}>
+                      {role === 'super_admin' ? '超级管理员' : '普通管理员'}
+                    </Tag>
+                  )}
+                />
+                <Table.Column
+                  title="状态"
+                  dataIndex="status"
+                  render={(status: string) => (
+                    <Tag color={status === 'active' ? 'green' : 'red'}>
+                      {status === 'active' ? '启用' : '禁用'}
+                    </Tag>
+                  )}
+                />
+                <Table.Column
+                  title="最后登录"
+                  dataIndex="lastLoginAt"
+                  render={(time: string) => time ? new Date(time).toLocaleString() : '从未登录'}
+                />
+                <Table.Column
+                  title="操作"
+                  render={(_, record: AdminUser) => (
+                    <Space>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEditAdmin(record)}
+                        disabled={record.id === currentAdmin?.id}
+                      >
+                        编辑
+                      </Button>
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<LockOutlined />}
+                        onClick={() => handleResetPassword(record.id)}
+                      >
+                        重置密码
+                      </Button>
+                      <Popconfirm
+                        title="确认删除此管理员？"
+                        description="删除后无法恢复，请谨慎操作"
+                        onConfirm={() => handleDeleteAdmin(record.id)}
+                        disabled={record.id === currentAdmin?.id}
+                      >
+                        <Button
+                          type="link"
+                          size="small"
+                          danger
+                          icon={<DeleteOutlined />}
+                          disabled={record.id === currentAdmin?.id}
+                        >
+                          删除
+                        </Button>
+                      </Popconfirm>
+                    </Space>
+                  )}
+                />
+              </Table>
+            </Card>
+          )}
         </TabPane>
 
-        {/* 系统公告 */}
+        {/* 系统公告 Tab */}
         <TabPane
           tab={
             <span>
@@ -427,14 +517,22 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                 <SoundOutlined style={{ marginRight: 8 }} />
                 系统公告管理
               </Title>
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleAddAnnouncement}>
-                添加公告
-              </Button>
+              <Space>
+                <Switch
+                  checked={systemSettings?.announcementEnabled}
+                  onChange={handleToggleAnnouncement}
+                  checkedChildren="显示"
+                  unCheckedChildren="隐藏"
+                />
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAddAnnouncement}>
+                  添加公告
+                </Button>
+              </Space>
             </div>
 
             <Alert
               message="公告说明"
-              description="当维护模式开启或公告显示开启时，这些公告将在系统中轮播显示。公告将按添加顺序显示。"
+              description="开启公告显示后，这些公告将在系统中轮播显示。公告将按添加顺序显示。"
               type="info"
               showIcon
               style={{ marginBottom: 16 }}
@@ -479,7 +577,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
           </Card>
         </TabPane>
 
-        {/* 系统信息 */}
+        {/* 系统信息 Tab */}
         <TabPane
           tab={
             <span>
@@ -516,21 +614,30 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
               </Col>
 
               <Col span={12}>
-                <Card size="small" title="技术架构">
+                <Card size="small" title="开发信息">
                   <Descriptions column={1} size="small">
-                    <Descriptions.Item label="前端技术">
-                      {SYSTEM_INFO.technicalStack.frontend}
+                    <Descriptions.Item label="开发者">
+                      {SYSTEM_INFO.developer}
                     </Descriptions.Item>
-                    <Descriptions.Item label="后端技术">
-                      {SYSTEM_INFO.technicalStack.backend}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="数据库">
-                      {SYSTEM_INFO.technicalStack.database}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="部署方式">
-                      {SYSTEM_INFO.technicalStack.deployment}
+                    <Descriptions.Item label="项目仓库">
+                      <a href={SYSTEM_INFO.repository} target="_blank" rel="noopener noreferrer">
+                        <GithubOutlined style={{ marginRight: 4 }} />
+                        GitHub 仓库
+                      </a>
                     </Descriptions.Item>
                   </Descriptions>
+                </Card>
+              </Col>
+
+              <Col span={24}>
+                <Card size="small" title="项目支持者">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {SYSTEM_INFO.supporters.map((supporter, index) => (
+                      <Tag key={index} icon={<HeartOutlined />} color="pink">
+                        {supporter}
+                      </Tag>
+                    ))}
+                  </div>
                 </Card>
               </Col>
 
@@ -544,265 +651,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                 </Card>
               </Col>
             </Row>
-          </Card>
-        </TabPane>
-
-        {/* 管理员管理 */}
-        <TabPane
-          tab={
-            <span>
-              <TeamOutlined />
-              管理员管理
-            </span>
-          }
-          key="admins"
-        >
-          <Card>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Title level={4} style={{ margin: 0 }}>
-                <TeamOutlined style={{ marginRight: 8 }} />
-                管理员管理
-              </Title>
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleAddAdmin}>
-                添加管理员
-              </Button>
-            </div>
-
-            <Table
-              dataSource={adminUsers}
-              rowKey="id"
-              loading={loading}
-              columns={[
-                {
-                  title: '头像',
-                  dataIndex: 'avatar',
-                  key: 'avatar',
-                  width: 80,
-                  render: (avatar: string) => (
-                    <Avatar 
-                      size={40} 
-                      src={avatar} 
-                      icon={<UserOutlined />}
-                      style={{ backgroundColor: '#87d068' }}
-                    />
-                  ),
-                },
-                {
-                  title: '用户名',
-                  dataIndex: 'username',
-                  key: 'username',
-                },
-                {
-                  title: '邮箱',
-                  dataIndex: 'email',
-                  key: 'email',
-                  render: (email: string) => email || '-',
-                },
-                {
-                  title: '角色',
-                  dataIndex: 'role',
-                  key: 'role',
-                  render: (role: string) => (
-                    <Tag color={role === 'super_admin' ? 'red' : 'blue'}>
-                      {role === 'super_admin' ? '超级管理员' : '普通管理员'}
-                    </Tag>
-                  ),
-                },
-                {
-                  title: '状态',
-                  dataIndex: 'status',
-                  key: 'status',
-                  render: (status: string) => (
-                    <Tag color={status === 'active' ? 'green' : 'red'}>
-                      {status === 'active' ? '正常' : '禁用'}
-                    </Tag>
-                  ),
-                },
-                {
-                  title: '创建时间',
-                  dataIndex: 'createdAt',
-                  key: 'createdAt',
-                  render: (date: string) => new Date(date).toLocaleDateString(),
-                },
-                {
-                  title: '最后登录',
-                  dataIndex: 'lastLoginAt',
-                  key: 'lastLoginAt',
-                  render: (date?: string) => date ? new Date(date).toLocaleDateString() : '-',
-                },
-                {
-                  title: '操作',
-                  key: 'actions',
-                  width: 200,
-                  render: (_, record: AdminUser) => (
-                    <Space>
-                      <Button
-                        type="link"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEditAdmin(record)}
-                      >
-                        编辑
-                      </Button>
-                      <Button
-                        type="link"
-                        icon={<LockOutlined />}
-                        onClick={() => handleResetPassword(record.id)}
-                      >
-                        重置密码
-                      </Button>
-                      {record.id !== currentAdmin?.id && (
-                        <Popconfirm
-                          title="确认删除此管理员？"
-                          description="删除后无法恢复，请谨慎操作"
-                          onConfirm={() => handleDeleteAdmin(record.id)}
-                          okText="确认删除"
-                          cancelText="取消"
-                        >
-                          <Button
-                            type="link"
-                            danger
-                            icon={<DeleteOutlined />}
-                          >
-                            删除
-                          </Button>
-                        </Popconfirm>
-                      )}
-                    </Space>
-                  ),
-                },
-              ]}
-              pagination={{
-                total: adminUsers.length,
-                pageSize: 10,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total) => `共 ${total} 条记录`,
-              }}
-            />
-          </Card>
-        </TabPane>
-
-        {/* 个人资料 */}
-        <TabPane
-          tab={
-            <span>
-              <UserOutlined />
-              个人资料
-            </span>
-          }
-          key="profile"
-        >
-          <Card>
-            <Title level={4}>
-              <UserOutlined style={{ marginRight: 8 }} />
-              个人资料管理
-            </Title>
-            
-            <Row gutter={[24, 24]}>
-              <Col span={8}>
-                <Card size="small" title="头像设置">
-                  <div style={{ textAlign: 'center' }}>
-                    <Avatar 
-                      size={100} 
-                      src={currentAdmin?.avatar} 
-                      icon={<UserOutlined />}
-                      style={{ backgroundColor: '#87d068', marginBottom: 16 }}
-                    />
-                    <br />
-                    <Upload
-                      name="avatar"
-                      listType="picture"
-                      className="avatar-uploader"
-                      showUploadList={false}
-                      beforeUpload={(file) => {
-                        handleAvatarUpload(file);
-                        return false;
-                      }}
-                    >
-                      <Button 
-                        icon={<UploadOutlined />} 
-                        loading={avatarUploading}
-                      >
-                        {avatarUploading ? '上传中...' : '更换头像'}
-                      </Button>
-                    </Upload>
-                  </div>
-                </Card>
-              </Col>
-
-              <Col span={16}>
-                <Card size="small" title="基本信息">
-                  <Form
-                    form={profileForm}
-                    layout="vertical"
-                    onFinish={handleUpdateProfile}
-                    initialValues={{
-                      username: currentAdmin?.username,
-                      email: currentAdmin?.email,
-                      nickname: currentAdmin?.nickname,
-                      role: currentAdmin?.role,
-                    }}
-                  >
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <Form.Item label="用户名" name="username">
-                          <Input disabled />
-                        </Form.Item>
-                      </Col>
-                      <Col span={12}>
-                        <Form.Item label="角色" name="role">
-                          <Select disabled>
-                            <Option value="super_admin">超级管理员</Option>
-                            <Option value="admin">普通管理员</Option>
-                          </Select>
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <Form.Item 
-                          label="邮箱" 
-                          name="email"
-                          rules={[
-                            { type: 'email', message: '请输入有效的邮箱地址' }
-                          ]}
-                        >
-                          <Input placeholder="请输入邮箱地址" />
-                        </Form.Item>
-                      </Col>
-                      <Col span={12}>
-                        <Form.Item label="昵称" name="nickname">
-                          <Input placeholder="请输入昵称" />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Form.Item>
-                      <Button type="primary" htmlType="submit" loading={loading}>
-                        保存个人信息
-                      </Button>
-                    </Form.Item>
-                  </Form>
-                </Card>
-              </Col>
-            </Row>
-
-            <Divider />
-
-            <Card size="small" title="安全设置">
-              <Button 
-                type="primary" 
-                icon={<LockOutlined />}
-                onClick={() => {
-                  if (currentAdmin) {
-                    handleResetPassword(currentAdmin.id);
-                  }
-                }}
-              >
-                修改密码
-              </Button>
-            </Card>
           </Card>
         </TabPane>
       </Tabs>
@@ -894,21 +742,20 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
             </Col>
             <Col span={12}>
               <Form.Item
-                label="邮箱"
-                name="email"
+                label="显示名称"
+                name="name"
                 rules={[
-                  { required: true, message: '请输入邮箱' },
-                  { type: 'email', message: '请输入有效的邮箱地址' }
+                  { required: true, message: '请输入显示名称' }
                 ]}
               >
-                <Input placeholder="请输入邮箱地址" />
+                <Input placeholder="请输入显示名称" />
               </Form.Item>
             </Col>
           </Row>
 
           {!editingAdmin && (
             <Row gutter={16}>
-              <Col span={12}>
+              <Col span={24}>
                 <Form.Item
                   label="密码"
                   name="password"
@@ -920,59 +767,25 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                   <Password placeholder="请输入密码" />
                 </Form.Item>
               </Col>
+            </Row>
+          )}
+
+          {editingAdmin && (
+            <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label="确认密码"
-                  name="confirmPassword"
-                  dependencies={['password']}
-                  rules={[
-                    { required: true, message: '请确认密码' },
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (!value || getFieldValue('password') === value) {
-                          return Promise.resolve();
-                        }
-                        return Promise.reject(new Error('确认密码与密码不一致'));
-                      },
-                    }),
-                  ]}
+                  label="状态"
+                  name="status"
+                  rules={[{ required: true, message: '请选择状态' }]}
                 >
-                  <Password placeholder="请再次输入密码" />
+                  <Select placeholder="请选择状态">
+                    <Option value="active">启用</Option>
+                    <Option value="disabled">禁用</Option>
+                  </Select>
                 </Form.Item>
               </Col>
             </Row>
           )}
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="角色"
-                name="role"
-                rules={[{ required: true, message: '请选择角色' }]}
-              >
-                <Select placeholder="请选择角色">
-                  <Option value="admin">普通管理员</Option>
-                  {currentAdmin?.role === 'super_admin' && (
-                    <Option value="super_admin">超级管理员</Option>
-                  )}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="权限" name="permissions">
-                <Select
-                  mode="multiple"
-                  placeholder="请选择权限（可选）"
-                  allowClear
-                >
-                  <Option value="exam_manage">考试管理</Option>
-                  <Option value="user_manage">用户管理</Option>
-                  <Option value="grading_manage">阅卷管理</Option>
-                  <Option value="system_manage">系统管理</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
 
           <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
             <Space>
@@ -993,9 +806,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
         </Form>
       </Modal>
 
-      {/* 密码修改模态框 */}
+      {/* 密码重置模态框 */}
       <Modal
-        title="修改密码"
+        title="重置密码"
         open={passwordModalVisible}
         onCancel={() => {
           setPasswordModalVisible(false);
@@ -1010,14 +823,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
           onFinish={handleChangePassword}
         >
           <Form.Item
-            label="当前密码"
-            name="currentPassword"
-            rules={[{ required: true, message: '请输入当前密码' }]}
-          >
-            <Password placeholder="请输入当前密码" />
-          </Form.Item>
-
-          <Form.Item
             label="新密码"
             name="newPassword"
             rules={[
@@ -1026,25 +831,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
             ]}
           >
             <Password placeholder="请输入新密码" />
-          </Form.Item>
-
-          <Form.Item
-            label="确认新密码"
-            name="confirmPassword"
-            dependencies={['newPassword']}
-            rules={[
-              { required: true, message: '请确认新密码' },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (!value || getFieldValue('newPassword') === value) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error('确认密码与新密码不一致'));
-                },
-              }),
-            ]}
-          >
-            <Password placeholder="请再次输入新密码" />
           </Form.Item>
 
           <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
@@ -1059,7 +845,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                 取消
               </Button>
               <Button type="primary" htmlType="submit" loading={loading}>
-                确认修改
+                确认重置
               </Button>
             </Space>
           </Form.Item>

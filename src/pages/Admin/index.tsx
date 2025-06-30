@@ -175,7 +175,7 @@ const Admin: React.FC = () => {
             onGetGradingProgress={getGradingProgress}
             onUpdateGradingProgress={updateGradingProgress}
             onChangeAdminPassword={changeAdminPassword}
-            onUpdateAdminInfo={updateAdminInfo}
+            onUpdateAdmin={updateAdminInfo}
             onCreateAdmin={createAdmin}
             onDeleteAdmin={deleteAdmin}
             onUpdateSystemSettings={updateSystemSettings}

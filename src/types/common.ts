@@ -507,20 +507,16 @@ export interface ApprovedUser {
   lastLoginAt?: string;
 }
 
-// 管理员用户
+// 管理员用户（简化版）
 export interface AdminUser {
   id: string;
   username: string;
-  password: string;
-  email?: string; // 邮箱字段
-  nickname?: string; // 昵称字段
+  name?: string; // 显示名称
   avatar?: string; // 头像字段
   role: 'super_admin' | 'admin';
   status: 'active' | 'disabled';
-  permissions?: string[]; // 权限列表
   createdAt: string;
   lastLoginAt?: string;
-  createdBy: string;
 }
 
 // 系统设置（简化版 v1.3.0）
@@ -546,15 +542,12 @@ export interface PasswordChangeData {
   confirmPassword: string;
 }
 
-// 管理员创建数据
+// 管理员创建数据（简化版）
 export interface AdminCreateData {
   username: string;
-  email: string;
   password: string;
-  confirmPassword: string;
-  avatar?: string; // 头像字段
-  role: 'admin';
-  permissions?: string[]; // 权限列表
+  name?: string; // 显示名称
+  role?: 'admin'; // 只能创建普通管理员
 }
 
 // 学生注册请求
