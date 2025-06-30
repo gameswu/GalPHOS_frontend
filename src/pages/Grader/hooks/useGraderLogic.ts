@@ -312,6 +312,24 @@ export const useGraderLogic = () => {
     }
   }, []);
 
+  // 上传头像（统一规范 v1.2.0）
+  const uploadAvatar = useCallback(async (file: File) => {
+    try {
+      const response = await GraderAPI.uploadAvatar(file);
+      
+      if (response.success) {
+        message.success('头像上传成功');
+        return response.data?.url || response.data?.path;
+      } else {
+        message.error(response.message || '头像上传失败');
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      message.error('头像上传失败');
+      throw error;
+    }
+  }, []);
+
   // 账户设置（保留兼容性）
   const handleAccountSettings = useCallback(() => {
     message.info('请使用新的账户设置页面');
@@ -339,6 +357,7 @@ export const useGraderLogic = () => {
     handleAccountSettings,
     handleLogout,
     updateProfile,
-    changePassword
+    changePassword,
+    uploadAvatar
   };
 };

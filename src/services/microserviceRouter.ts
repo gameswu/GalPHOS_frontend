@@ -715,6 +715,7 @@ export const DEPRECATED_PATH_MAPPING: Record<string, string> = {
   '/api/student/dashboard': '/api/student/dashboard/stats',
   
   // 头像上传API路径统一
+  '/api/student/profile/upload-avatar': '/api/upload/avatar',
   '/api/coach/profile/upload-avatar': '/api/upload/avatar',
   '/api/grader/upload-avatar': '/api/upload/avatar',
   '/api/admin/profile/upload-avatar': '/api/upload/avatar'

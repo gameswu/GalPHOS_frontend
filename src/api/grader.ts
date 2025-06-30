@@ -498,6 +498,13 @@ class GraderAPI extends BaseAPI {
     );
   }
 
+  // 上传头像（统一规范 v1.2.0）
+  static async uploadAvatar(file: File): Promise<ApiResponse<any>> {
+    // 使用新的文件上传服务
+    const FileUploadService = await import('../services/fileUploadService');
+    return FileUploadService.default.uploadAvatar(file);
+  }
+
   // ===================== 仪表板统计数据模块 =====================
 
   // 获取阅卷员仪表板统计数据（统一规范 v1.2.0）
