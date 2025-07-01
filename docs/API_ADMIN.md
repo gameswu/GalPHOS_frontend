@@ -1060,16 +1060,12 @@ interface ApiResponse<T> {
     // 系统基础信息
     systemName: string,
     version: string,
-    buildTime: string,
-    
-    // 系统公告配置
-    systemAnnouncements: string[],
-    announcementEnabled: boolean
+    buildTime: string
   }
 }
 ```
 
-### 5.2 更新系统设置（简化版 v1.3.1）
+### 5.2 更新系统设置（简化版 v1.3.2）
 
 **接口路径：** `PUT /api/admin/system/settings`
 
@@ -1078,9 +1074,7 @@ interface ApiResponse<T> {
 **请求参数：**
 ```typescript
 {
-  // 系统公告配置
-  systemAnnouncements?: string[],
-  announcementEnabled?: boolean
+  // 系统设置参数（暂无可配置参数）
 }
 ```
 
@@ -1092,8 +1086,6 @@ interface ApiResponse<T> {
     updated: boolean,
     settings: {
       // 返回更新后的完整系统设置
-      systemAnnouncements: string[],
-      announcementEnabled: boolean,
       systemName: string,
       version: string,
       buildTime: string,
@@ -1568,17 +1560,13 @@ const handleQuickScoreSetup = async (totalQuestions: number, defaultScore: numbe
 
 **接口路径：** `GET /api/system/settings`
 
-**描述**: 用于前端获取公告等公共系统设置，此接口无需认证
+**描述**: 用于前端获取公共系统设置，此接口无需认证
 
 **响应格式：**
 ```typescript
 {
   success: boolean,
   data: {
-    // 系统公告配置
-    systemAnnouncements: string[],
-    announcementEnabled: boolean,
-    
     // 系统基础信息
     systemName: string,
     version: string,

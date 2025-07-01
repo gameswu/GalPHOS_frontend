@@ -102,12 +102,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
   onUploadAvatar
 }) => {
   const [form] = Form.useForm();
-  const [announcementForm] = Form.useForm();
   const [adminForm] = Form.useForm();
   const [profileForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
-  const [editingAnnouncement, setEditingAnnouncement] = useState<number | null>(null);
-  const [announcementModalVisible, setAnnouncementModalVisible] = useState(false);
   const [adminModalVisible, setAdminModalVisible] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
@@ -233,78 +230,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
     }
   };
 
-  // 添加/编辑公告
-  const handleSaveAnnouncement = async (values: { content: string }) => {
-    try {
-      const currentAnnouncements = systemSettings?.systemAnnouncements || [];
-      let newAnnouncements: string[];
-
-      if (editingAnnouncement !== null) {
-        // 编辑现有公告
-        newAnnouncements = [...currentAnnouncements];
-        newAnnouncements[editingAnnouncement] = values.content;
-      } else {
-        // 添加新公告
-        newAnnouncements = [...currentAnnouncements, values.content];
-      }
-
-      await onUpdateSystemSettings({
-        systemAnnouncements: newAnnouncements
-      });
-
-      message.success(editingAnnouncement !== null ? '公告修改成功' : '公告添加成功');
-      setAnnouncementModalVisible(false);
-      setEditingAnnouncement(null);
-      announcementForm.resetFields();
-    } catch (error) {
-      message.error('公告保存失败');
-    }
-  };
-
-  // 删除公告
-  const handleDeleteAnnouncement = async (index: number) => {
-    try {
-      const currentAnnouncements = systemSettings?.systemAnnouncements || [];
-      const newAnnouncements = currentAnnouncements.filter((_, i) => i !== index);
-
-      await onUpdateSystemSettings({
-        systemAnnouncements: newAnnouncements
-      });
-
-      message.success('公告删除成功');
-    } catch (error) {
-      message.error('公告删除失败');
-    }
-  };
-
-  // 编辑公告
-  const handleEditAnnouncement = (index: number) => {
-    const announcement = systemSettings?.systemAnnouncements?.[index];
-    if (announcement) {
-      setEditingAnnouncement(index);
-      announcementForm.setFieldsValue({ content: announcement });
-      setAnnouncementModalVisible(true);
-    }
-  };
-
-  // 添加公告
-  const handleAddAnnouncement = () => {
-    setEditingAnnouncement(null);
-    announcementForm.resetFields();
-    setAnnouncementModalVisible(true);
-  };
-
-  // 切换公告显示状态
-  const handleToggleAnnouncement = async (enabled: boolean) => {
-    try {
-      await onUpdateSystemSettings({
-        announcementEnabled: enabled
-      });
-      message.success(enabled ? '公告显示已开启' : '公告显示已关闭');
-    } catch (error) {
-      message.error('公告显示状态切换失败');
-    }
-  };
+  // 所有公告相关方法已删除
 
   return (
     <div className="system-settings">
@@ -501,81 +427,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
           )}
         </TabPane>
 
-        {/* 系统公告 Tab */}
-        <TabPane
-          tab={
-            <span>
-              <SoundOutlined />
-              系统公告
-            </span>
-          }
-          key="announcements"
-        >
-          <Card>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Title level={4} style={{ margin: 0 }}>
-                <SoundOutlined style={{ marginRight: 8 }} />
-                系统公告管理
-              </Title>
-              <Space>
-                <Switch
-                  checked={systemSettings?.announcementEnabled}
-                  onChange={handleToggleAnnouncement}
-                  checkedChildren="显示"
-                  unCheckedChildren="隐藏"
-                />
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleAddAnnouncement}>
-                  添加公告
-                </Button>
-              </Space>
-            </div>
-
-            <Alert
-              message="公告说明"
-              description="开启公告显示后，这些公告将在系统中轮播显示。公告将按添加顺序显示。"
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-
-            <List
-              dataSource={systemSettings?.systemAnnouncements || []}
-              renderItem={(announcement, index) => (
-                <List.Item
-                  actions={[
-                    <Button
-                      type="link"
-                      icon={<EditOutlined />}
-                      onClick={() => handleEditAnnouncement(index)}
-                    >
-                      编辑
-                    </Button>,
-                    <Button
-                      type="link"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => {
-                        Modal.confirm({
-                          title: '确认删除此公告？',
-                          content: '删除后无法恢复',
-                          onOk: () => handleDeleteAnnouncement(index)
-                        });
-                      }}
-                    >
-                      删除
-                    </Button>
-                  ]}
-                >
-                  <List.Item.Meta
-                    avatar={<Tag color="blue">#{index + 1}</Tag>}
-                    description={announcement}
-                  />
-                </List.Item>
-              )}
-              locale={{ emptyText: '暂无系统公告' }}
-            />
-          </Card>
-        </TabPane>
+        {/* 系统公告 Tab 已移除 */}
 
         {/* 系统信息 Tab */}
         <TabPane
@@ -655,56 +507,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
         </TabPane>
       </Tabs>
 
-      {/* 公告编辑模态框 */}
-      <Modal
-        title={editingAnnouncement !== null ? '编辑公告' : '添加公告'}
-        open={announcementModalVisible}
-        onCancel={() => {
-          setAnnouncementModalVisible(false);
-          setEditingAnnouncement(null);
-          announcementForm.resetFields();
-        }}
-        footer={null}
-      >
-        <Form
-          form={announcementForm}
-          layout="vertical"
-          onFinish={handleSaveAnnouncement}
-        >
-          <Form.Item
-            label="公告内容"
-            name="content"
-            rules={[
-              { required: true, message: '请输入公告内容' },
-              { max: 500, message: '公告内容不能超过500字符' }
-            ]}
-          >
-            <TextArea
-              rows={4}
-              placeholder="请输入公告内容..."
-              showCount
-              maxLength={500}
-            />
-          </Form.Item>
-
-          <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
-            <Space>
-              <Button
-                onClick={() => {
-                  setAnnouncementModalVisible(false);
-                  setEditingAnnouncement(null);
-                  announcementForm.resetFields();
-                }}
-              >
-                取消
-              </Button>
-              <Button type="primary" htmlType="submit">
-                {editingAnnouncement !== null ? '保存修改' : '添加公告'}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+      {/* 公告编辑模态框已删除 */}
 
       {/* 管理员创建/编辑模态框 */}
       <Modal

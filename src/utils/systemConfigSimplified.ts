@@ -1,16 +1,12 @@
 // 全局系统配置管理（简化版 v1.3.0）
 import { SystemSettings } from '../types/common';
 
-// 默认系统配置（简化版 v1.3.1）
+// 默认系统配置（简化版 v1.3.2）
 const DEFAULT_CONFIG: Partial<SystemSettings> = {
-  // 系统公告
-  systemAnnouncements: [],
-  announcementEnabled: true,
-  
   // 系统信息（硬编码）
   systemName: 'GalPHOS 考试管理系统',
-  version: 'v1.3.0',
-  buildTime: '2024-12-30 10:30:00'
+  version: 'v1.3.2',
+  buildTime: '2025-07-02 10:30:00'
 };
 
 class SystemConfigManager {
@@ -105,21 +101,7 @@ class SystemConfigManager {
     }
   }
 
-  // 维护模式相关方法已删除
-
-  /**
-   * 获取系统公告
-   */
-  getSystemAnnouncements(): string[] {
-    return this.config.systemAnnouncements || [];
-  }
-
-  /**
-   * 检查公告是否启用
-   */
-  isAnnouncementEnabled(): boolean {
-    return this.config.announcementEnabled !== false; // 默认启用
-  }
+  // 所有特殊配置方法已删除
 
   /**
    * 添加配置监听器

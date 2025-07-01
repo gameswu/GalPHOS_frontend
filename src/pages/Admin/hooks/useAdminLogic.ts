@@ -856,15 +856,12 @@ export const useAdminLogic = () => {
     }
   }, [currentAdmin, loadAdminUsers]);
 
-  // 更新系统设置（简化版 v1.3.0）
+  // 更新系统设置（简化版 v1.3.2）
   const updateSystemSettings = useCallback(async (settings: Partial<SystemSettings>) => {
     try {
       setLoading(true);
-      // 简化的字段映射，只保留核心公告功能
-      const apiSettings = {
-        systemAnnouncements: settings.systemAnnouncements,
-        announcementEnabled: settings.announcementEnabled
-      };
+      // 系统设置已简化
+      const apiSettings = {};
       
       const response = await AdminAPI.updateSystemSettings(apiSettings);
       

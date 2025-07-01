@@ -562,11 +562,8 @@ class AdminAPI extends BaseAPI {
     );
   }
 
-  // 更新系统设置（简化版 v1.3.1）
-  static async updateSystemSettings(settings: {
-    systemAnnouncements?: string[];
-    announcementEnabled?: boolean;
-  }): Promise<ApiResponse<any>> {
+  // 更新系统设置（简化版 v1.3.2）
+  static async updateSystemSettings(settings: {}): Promise<ApiResponse<any>> {
     this.validateRequired(settings, '系统设置');
 
     return this.makeRequest<any>(

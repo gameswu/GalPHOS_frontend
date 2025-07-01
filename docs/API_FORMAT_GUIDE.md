@@ -247,22 +247,13 @@ JWT Token格式: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIi
 
 ---
 
-## 系统配置简化说明 (v1.3.0)
+## 系统配置简化说明 (v1.3.2)
 
 ### 简化原则
 为了提高系统的可维护性和用户体验，系统配置已进行大幅简化：
 
 #### 保留功能
-1. **维护模式控制**：
-   - 维护模式开关 (`maintenanceMode`)
-   - 维护消息设置 (`maintenanceMessage`)
-   
-2. **系统公告管理**：
-   - 公告列表 (`systemAnnouncements`)
-   - 公告显示开关 (`announcementEnabled`)
-   - 自动轮播功能
-
-3. **系统信息展示**：
+1. **系统信息展示**：
    - 系统名称、版本、构建时间（硬编码）
    - 技术架构信息（硬编码）
    - 系统特性列表（硬编码）

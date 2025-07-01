@@ -22,7 +22,5 @@ export const useSystemConfig = () => {
   return {
     systemConfig: config,
     updateConfig: systemConfig.updateConfig.bind(systemConfig),
-    getSystemAnnouncements: systemConfig.getSystemAnnouncements.bind(systemConfig),
-    isAnnouncementEnabled: systemConfig.isAnnouncementEnabled.bind(systemConfig),
   };
 };

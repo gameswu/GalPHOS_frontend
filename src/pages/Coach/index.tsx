@@ -6,8 +6,8 @@ import { useCoachLogic } from './hooks/useCoachLogic';
 import { authService } from '../../services/authService';
 import { getCoachMenuItems, getTitleByKey } from './config/menuConfig';
 import CoachContent from './components/CoachContent';
-import SystemAnnouncementCarousel from '../../components/SystemAnnouncementCarousel';
-import { SystemSettings } from '../../types/common';
+
+
 
 const { Title } = Typography;
 const { Header, Content, Sider } = Layout;
@@ -26,7 +26,7 @@ const Coach: React.FC = () => {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [selectedKey, setSelectedKey] = useState('dashboard');
-  const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null);
+
 
   const {
     loading,
@@ -52,22 +52,7 @@ const Coach: React.FC = () => {
     uploadAvatar
   } = useCoachLogic();
 
-  // 获取系统设置
-  useEffect(() => {
-    const loadSystemSettings = async () => {
-      try {
-        const { systemConfig } = await import('../../utils/systemConfig');
-        const settings = await systemConfig.fetchSystemSettings();
-        if (settings) {
-          setSystemSettings(settings);
-        }
-      } catch (error) {
-        console.error('加载系统设置失败:', error);
-      }
-    };
-    
-    loadSystemSettings();
-  }, []);
+  // 系统设置加载已移除
 
   // 检查登录状态和用户权限
   useEffect(() => {
@@ -237,8 +222,7 @@ const Coach: React.FC = () => {
           boxShadow: '0 1px 4px rgba(0,21,41,.08)',
           zIndex: 1
         }}>
-          {/* 公告轮播 */}
-          <SystemAnnouncementCarousel systemSettings={systemSettings} />
+          {/* 公告轮播已移除 */}
           
           <div style={{ 
             display: 'flex', 

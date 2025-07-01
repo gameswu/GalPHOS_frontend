@@ -512,12 +512,8 @@ export interface AdminUser {
   lastLoginAt?: string;
 }
 
-// 系统设置（简化版 v1.3.1）
+// 系统设置（简化版 v1.3.2）
 export interface SystemSettings {
-  // 系统公告
-  systemAnnouncements: string[];      // 系统公告列表（轮播显示）
-  announcementEnabled: boolean;       // 公告显示开关
-  
   // 系统信息（只读，用于显示）
   systemName: string;                 // 系统名称
   version: string;                    // 系统版本
