@@ -101,6 +101,11 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
   onResetAdminPassword,
   onUploadAvatar
 }) => {
+  // 调试信息
+  console.log('SystemSettings - currentAdmin:', currentAdmin);
+  console.log('SystemSettings - currentAdmin role:', currentAdmin?.role);
+  console.log('SystemSettings - is super_admin:', currentAdmin?.role === 'super_admin');
+
   const [form] = Form.useForm();
   const [announcementForm] = Form.useForm();
   const [adminForm] = Form.useForm();
@@ -404,6 +409,18 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                 </Form>
               </Col>
             </Row>
+          </Card>
+
+          {/* 调试信息卡片 - 临时用于排查问题 */}
+          <Card style={{ marginBottom: 16, border: '2px solid #ff4d4f' }}>
+            <Title level={5} style={{ color: '#ff4d4f' }}>调试信息 (临时)</Title>
+            <Descriptions size="small" column={1}>
+              <Descriptions.Item label="currentAdmin 是否存在">{currentAdmin ? '是' : '否'}</Descriptions.Item>
+              <Descriptions.Item label="currentAdmin.role">{currentAdmin?.role || '未定义'}</Descriptions.Item>
+              <Descriptions.Item label="currentAdmin.username">{currentAdmin?.username || '未定义'}</Descriptions.Item>
+              <Descriptions.Item label="是否为超级管理员">{currentAdmin?.role === 'super_admin' ? '是' : '否'}</Descriptions.Item>
+              <Descriptions.Item label="管理员管理是否应该显示">{currentAdmin?.role === 'super_admin' ? '应该显示' : '不应该显示'}</Descriptions.Item>
+            </Descriptions>
           </Card>
 
           {/* 管理员管理卡片 - 仅超级管理员可见 */}

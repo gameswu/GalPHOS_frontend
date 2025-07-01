@@ -83,6 +83,7 @@ interface AdminContentProps {
   onUnpublishExam: (examId: string) => Promise<void>;
   onDeleteExam: (examId: string) => Promise<void>;
   onUploadFile: (file: File, type: 'question' | 'answer' | 'answerSheet') => Promise<any>;
+  onDeleteFile: (fileId: string) => Promise<void>;
   onAssignGradingTask: (examId: string, questionNumber: number, graderIds: string[]) => Promise<void>;
   onGetGradingProgress: (examId: string) => any;
   onUpdateGradingProgress: (taskId: string) => Promise<void>;
@@ -737,6 +738,7 @@ const AdminContent: React.FC<AdminContentProps> = ({
   onUnpublishExam,
   onDeleteExam,
   onUploadFile,
+  onDeleteFile,
   onAssignGradingTask,
   onGetGradingProgress,
   onUpdateGradingProgress,
@@ -806,6 +808,7 @@ const AdminContent: React.FC<AdminContentProps> = ({
           onUnpublishExam={onUnpublishExam}
           onDeleteExam={onDeleteExam}
           onUploadFile={onUploadFile}
+          onDeleteFile={onDeleteFile}
         />
       );
     

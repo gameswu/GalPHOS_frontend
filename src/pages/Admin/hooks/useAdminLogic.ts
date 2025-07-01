@@ -612,6 +612,21 @@ export const useAdminLogic = () => {
     }
   }, []);
 
+  // 删除文件
+  const deleteFile = useCallback(async (fileId: string): Promise<void> => {
+    try {
+      const FileUploadService = await import('../../../services/fileUploadService');
+      const result = await FileUploadService.default.deleteFile(fileId);
+      
+      if (!result.success) {
+        throw new Error(result.message || '文件删除失败');
+      }
+    } catch (error) {
+      console.error('文件删除失败:', error);
+      throw error;
+    }
+  }, []);
+
   // 分配阅卷任务
   const assignGradingTask = useCallback(async (
     examId: string, 
@@ -1000,7 +1015,8 @@ export const useAdminLogic = () => {
     unpublishExam,
     deleteExam,
     uploadFile,
-    loadExams,
+    // 文件管理方法
+    deleteFile,
     // 阅卷管理方法
     assignGradingTask,
     getGradingProgress,

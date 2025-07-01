@@ -31,11 +31,13 @@ import {
   CalendarOutlined,
   PlayCircleOutlined,
   StopOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Exam, ExamFile } from '../../../types/common';
 import '../../../styles/responsive.css';
+import QuestionScoreSettings from '../../../components/QuestionScoreSettings';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -51,6 +53,7 @@ interface ExamManagementProps {
   onUnpublishExam: (examId: string) => Promise<void>;
   onDeleteExam: (examId: string) => Promise<void>;
   onUploadFile: (file: File, type: 'question' | 'answer' | 'answerSheet') => Promise<ExamFile>;
+  onDeleteFile: (fileId: string) => Promise<void>;
 }
 
 const ExamManagement: React.FC<ExamManagementProps> = ({
@@ -61,7 +64,8 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
   onPublishExam,
   onUnpublishExam,
   onDeleteExam,
-  onUploadFile
+  onUploadFile,
+  onDeleteFile
 }) => {
   const [examModalVisible, setExamModalVisible] = useState(false);
   const [examDetailVisible, setExamDetailVisible] = useState(false);
@@ -234,6 +238,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     setSelectedExam(exam);
     setExamDetailVisible(true);
   };
+
   // 文件上传处理
   const handleFileUpload = async (file: File, type: 'question' | 'answer' | 'answerSheet') => {
     setUploading(prev => ({ ...prev, [type]: true }));
@@ -303,7 +308,10 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     if (!file || !file.id) return;
     
     try {
-      // 仅清除表单和本地状态，因为接口中没有定义删除文件的函数
+      // 调用API删除文件
+      await onDeleteFile(file.id);
+      
+      // 清除表单和本地状态
       form.setFieldsValue({ [fieldName]: undefined });
       setUploadedFiles(prev => ({ ...prev, [fieldName]: undefined }));
       
@@ -313,10 +321,10 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
         answerSheetFile: '答题卡'
       };
       
-      message.success(`${fileTypeMap[fieldName]}文件已移除`);
+      message.success(`${fileTypeMap[fieldName]}文件已删除`);
     } catch (error) {
-      message.error('文件移除失败');
-      console.error('文件移除失败:', error);
+      message.error('文件删除失败');
+      console.error('文件删除失败:', error);
     }
   };
 
@@ -513,9 +521,20 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                   </Upload>
                   {form.getFieldValue('questionFile') && (
                     <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                      <Text type="success" style={{ fontSize: '12px' }}>
-                        📄 {form.getFieldValue('questionFile').name}
-                      </Text>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text type="success" style={{ fontSize: '12px' }}>
+                          📄 {form.getFieldValue('questionFile').name}
+                        </Text>
+                        <Button 
+                          type="text"
+                          danger
+                          size="small"
+                          onClick={() => handleDeleteFile('questionFile')}
+                          style={{ marginLeft: 8, padding: '0 4px' }}
+                        >
+                          删除
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -542,9 +561,20 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                   </Upload>
                   {form.getFieldValue('answerFile') && (
                     <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                      <Text type="success" style={{ fontSize: '12px' }}>
-                        📄 {form.getFieldValue('answerFile').name}
-                      </Text>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text type="success" style={{ fontSize: '12px' }}>
+                          📄 {form.getFieldValue('answerFile').name}
+                        </Text>
+                        <Button 
+                          type="text"
+                          danger
+                          size="small"
+                          onClick={() => handleDeleteFile('answerFile')}
+                          style={{ marginLeft: 8, padding: '0 4px' }}
+                        >
+                          删除
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -571,9 +601,20 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                   </Upload>
                   {form.getFieldValue('answerSheetFile') && (
                     <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                      <Text type="success" style={{ fontSize: '12px' }}>
-                        📄 {form.getFieldValue('answerSheetFile').name}
-                      </Text>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text type="success" style={{ fontSize: '12px' }}>
+                          📄 {form.getFieldValue('answerSheetFile').name}
+                        </Text>
+                        <Button 
+                          type="text"
+                          danger
+                          size="small"
+                          onClick={() => handleDeleteFile('answerSheetFile')}
+                          style={{ marginLeft: 8, padding: '0 4px' }}
+                        >
+                          删除
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
