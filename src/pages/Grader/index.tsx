@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { useGraderLogic } from './hooks/useGraderLogic';
 import { getGraderMenuItems, getTitleByKey } from './config/menuConfig';
 import GraderContent from './components/GraderContent';
+import SystemAnnouncementCarousel from '../../components/SystemAnnouncementCarousel';
+import { SystemSettings } from '../../types/common';
 
 const { Title } = Typography;
 const { Header, Content, Sider } = Layout;
@@ -23,6 +25,7 @@ const Grader: React.FC = () => {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [selectedKey, setSelectedKey] = useState('dashboard');
+  const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null);
 
   const {
     loading,
@@ -41,6 +44,23 @@ const Grader: React.FC = () => {
     updateProfile,
     changePassword
   } = useGraderLogic();
+
+  // 获取系统设置
+  useEffect(() => {
+    const loadSystemSettings = async () => {
+      try {
+        const { systemConfig } = await import('../../utils/systemConfig');
+        const settings = await systemConfig.fetchSystemSettings();
+        if (settings) {
+          setSystemSettings(settings);
+        }
+      } catch (error) {
+        console.error('加载系统设置失败:', error);
+      }
+    };
+    
+    loadSystemSettings();
+  }, []);
 
   // 检查登录状态和用户权限
   useEffect(() => {
@@ -195,21 +215,32 @@ const Grader: React.FC = () => {
           background: '#fff', 
           padding: '0 24px',
           display: 'flex',
+          flexDirection: 'column',
           justifyContent: 'space-between',
-          alignItems: 'center',
           boxShadow: '0 1px 4px rgba(0,21,41,.08)',
           zIndex: 1
         }}>
-          <Title level={3} style={{ margin: 0, color: '#1890ff' }}>
-            {getTitleByKey(selectedKey)}
-          </Title>
-          <Button 
-            icon={<LogoutOutlined />}
-            onClick={handleLogout}
-            type="text"
-          >
-            退出登录
-          </Button>
+          {/* 公告轮播 */}
+          <SystemAnnouncementCarousel systemSettings={systemSettings} />
+          
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+            padding: '0 0 10px'
+          }}>
+            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>
+              {getTitleByKey(selectedKey)}
+            </Title>
+            <Button 
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+              type="text"
+            >
+              退出登录
+            </Button>
+          </div>
         </Header>
         
         {/* 主要内容区域 */}

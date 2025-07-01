@@ -1,5 +1,6 @@
 // 全局系统配置管理（简化版 v1.3.0）
 import { SystemSettings } from '../types/common';
+import { apiClient } from './apiClient';
 
 // 默认系统配置（简化版 v1.3.1）
 const DEFAULT_CONFIG: Partial<SystemSettings> = {
@@ -118,7 +119,25 @@ class SystemConfigManager {
    * 检查公告是否启用
    */
   isAnnouncementEnabled(): boolean {
-    return this.config.announcementEnabled !== false; // 默认启用
+    return this.config.announcementEnabled || false;
+  }
+  
+  /**
+   * 从服务器获取系统设置
+   */
+  async fetchSystemSettings(): Promise<SystemSettings | null> {
+    try {
+      const response = await apiClient.get('/api/system/settings');
+      if (response.success && response.data) {
+        const settings = response.data as SystemSettings;
+        this.updateConfig(settings);
+        return settings;
+      }
+      return null;
+    } catch (error) {
+      console.error('获取系统设置失败:', error);
+      return null;
+    }
   }
 
   /**

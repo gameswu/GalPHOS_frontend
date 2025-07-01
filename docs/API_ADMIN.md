@@ -1562,4 +1562,29 @@ const handleQuickScoreSetup = async (totalQuestions: number, defaultScore: numbe
 3. **分值设置时**：一键式快速均分设置
 4. **发布前检查**：确保分值已设置且合理
 
-这样的设计完全符合您的需求，实现了"题目数量+分值批量设置"的简化流程，避免了繁琐的题干内容填写。
+这样的设计完全符合您的需求，实现了"题目数量+分值批量设置"的简化流程，避免了繁琐的题干内容填写.
+
+### 5.9 公共系统设置获取接口
+
+**接口路径：** `GET /api/system/settings`
+
+**描述**: 用于前端获取公告等公共系统设置，此接口无需认证
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    // 系统公告配置
+    systemAnnouncements: string[],
+    announcementEnabled: boolean,
+    
+    // 系统基础信息
+    systemName: string,
+    version: string,
+    buildTime: string
+  }
+}
+```
+
+---

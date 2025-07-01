@@ -194,6 +194,7 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
     port: 3009,
     paths: [
       '/api/admin/system*',
+      '/api/system/settings',
       '/api/config*',
       '/api/system*'
     ],
