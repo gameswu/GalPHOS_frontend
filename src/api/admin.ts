@@ -257,15 +257,19 @@ class AdminAPI extends BaseAPI {
     startTime: string;
     endTime: string;
     duration: number;
-    maxScore: number;
-    totalQuestions?: number;
+    totalScore: number;
+    totalQuestions: number;
+    questions: { number: number; score: number }[];
+    status: 'draft' | 'published';
     instructions?: string;
   }): Promise<ApiResponse<any>> {
     this.validateRequired(examData.title, '考试标题');
     this.validateRequired(examData.startTime, '开始时间');
     this.validateRequired(examData.endTime, '结束时间');
     this.validateRequired(examData.duration, '考试时长');
-    this.validateRequired(examData.maxScore, '总分');
+    this.validateRequired(examData.totalScore, '总分');
+    this.validateRequired(examData.totalQuestions, '题目数量');
+    this.validateRequired(examData.questions, '题目分值设置');
 
     return this.makeRequest<any>(
       `/api/admin/exams`,
@@ -353,7 +357,7 @@ class AdminAPI extends BaseAPI {
   // ===================== 题目分值管理模块 =====================
   
   // 设置考试题目分值
-  static async setQuestionScores(examId: string, questions: { number: number; score: number; content?: string }[]): Promise<ApiResponse<any>> {
+  static async setQuestionScores(examId: string, questions: { number: number; score: number }[]): Promise<ApiResponse<any>> {
     this.validateRequired(examId, '考试ID');
     this.validateRequired(questions, '题目分值');
 

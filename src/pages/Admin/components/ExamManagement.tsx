@@ -20,7 +20,8 @@ import {
   Progress,
   Switch,
   InputNumber,
-  message
+  message,
+  Steps
 } from 'antd';
 import {
   PlusOutlined,
@@ -37,12 +38,20 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Exam, ExamFile } from '../../../types/common';
+import { 
+  ExamCreationStepEnum, 
+  ExamBasicInfoForm, 
+  ExamScoreSettingsForm, 
+  ExamPublishSettingsForm, 
+  CreateExamRequest 
+} from '../../../types/exam';
 import '../../../styles/responsive.css';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
+const { Step } = Steps;
 
 // 分值设置Tab组件
 interface ScoreSettingsTabProps {
@@ -309,7 +318,112 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     answerFile?: ExamFile;
     answerSheetFile?: ExamFile;
   }>({});
+  // 创建考试相关状态
+  const [currentStep, setCurrentStep] = useState<ExamCreationStepEnum>(ExamCreationStepEnum.BasicInfo);
+  const [basicInfoForm] = Form.useForm<ExamBasicInfoForm>();
+  const [scoreSettingsForm] = Form.useForm<ExamScoreSettingsForm>();
+  const [publishSettingsForm] = Form.useForm<ExamPublishSettingsForm>();
+  const [examCreationVisible, setExamCreationVisible] = useState(false);
+  const [generatedQuestions, setGeneratedQuestions] = useState<{number: number; score: number}[]>([]);
 
+  // 步骤变更处理函数
+  const handleStepChange = (step: number) => {
+    if (step < currentStep) {
+      setCurrentStep(step as ExamCreationStepEnum);
+      return;
+    }
+
+    if (currentStep === ExamCreationStepEnum.BasicInfo) {
+      basicInfoForm.validateFields().then(values => {
+        // 创建题目数量的空数组
+        const questions = Array.from({ length: values.totalQuestions }, (_, idx) => ({
+          number: idx + 1,
+          score: Math.round(values.totalScore / values.totalQuestions * 10) / 10 // 平均分配分数，保留一位小数
+        }));
+        setGeneratedQuestions(questions);
+        scoreSettingsForm.setFieldsValue({ questions });
+        setCurrentStep(ExamCreationStepEnum.ScoreSettings);
+      }).catch(err => {
+        console.error('表单验证失败:', err);
+      });
+    } else if (currentStep === ExamCreationStepEnum.ScoreSettings) {
+      scoreSettingsForm.validateFields().then(() => {
+        // 默认不立即发布
+        publishSettingsForm.setFieldsValue({ shouldPublish: false });
+        setCurrentStep(ExamCreationStepEnum.PublishSettings);
+      }).catch(err => {
+        console.error('分值设置验证失败:', err);
+      });
+    }
+  };
+
+  // 打开创建考试模态框
+  const openExamCreation = () => {
+    setCurrentStep(ExamCreationStepEnum.BasicInfo);
+    basicInfoForm.resetFields();
+    scoreSettingsForm.resetFields();
+    publishSettingsForm.resetFields();
+    setGeneratedQuestions([]);
+    setExamCreationVisible(true);
+  };
+
+  // 关闭创建考试模态框
+  const closeExamCreation = () => {
+    setExamCreationVisible(false);
+  };
+
+  // 创建考试提交处理
+  const handleExamCreationSubmit = async () => {
+    try {
+      const basicInfo = await basicInfoForm.validateFields();
+      const scoreSettings = await scoreSettingsForm.validateFields();
+      const publishSettings = await publishSettingsForm.validateFields();
+      
+      const examRequest: CreateExamRequest = {
+        title: basicInfo.title,
+        description: basicInfo.description,
+        totalQuestions: basicInfo.totalQuestions,
+        totalScore: basicInfo.totalScore,
+        duration: basicInfo.duration,
+        startTime: basicInfo.examTime[0].toISOString(),
+        endTime: basicInfo.examTime[1].toISOString(),
+        questions: scoreSettings.questions.map(q => ({ number: q.number, score: q.score })),
+        status: publishSettings.shouldPublish ? 'published' : 'draft'
+      };
+      
+      await onCreateExam({
+        ...examRequest,
+        participants: []
+      });
+      
+      message.success('考试创建成功');
+      closeExamCreation();
+    } catch (error) {
+      console.error('创建考试失败:', error);
+      message.error('创建考试失败，请检查表单数据');
+    }
+  };
+
+  // 分数输入变化处理
+  const handleScoreChange = (value: number | null, index: number) => {
+    const questions = scoreSettingsForm.getFieldValue('questions');
+    if (questions && value !== null) {
+      questions[index].score = value;
+      scoreSettingsForm.setFieldsValue({ questions });
+      
+      // 计算总分
+      const totalScore = questions.reduce((sum: number, q: {number: number; score: number}) => sum + (q.score || 0), 0);
+      // 更新基本信息中的总分
+      basicInfoForm.setFieldValue('totalScore', totalScore);
+    }
+  };
+
+  // 计算当前设置分数的总和
+  const calculateTotalSetScore = () => {
+    const questions = scoreSettingsForm.getFieldValue('questions') || [];
+    return questions.reduce((sum: number, q: {number: number; score: number}) => sum + (q.score || 0), 0);
+  };
+  
   // 表格列定义
   const examColumns = [
     {
@@ -464,10 +578,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
 
   // 处理创建考试
   const handleCreateExam = () => {
-    setEditingExam(null);
-    setExamModalVisible(true);
-    setUploadedFiles({});
-    form.resetFields();
+    openExamCreation();
   };
 
   // 处理编辑考试
@@ -1256,6 +1367,224 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
               </Form.Item>
             </Form>
           </div>
+        )}
+      </Modal>
+
+      {/* 三步创建考试的模态框 */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <PlusOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+            <span>创建新考试</span>
+          </div>
+        }
+        open={examCreationVisible}
+        onCancel={closeExamCreation}
+        footer={null}
+        width={800}
+        destroyOnClose
+      >
+        <div style={{ marginBottom: 24 }}>
+          <Steps current={currentStep} onChange={handleStepChange}>
+            <Step title="基本信息" description="设置考试基本信息" />
+            <Step title="分值设置" description="设置各题分数" />
+            <Step title="发布设置" description="选择是否立即发布" />
+          </Steps>
+        </div>
+
+        {/* 步骤1: 基本信息 */}
+        {currentStep === ExamCreationStepEnum.BasicInfo && (
+          <Form
+            form={basicInfoForm}
+            layout="vertical"
+            requiredMark="optional"
+          >
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item
+                  name="title"
+                  label="考试标题"
+                  rules={[{ required: true, message: '请输入考试标题' }]}
+                >
+                  <Input placeholder="请输入考试标题" />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item
+                  name="description"
+                  label="考试描述"
+                  rules={[{ required: true, message: '请输入考试描述' }]}
+                >
+                  <TextArea rows={4} placeholder="请输入考试描述" />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="totalQuestions"
+                  label="题目数量"
+                  rules={[{ required: true, message: '请输入题目数量' }]}
+                >
+                  <InputNumber min={1} max={100} style={{ width: '100%' }} placeholder="请输入题目数量" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="totalScore"
+                  label="总分值"
+                  rules={[{ required: true, message: '请输入总分值' }]}
+                >
+                  <InputNumber min={1} style={{ width: '100%' }} placeholder="请输入总分值" />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="duration"
+                  label="考试时长(分钟)"
+                  rules={[{ required: true, message: '请输入考试时长' }]}
+                >
+                  <InputNumber min={1} max={600} style={{ width: '100%' }} placeholder="请输入考试时长（分钟）" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="examTime"
+                  label="考试时间段"
+                  rules={[{ required: true, message: '请选择考试时间段' }]}
+                >
+                  <RangePicker 
+                    showTime 
+                    format="YYYY-MM-DD HH:mm:ss" 
+                    style={{ width: '100%' }}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+              <Button type="primary" onClick={() => handleStepChange(currentStep + 1)}>
+                下一步
+              </Button>
+            </div>
+          </Form>
+        )}
+
+        {/* 步骤2: 分值设置 */}
+        {currentStep === ExamCreationStepEnum.ScoreSettings && (
+          <Form
+            form={scoreSettingsForm}
+            layout="vertical"
+            requiredMark="optional"
+          >
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Title level={5} style={{ margin: 0 }}>题目分值设置</Title>
+              <div>
+                <Text>总分: </Text>
+                <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                  {calculateTotalSetScore()} / {basicInfoForm.getFieldValue('totalScore')}
+                </Text>
+              </div>
+            </div>
+
+            <Form.List name="questions">
+              {(fields) => (
+                <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '0 10px' }}>
+                  {fields.map((field, index) => (
+                    <Row key={field.key} gutter={16} style={{ marginBottom: 16 }}>
+                      <Col span={4}>
+                        <Text strong>第 {index + 1} 题</Text>
+                      </Col>
+                      <Col span={20}>
+                        <Form.Item
+                          {...field}
+                          name={[field.name, 'score']}
+                          rules={[{ required: true, message: '请输入分值' }]}
+                        >
+                          <InputNumber
+                            min={0}
+                            step={0.5}
+                            style={{ width: '100%' }}
+                            placeholder="分值"
+                            onChange={(value) => handleScoreChange(value, index)}
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  ))}
+                </div>
+              )}
+            </Form.List>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+              <Button onClick={() => setCurrentStep(ExamCreationStepEnum.BasicInfo)}>
+                上一步
+              </Button>
+              <Button type="primary" onClick={() => handleStepChange(currentStep + 1)}>
+                下一步
+              </Button>
+            </div>
+          </Form>
+        )}
+
+        {/* 步骤3: 发布设置 */}
+        {currentStep === ExamCreationStepEnum.PublishSettings && (
+          <Form
+            form={publishSettingsForm}
+            layout="vertical"
+            requiredMark="optional"
+          >
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+              <Title level={4} style={{ marginBottom: 24 }}>考试创建完成!</Title>
+              <Paragraph>
+                您已成功设置了考试的基本信息和题目分值。现在，您可以选择是否要立即发布这个考试。
+              </Paragraph>
+              
+              <div style={{ background: '#f5f5f5', padding: '16px', borderRadius: '8px', margin: '24px 0', textAlign: 'left' }}>
+                <Descriptions column={2} bordered size="small">
+                  <Descriptions.Item label="考试标题" span={2}>
+                    {basicInfoForm.getFieldValue('title')}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="考试时间" span={2}>
+                    {basicInfoForm.getFieldValue('examTime')?.[0]?.format('YYYY-MM-DD HH:mm:ss')} 至 {basicInfoForm.getFieldValue('examTime')?.[1]?.format('YYYY-MM-DD HH:mm:ss')}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="题目数量">
+                    {basicInfoForm.getFieldValue('totalQuestions')} 题
+                  </Descriptions.Item>
+                  <Descriptions.Item label="总分值">
+                    {calculateTotalSetScore()} 分
+                  </Descriptions.Item>
+                  <Descriptions.Item label="考试时长">
+                    {basicInfoForm.getFieldValue('duration')} 分钟
+                  </Descriptions.Item>
+                </Descriptions>
+              </div>
+              
+              <Form.Item
+                name="shouldPublish"
+                valuePropName="checked"
+              >
+                <Switch checkedChildren="立即发布" unCheckedChildren="保存为草稿" />
+              </Form.Item>
+              <Text type="secondary">
+                {publishSettingsForm.getFieldValue('shouldPublish') 
+                  ? '考试将被立即发布，学生将能够看到并参加考试。' 
+                  : '考试将被保存为草稿，您可以稍后再发布。'}
+              </Text>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+              <Button onClick={() => setCurrentStep(ExamCreationStepEnum.ScoreSettings)}>
+                上一步
+              </Button>
+              <Button type="primary" onClick={handleExamCreationSubmit}>
+                完成创建
+              </Button>
+            </div>
+          </Form>
         )}
       </Modal>
     </div>

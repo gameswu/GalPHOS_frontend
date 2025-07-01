@@ -3,7 +3,7 @@ import { Button, Form, Input, InputNumber, Space, Table, message, Modal, Upload 
 import { PlusOutlined, DeleteOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons';
 import AdminAPI from '../api/admin';
 import { ScoreValidator } from '../utils/scoreValidator';
-import { Question } from '../types/common';
+import { Question } from '../types/exam';
 import './QuestionScoreSettings.css';
 
 interface QuestionScoreSettingsProps {
@@ -45,9 +45,10 @@ const QuestionScoreSettings: React.FC<QuestionScoreSettingsProps> = ({
 
   const handleAddQuestion = () => {
     const newQuestion: Question = {
+      id: `temp-${Date.now()}-${questions.length}`, // 临时ID
       number: questions.length + 1,
       score: 0,
-      content: ''
+      maxScore: 0
     };
     setQuestions([...questions, newQuestion]);
   };
@@ -165,14 +166,19 @@ const QuestionScoreSettings: React.FC<QuestionScoreSettingsProps> = ({
       )
     },
     {
-      title: '题目内容',
-      dataIndex: 'content',
-      key: 'content',
-      render: (value: string, record: Question, index: number) => (
-        <Input
+      title: '最大分数',
+      dataIndex: 'maxScore',
+      key: 'maxScore',
+      width: 120,
+      render: (value: number, record: Question, index: number) => (
+        <InputNumber
           value={value}
-          onChange={(e) => handleQuestionChange(index, 'content', e.target.value)}
-          placeholder="可选，题目描述"
+          onChange={(newValue) => handleQuestionChange(index, 'maxScore', newValue || 0)}
+          min={0}
+          max={100}
+          step={0.1}
+          precision={1}
+          style={{ width: '100%' }}
         />
       )
     },

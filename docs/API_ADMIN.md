@@ -706,15 +706,14 @@ interface ApiResponse<T> {
   description: string,              // 考试描述
   startTime: string,               // 开始时间（ISO格式）
   endTime: string,                 // 结束时间（ISO格式）
-  totalQuestions: number,          // 题目总数（必填，用于分值设置）
+  totalQuestions: number,          // 题目总数
+  totalScore: number,              // 考试总分
   duration: number,                // 考试时长（分钟）
-  autoSetScores?: {                // 可选：自动设置分值
-    defaultScore: number,          // 每题默认分值
-    customScores?: Array<{         // 自定义特定题目分值
-      number: number,              // 题目序号
-      score: number               // 分值
-    }>
-  }
+  questions: Array<{               // 题目分值设置
+    number: number,                // 题目序号
+    score: number                  // 分值
+  }>,
+  status: 'draft' | 'published'     // 状态：草稿或已发布
 }
 ```
 
@@ -729,17 +728,15 @@ interface ApiResponse<T> {
     startTime: string,
     endTime: string,
     totalQuestions: number,
+    totalScore: number,
     duration: number,
-    status: 'draft',
+    status: 'draft' | 'published',
     createdAt: string,
     createdBy: string,
-    scoreConfig?: {                // 如果设置了分值
-      totalScore: number,
-      questions: Array<{
-        number: number,
-        score: number
-      }>
-    }
+    questions: Array<{
+      number: number,
+      score: number
+    }>
   },
   message: "考试创建成功"
 }
@@ -833,8 +830,10 @@ interface ApiResponse<T> {
     totalQuestions: number,
     totalScore: number,
     questions: Array<{
-      number: number,         // 题目序号
-      score: number           // 题目分值
+      id: string,            // 题目ID
+      number: number,        // 题目序号
+      score: number,         // 题目分值
+      maxScore?: number      // 最大可得分
     }>
   },
   message: "题目分值设置成功"
@@ -869,8 +868,10 @@ interface ApiResponse<T> {
     totalQuestions: number,
     totalScore: number,
     questions: Array<{
-      number: number,         // 题目序号
-      score: number          // 题目分值
+      id: string,            // 题目ID
+      number: number,        // 题目序号
+      score: number,         // 题目分值
+      maxScore?: number      // 最大可得分
     }>
   }
 }

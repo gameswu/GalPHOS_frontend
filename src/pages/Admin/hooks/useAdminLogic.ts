@@ -462,9 +462,11 @@ export const useAdminLogic = () => {
         description: examData.description,
         startTime: examData.startTime,
         endTime: examData.endTime,
-        totalQuestions: examData.totalQuestions,
+        totalQuestions: examData.totalQuestions || 0, // 确保有数值
         duration: examData.duration || 120, // 默认120分钟
-        maxScore: 100 // 默认100分
+        totalScore: 100, // 默认总分
+        questions: Array.from({length: examData.totalQuestions || 0}, (_, i) => ({ number: i+1, score: 0 })),
+        status: 'draft' // 默认为草稿状态
       });
       if (response.success && response.data) {
         notification.showSuccess('考试创建成功');

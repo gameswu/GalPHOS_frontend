@@ -68,10 +68,8 @@ export interface StudentExam extends BaseExam {
 export interface Question {
   id?: string;
   number: number; // 题目编号
-  content?: string; // 题目内容
   score: number; // 题目分值
   maxScore?: number; // 最大可得分（通常等于score）
-  minScore?: number; // 最小可得分（通常为0）
   imageUrl?: string; // 题目图片
 }
 

@@ -2,10 +2,8 @@
 export interface Question {
   id: string;
   number: number; // 题目编号
-  content: string; // 题目内容
   score: number; // 题目分值
   maxScore?: number; // 最大可得分
-  minScore?: number; // 最小可得分（通常为0）
 }
 
 // 扩展考试接口，支持题目分值设置
@@ -136,7 +134,6 @@ export interface QuestionScoreForm {
   questions: {
     number: number;
     score: number;
-    content?: string;
   }[];
 }
 
@@ -161,4 +158,47 @@ export interface UpdateQuestionScoreRequest {
   questionNumber: number;
   score: number;
   comments?: string;
+}
+
+// 考试创建步骤类型
+export enum ExamCreationStepEnum {
+  BasicInfo = 0,
+  ScoreSettings = 1,
+  PublishSettings = 2
+}
+
+// 考试基本信息表单数据
+export interface ExamBasicInfoForm {
+  title: string;
+  description: string;
+  totalQuestions: number;
+  totalScore: number;
+  duration: number;
+  examTime: [any, any]; // 考试时间范围，使用dayjs类型
+}
+
+// 考试题目分数设置表单数据
+export interface ExamScoreSettingsForm {
+  questions: Question[];
+}
+
+// 考试发布设置表单数据
+export interface ExamPublishSettingsForm {
+  shouldPublish: boolean; // 是否立即发布
+}
+
+// 考试创建API请求
+export interface CreateExamRequest {
+  title: string;
+  description: string;
+  totalQuestions: number;
+  totalScore: number;
+  duration: number;
+  startTime: string; // ISO格式
+  endTime: string; // ISO格式
+  questions: {
+    number: number;
+    score: number;
+  }[];
+  status: 'draft' | 'published';
 }
