@@ -54,14 +54,6 @@ const GraderDashboard: React.FC<GraderDashboardProps> = ({
   const gradingExams = exams.filter(exam => exam.status === 'grading');
   const completedExams = exams.filter(exam => exam.status === 'completed');
 
-  // 如果没有统计数据中的平均分，则计算本地平均分
-  const localAverageScore = statistics?.averageScore ?? (() => {
-    const completedTasksWithScore = gradingTasks.filter(task => task.status === 'completed' && task.score !== undefined);
-    return completedTasksWithScore.length > 0 
-      ? completedTasksWithScore.reduce((sum, task) => sum + (task.score || 0), 0) / completedTasksWithScore.length 
-      : 0;
-  })();
-
   // 最近的阅卷任务
   const recentTasks = gradingTasks
     .filter(task => task.submittedAt) // 过滤掉没有提交时间的任务
@@ -72,7 +64,7 @@ const GraderDashboard: React.FC<GraderDashboardProps> = ({
     <div>
       {/* 统计卡片 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={8} md={8}>
           <Card>
             <Statistic
               title="总阅卷任务"
@@ -83,7 +75,7 @@ const GraderDashboard: React.FC<GraderDashboardProps> = ({
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={8} md={8}>
           <Card>
             <Statistic
               title="待阅卷"
@@ -94,7 +86,7 @@ const GraderDashboard: React.FC<GraderDashboardProps> = ({
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={8} md={8}>
           <Card>
             <Statistic
               title="已完成"
@@ -102,17 +94,6 @@ const GraderDashboard: React.FC<GraderDashboardProps> = ({
               suffix="份"
               valueStyle={{ color: '#52c41a' }}
               prefix={<CheckCircleOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="平均分"
-              value={localAverageScore.toFixed(1)}
-              suffix="分"
-              valueStyle={{ color: '#722ed1' }}
-              prefix={<TrophyOutlined />}
             />
           </Card>
         </Col>

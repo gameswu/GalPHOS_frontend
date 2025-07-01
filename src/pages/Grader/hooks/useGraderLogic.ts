@@ -73,7 +73,6 @@ export const useGraderLogic = () => {
           pendingTasks: dashboardStats.pendingTasks,
           abandonedTasks: 0, // getDashboardStats 未提供，默认为 0
           gradingTasks: dashboardStats.totalTasks - dashboardStats.completedTasks - dashboardStats.pendingTasks,
-          averageScore: dashboardStats.averageScore,
           totalGradingTime: 0, // getDashboardStats 未提供，默认为 0
           averageGradingTime: 0, // getDashboardStats 未提供，默认为 0
           todayCompleted: 0, // getDashboardStats 未提供，默认为 0

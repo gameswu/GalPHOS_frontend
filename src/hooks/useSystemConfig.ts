@@ -22,8 +22,6 @@ export const useSystemConfig = () => {
   return {
     systemConfig: config,
     updateConfig: systemConfig.updateConfig.bind(systemConfig),
-    isInMaintenanceMode: systemConfig.isInMaintenanceMode.bind(systemConfig),
-    getMaintenanceMessage: systemConfig.getMaintenanceMessage.bind(systemConfig),
     getSystemAnnouncements: systemConfig.getSystemAnnouncements.bind(systemConfig),
     isAnnouncementEnabled: systemConfig.isAnnouncementEnabled.bind(systemConfig),
   };

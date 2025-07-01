@@ -186,7 +186,6 @@ export interface GradingStatistics {
   pendingTasks: number;
   abandonedTasks: number;
   gradingTasks?: number;
-  averageScore: number;
   totalGradingTime: number;
   averageGradingTime: number;
   todayCompleted: number;
@@ -513,12 +512,8 @@ export interface AdminUser {
   lastLoginAt?: string;
 }
 
-// 系统设置（简化版 v1.3.0）
+// 系统设置（简化版 v1.3.1）
 export interface SystemSettings {
-  // 维护模式相关
-  maintenanceMode: boolean;           // 维护模式开关
-  maintenanceMessage: string;         // 维护模式消息
-  
   // 系统公告
   systemAnnouncements: string[];      // 系统公告列表（轮播显示）
   announcementEnabled: boolean;       // 公告显示开关

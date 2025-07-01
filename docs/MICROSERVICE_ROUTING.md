@@ -225,9 +225,9 @@
 /api/coach/students/{studentId}/exams/{examId}/score # 教练查看学生成绩
 /api/coach/dashboard/stats             # 教练仪表板统计数据
 
-# 阅卷员统计和仪表板（新增 v1.2.0）
-/api/grader/statistics                 # 阅卷员统计数据
-/api/grader/dashboard/stats            # 阅卷员仪表板统计数据
+# 阅卷员统计和仪表板（简化版 v1.3.0）
+/api/grader/statistics                 # 阅卷员统计数据（不含平均分）
+/api/grader/dashboard/stats            # 阅卷员仪表板统计数据（简化版）
 /api/grader/history                    # 阅卷员历史记录
 
 # 管理员仪表板（统一规范 v1.2.0）
@@ -324,9 +324,8 @@
 ```
 
 **功能说明**：
-- **简化的系统配置管理**：仅保留维护模式和系统公告
+- **简化的系统配置管理**：仅保留系统公告功能
 - 系统管理员账户管理
-- **维护模式控制**：开启时显示维护页面和公告轮播
 - **系统公告管理**：支持多条公告轮播显示
 - **系统信息展示**：硬编码的系统版本和技术信息
 
@@ -495,6 +494,7 @@ const allConfigs = microserviceRouter.getAllServiceConfigs();
    - 移除未使用的删除题目分值API接口
    - 精简分值设置为单题分值设置模式
    - 简化阅卷者管理表格字段，仅保留核心信息
+   - 简化阅卷者仪表盘，删除平均分字段、计算和显示
 
 2. **文件上传API统一化**：
    - 所有考试文件上传统一使用 `/api/upload/*` 路径

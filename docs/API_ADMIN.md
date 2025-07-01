@@ -693,11 +693,13 @@ interface ApiResponse<T> {
 }
 ```
 
-### 3.2 创建考试（优化版）
+### 3.2 三步创建考试流程
+
+**步骤1: 创建考试基本信息**
 
 **接口路径：** `POST /api/admin/exams`
 
-**描述**: 创建新考试，支持同时设置基本信息和题目分值
+**描述**: 创建新考试的基本信息（第一步）
 
 **请求参数：**
 ```typescript
@@ -707,13 +709,8 @@ interface ApiResponse<T> {
   startTime: string,               // 开始时间（ISO格式）
   endTime: string,                 // 结束时间（ISO格式）
   totalQuestions: number,          // 题目总数
-  totalScore: number,              // 考试总分
   duration: number,                // 考试时长（分钟）
-  questions: Array<{               // 题目分值设置
-    number: number,                // 题目序号
-    score: number                  // 分值
-  }>,
-  status: 'draft' | 'published'     // 状态：草稿或已发布
+  status: 'draft'                  // 状态：草稿
 }
 ```
 
@@ -728,17 +725,79 @@ interface ApiResponse<T> {
     startTime: string,
     endTime: string,
     totalQuestions: number,
-    totalScore: number,
     duration: number,
-    status: 'draft' | 'published',
+    status: 'draft',
     createdAt: string,
-    createdBy: string,
+    createdBy: string
+  },
+  message: "考试基本信息创建成功"
+}
+```
+
+**步骤2: 设置题目分值**
+
+**接口路径：** `POST /api/admin/exams/{examId}/question-scores`
+
+**描述**: 为考试设置题目分值（第二步）
+
+**请求参数：**
+```typescript
+{
+  questions: Array<{               // 题目分值设置
+    number: number,                // 题目序号
+    score: number                  // 分值
+  }>
+}
+```
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    examId: string,
+    totalQuestions: number,
+    totalScore: number,            // 计算的总分值
     questions: Array<{
+      id: string,
       number: number,
       score: number
     }>
   },
-  message: "考试创建成功"
+  message: "题目分值设置成功"
+}
+```
+
+**步骤3: 上传考试文件并发布考试**
+
+**上传文件接口路径：** `POST /api/upload/exam-files`
+
+**发布考试接口路径：** `POST /api/admin/exams/{examId}/publish`
+
+**描述**: 上传考试相关文件并发布考试（第三步）
+
+**上传文件请求类型**: `multipart/form-data`
+
+**发布考试请求参数：**
+```typescript
+{
+  questionFileId?: string,        // 题目文件ID
+  answerFileId?: string,          // 答案文件ID
+  answerSheetFileId?: string      // 答题卡文件ID
+}
+```
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    id: string,
+    title: string,
+    status: 'published',
+    publishedAt: string
+  },
+  message: "考试发布成功"
 }
 ```
 
@@ -991,44 +1050,57 @@ interface ApiResponse<T> {
 
 **接口路径：** `GET /api/admin/system/settings`
 
+**描述**: 获取系统全局配置，包含系统公告等配置
+
 **响应格式：**
 ```typescript
 {
   success: boolean,
   data: {
+    // 系统基础信息
     systemName: string,
-    siteName: string,
-    siteDescription: string,
-    systemLogo: string,
-    allowRegistration: boolean,
-    examDuration: number,
-    gradingDeadline: number,
-    maintenanceMode: boolean,
-    announcement: string,
-    maxUploadSize: number,
-    allowedFileTypes: string[]
+    version: string,
+    buildTime: string,
+    
+    // 系统公告配置
+    systemAnnouncements: string[],
+    announcementEnabled: boolean
   }
 }
 ```
 
-### 5.2 更新系统设置
+### 5.2 更新系统设置（简化版 v1.3.1）
 
 **接口路径：** `PUT /api/admin/system/settings`
+
+**描述**: 更新系统设置，支持部分字段更新
 
 **请求参数：**
 ```typescript
 {
-  systemName?: string,
-  siteName?: string,
-  siteDescription?: string,
-  systemLogo?: string,
-  allowRegistration?: boolean,
-  examDuration?: number,
-  gradingDeadline?: number,
-  maintenanceMode?: boolean,
-  announcement?: string,
-  maxUploadSize?: number,
-  allowedFileTypes?: string[]
+  // 系统公告配置
+  systemAnnouncements?: string[],
+  announcementEnabled?: boolean
+}
+```
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    updated: boolean,
+    settings: {
+      // 返回更新后的完整系统设置
+      systemAnnouncements: string[],
+      announcementEnabled: boolean,
+      systemName: string,
+      version: string,
+      buildTime: string,
+      // ...其他系统设置
+    }
+  },
+  message: "系统设置更新成功"
 }
 ```
 

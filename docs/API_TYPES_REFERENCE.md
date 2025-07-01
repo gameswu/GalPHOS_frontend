@@ -95,12 +95,10 @@ interface ExamWithQuestions extends Exam {
 ### 题目信息
 ```typescript
 interface Question {
-  id?: string;
+  id: string;                   // 题目ID
   number: number;               // 题目编号
-  content?: string;             // 题目内容
   score: number;                // 题目分值
   maxScore?: number;            // 最大可得分
-  minScore?: number;            // 最小可得分
   imageUrl?: string;            // 题目图片
 }
 ```
@@ -239,6 +237,21 @@ interface AdminGradingTask {
   assignedAt: string;
   deadline?: string;
   completedAt?: string;
+}
+```
+
+### 阅卷统计类型（简化版 v1.3.0）
+```typescript
+interface GradingStatistics {
+  totalTasks: number;        // 总任务数
+  pendingTasks: number;      // 待阅卷数
+  gradingTasks: number;      // 阅卷中数
+  completedTasks: number;    // 已完成数
+  todayCompleted: number;    // 今日完成数
+  efficiency?: {
+    tasksPerHour: number;     // 每小时任务数
+    averageGradingTime: number  // 平均阅卷时间(分钟)
+  }
 }
 ```
 
@@ -389,15 +402,17 @@ interface RegionChangeRequest {
 
 ## 系统管理类型
 
-### 系统设置
+### 系统设置（简化版 v1.3.1）
 ```typescript
 interface SystemSettings {
-  siteName: string;
-  siteDescription: string;
-  maxUploadSize: number; // MB
-  allowedFileTypes: string[];
-  systemMaintenance: boolean;
-  maintenanceMessage: string;
+  // 系统公告
+  systemAnnouncements: string[];      // 系统公告列表（轮播显示）
+  announcementEnabled: boolean;       // 公告显示开关
+  
+  // 系统信息（只读，用于显示）
+  systemName: string;                 // 系统名称
+  version: string;                    // 系统版本
+  buildTime: string;                  // 构建时间
 }
 ```
 

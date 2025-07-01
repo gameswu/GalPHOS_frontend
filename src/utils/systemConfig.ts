@@ -1,12 +1,8 @@
 // 全局系统配置管理（简化版 v1.3.0）
 import { SystemSettings } from '../types/common';
 
-// 默认系统配置（简化版）
+// 默认系统配置（简化版 v1.3.1）
 const DEFAULT_CONFIG: Partial<SystemSettings> = {
-  // 维护模式相关
-  maintenanceMode: false,
-  maintenanceMessage: '系统正在维护中，请稍后再试...',
-  
   // 系统公告
   systemAnnouncements: [],
   announcementEnabled: true,
@@ -109,19 +105,7 @@ class SystemConfigManager {
     }
   }
 
-  /**
-   * 检查是否处于维护模式
-   */
-  isInMaintenanceMode(): boolean {
-    return this.config.maintenanceMode || false;
-  }
-
-  /**
-   * 获取维护模式消息
-   */
-  getMaintenanceMessage(): string {
-    return this.config.maintenanceMessage || DEFAULT_CONFIG.maintenanceMessage || '系统正在维护中，请稍后再试...';
-  }
+  // 维护模式相关方法已删除
 
   /**
    * 获取系统公告

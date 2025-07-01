@@ -562,10 +562,8 @@ class AdminAPI extends BaseAPI {
     );
   }
 
-  // 更新系统设置（简化版 v1.3.0）
+  // 更新系统设置（简化版 v1.3.1）
   static async updateSystemSettings(settings: {
-    maintenanceMode?: boolean;
-    maintenanceMessage?: string;
     systemAnnouncements?: string[];
     announcementEnabled?: boolean;
   }): Promise<ApiResponse<any>> {

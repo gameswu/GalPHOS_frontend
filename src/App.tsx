@@ -7,7 +7,6 @@ import Student from './pages/Student';
 import Grader from './pages/Grader';
 import Coach from './pages/Coach';
 import ProtectedRoute from './components/ProtectedRoute';
-import MaintenanceAlert from './components/MaintenanceAlert';
 import { NotificationProvider, useNotification } from './contexts/NotificationContext';
 import { BaseAPI } from './types/api';
 import { systemConfig } from './utils/systemConfig';
@@ -35,8 +34,6 @@ const AppContent: React.FC = () => {
 
   return (
     <>
-      {/* 全局维护模式公告 */}
-      <MaintenanceAlert />
       <Router>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />

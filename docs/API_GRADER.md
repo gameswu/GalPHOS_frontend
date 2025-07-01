@@ -180,7 +180,7 @@ interface ApiResponse<T> {
 
 ## 4. 统计与报告模块
 
-### 4.1 获取阅卷统计信息
+### 4.1 获取阅卷统计信息（简化版 v1.3.0）
 
 **接口**: `GET /api/grader/statistics`
 
@@ -199,7 +199,6 @@ interface ApiResponse<T> {
     gradingTasks: number,      // 阅卷中数
     completedTasks: number,    // 已完成数
     todayCompleted: number,    // 今日完成数
-    averageScore?: number,     // 平均分
     efficiency?: {
       tasksPerHour: number,           // 每小时任务数
       averageGradingTime: number      // 平均阅卷时间(分钟)
@@ -249,7 +248,6 @@ interface ApiResponse<T> {
     },
     statistics: {
       totalGraded: number,    // 总阅卷数
-      averageScore: number,   // 平均给分
       efficiency: number,     // 阅卷效率
       accuracy: number        // 阅卷准确性
     }
@@ -295,6 +293,28 @@ interface ApiResponse<T> {
 }
 ```
 
+### 5.4 注销账号
+
+**接口**: `POST /api/grader/account/delete`
+
+**描述**: 永久删除当前阅卷员账号及所有相关数据
+
+**请求体**: 无需额外参数
+
+**响应**:
+```typescript
+{
+  success: true,
+  message: "账号已成功注销"
+}
+```
+
+**注意**:
+- 此操作不可撤销，将永久删除用户所有数据
+- 操作执行后会立即登出用户
+- 账号一旦注销无法恢复
+- 请确保完成所有进行中的阅卷任务，否则可能影响考试评分流程
+
 ## 6. 文件处理模块
 
 ### 6.1 下载考试文件
@@ -324,10 +344,10 @@ interface ApiResponse<T> {
 
 ## 6.5. 仪表板统计模块
 
-### 6.5.1 获取阅卷员仪表板数据
+### 6.5.1 获取阅卷员仪表板数据（简化版 v1.3.0）
 **接口**: `GET /api/grader/dashboard/stats`
 
-**描述**: 获取阅卷员仪表板统计数据
+**描述**: 获取阅卷员仪表板统计数据，简化版不含平均分计算
 
 **响应**:
 ```typescript
@@ -337,25 +357,18 @@ interface ApiResponse<T> {
     totalTasks: 5,              // 总任务数量
     completedTasks: 3,          // 已完成任务数量
     pendingTasks: 2,            // 待处理任务数量
-    averageScore: 78.5,         // 平均给分
+    totalScores: 500,           // 总分值
     efficiency: 85.2,           // 阅卷效率(%)
-    accuracy: 92.8,             // 阅卷准确性(%)
-    recentTasks: [              // 最近阅卷记录
+    recentActivities: [         // 最近活动记录
       {
-        id: "task003",
-        examTitle: "2024年春季物理竞赛",
-        questionNumber: 5,
-        gradedAt: "2024-03-18T15:30:00Z",
-        status: "completed",
-        score: 85
+        type: "grading",
+        description: "完成了《2024年春季物理竞赛》的阅卷",
+        timestamp: "2024-03-18T15:30:00Z"
       },
       {
-        id: "task002", 
-        examTitle: "2024年春季化学竞赛",
-        questionNumber: 3,
-        gradedAt: "2024-03-15T16:45:00Z",
-        status: "completed",
-        score: 72
+        type: "task",
+        description: "领取了《2024年春季化学竞赛》的阅卷任务",
+        timestamp: "2024-03-15T16:45:00Z"
       }
     ]
   },

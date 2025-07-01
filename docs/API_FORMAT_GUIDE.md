@@ -281,5 +281,4 @@ JWT Token格式: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIi
 
 ### 新增组件
 1. **SystemSettingsSimplified**：简化的系统配置管理界面
-2. **SystemAnnouncementCarousel**：系统公告轮播组件  
-3. **MaintenancePage**：维护模式页面
+2. **SystemAnnouncementCarousel**：系统公告轮播组件

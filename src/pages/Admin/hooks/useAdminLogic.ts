@@ -860,10 +860,8 @@ export const useAdminLogic = () => {
   const updateSystemSettings = useCallback(async (settings: Partial<SystemSettings>) => {
     try {
       setLoading(true);
-      // 简化的字段映射，只保留核心维护和公告功能
+      // 简化的字段映射，只保留核心公告功能
       const apiSettings = {
-        maintenanceMode: settings.maintenanceMode,
-        maintenanceMessage: settings.maintenanceMessage,
         systemAnnouncements: settings.systemAnnouncements,
         announcementEnabled: settings.announcementEnabled
       };
