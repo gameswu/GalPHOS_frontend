@@ -44,9 +44,13 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/coach/profile*',
       '/api/coach/password*',      // 统一路径：原 /api/coach/profile/change-password
       '/api/grader/profile*',
-      '/api/grader/password*'      // 统一路径：原 /api/grader/change-password
+      '/api/grader/password*',      // 统一路径：原 /api/grader/change-password
+      // 账号注销功能（新增 v1.3.0）
+      '/api/student/account/delete',
+      '/api/coach/account/delete',
+      '/api/grader/account/delete'
     ],
-    description: '用户生命周期管理服务 - v1.2.0统一个人资料和密码管理API',
+    description: '用户生命周期管理服务 - v1.2.0统一个人资料和密码管理API, v1.3.0账号注销功能',
     healthCheck: '/health'
   },
 

@@ -53,6 +53,7 @@ interface UserSettingsProps {
   onChangePassword: (data: { oldPassword: string; newPassword: string }) => Promise<void>;
   onRequestRegionChange?: (data: { province: string; school: string; reason: string }) => Promise<void>;
   onLogout: () => void;
+  onDeleteAccount?: () => Promise<void>; // 账号注销功能（删除账号）
   showRegionChange?: boolean; // 控制是否显示赛区变更功能
 }
 
@@ -62,6 +63,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({
   onChangePassword,
   onRequestRegionChange,
   onLogout,
+  onDeleteAccount,
   showRegionChange = true
 }) => {
   const [profileForm] = Form.useForm();
@@ -212,15 +214,44 @@ const UserSettings: React.FC<UserSettingsProps> = ({
     }
   };
 
-  // 处理注销账号
+  // 处理登出账号
   const handleLogout = () => {
     Modal.confirm({
-      title: '确认注销',
+      title: '确认登出',
       icon: <ExclamationCircleOutlined />,
-      content: '确定要注销当前账号吗？注销后需要重新登录。',
-      okText: '确认注销',
+      content: '确定要登出当前账号吗？登出后需要重新登录。',
+      okText: '确认登出',
       cancelText: '取消',
       onOk: onLogout,
+    });
+  };
+  
+  // 处理删除账号
+  const handleDeleteAccount = () => {
+    Modal.confirm({
+      title: '确认注销账号',
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p style={{ color: '#ff4d4f', fontWeight: 'bold' }}>警告：此操作不可撤销！</p>
+          <p>注销账号将永久删除您的所有数据，包括个人信息、历史记录和相关数据。</p>
+          <p>您确定要继续吗？</p>
+        </div>
+      ),
+      okText: '确认注销',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        if (onDeleteAccount) {
+          try {
+            await onDeleteAccount();
+          } catch (error) {
+            message.error('账号注销失败，请重试或联系管理员');
+          }
+        } else {
+          message.error('未提供账号注销功能');
+        }
+      },
     });
   };
 
@@ -388,13 +419,24 @@ const UserSettings: React.FC<UserSettingsProps> = ({
           <div style={{ color: '#ff4d4f', marginBottom: 16 }}>
             <strong>注意：</strong>以下操作会影响您的账号状态，请谨慎操作。
           </div>
-          <Button 
-            danger 
-            icon={<LogoutOutlined />}
-            onClick={handleLogout}
-          >
-            注销账号
-          </Button>
+          <Space>
+            <Button 
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+            >
+              登出账号
+            </Button>
+            <Button 
+              danger 
+              icon={<ExclamationCircleOutlined />}
+              onClick={handleDeleteAccount}
+            >
+              注销账号
+            </Button>
+          </Space>
+          <div style={{ marginTop: 8, color: '#999', fontSize: 12 }}>
+            注销账号会永久删除您的所有数据，此操作无法撤销。
+          </div>
         </div>
       </Card>
 

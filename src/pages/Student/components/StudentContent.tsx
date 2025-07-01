@@ -29,6 +29,7 @@ interface StudentContentProps {
   changePassword: (data: { oldPassword: string; newPassword: string }) => Promise<void>;
   requestRegionChange: (data: { province: string; school: string; reason: string }) => Promise<void>;
   onLogout: () => void;
+  onDeleteAccount?: () => Promise<void>; // 添加注销账号方法
   submitExamAnswers: (examId: string, answers: ExamAnswer[]) => Promise<void>;
   getExamSubmission: (examId: string) => Promise<ExamSubmission | null>;
   downloadFile: (fileId: string, fileName: string) => Promise<void>;
@@ -44,10 +45,12 @@ const AccountSettingsPage: React.FC<{
   changePassword: (data: { oldPassword: string; newPassword: string }) => Promise<void>;
   requestRegionChange: (data: { province: string; school: string; reason: string }) => Promise<void>;
   onLogout: () => void;
-}> = ({ userInfo, updateProfile, changePassword, requestRegionChange, onLogout }) => (
+  onDeleteAccount?: () => Promise<void>; // 添加注销账号方法
+}> = ({ userInfo, updateProfile, changePassword, requestRegionChange, onLogout, onDeleteAccount }) => (
   <UserSettings
     userInfo={userInfo}
     onUpdateProfile={updateProfile}
+    onDeleteAccount={onDeleteAccount}
     onChangePassword={changePassword}
     onRequestRegionChange={requestRegionChange}
     onLogout={onLogout}
@@ -178,6 +181,7 @@ const StudentContent: React.FC<StudentContentProps> = ({
   changePassword,
   requestRegionChange,
   onLogout,
+  onDeleteAccount,
   submitExamAnswers,
   getExamSubmission,
   downloadFile,
@@ -226,6 +230,7 @@ const StudentContent: React.FC<StudentContentProps> = ({
           changePassword={changePassword}
           requestRegionChange={requestRegionChange}
           onLogout={onLogout}
+          onDeleteAccount={onDeleteAccount}
         />
       );
     

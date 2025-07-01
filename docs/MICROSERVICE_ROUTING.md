@@ -102,6 +102,11 @@
 /api/coach/password                # 教练密码修改 (PUT) 
 /api/grader/profile                # 阅卷员个人信息 (GET, PUT)
 /api/grader/password               # 阅卷员密码修改 (PUT)
+
+# 账号注销功能（新增 v1.3.0）
+/api/student/account/delete        # 学生注销账号 (POST)
+/api/coach/account/delete          # 教练注销账号 (POST)
+/api/grader/account/delete         # 阅卷员注销账号 (POST)
 ```
 
 **功能说明**：

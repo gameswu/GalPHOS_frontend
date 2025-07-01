@@ -33,6 +33,7 @@ const Student: React.FC = () => {
     loadDashboardData,
     handleAccountSettings,
     handleLogout: handleLogoutLogic,
+    deleteAccount,
     updateProfile,
     changePassword,
     requestRegionChange,
@@ -241,6 +242,7 @@ const Student: React.FC = () => {
             changePassword={changePassword}
             requestRegionChange={requestRegionChange}
             onLogout={handleLogoutLogic}
+            onDeleteAccount={deleteAccount}
             submitExamAnswers={submitExamAnswers}
             getExamSubmission={getExamSubmission}
             downloadFile={downloadFile}

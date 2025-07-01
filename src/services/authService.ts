@@ -215,6 +215,47 @@ class AuthService {
   }
 
   /**
+   * 删除当前用户账号
+   * @returns 操作结果
+   */
+  async deleteAccount(): Promise<{success: boolean; message: string}> {
+    try {
+      const user = this.getCurrentUser();
+      if (!user) {
+        return { success: false, message: '未找到用户信息' };
+      }
+
+      let endpoint = '';
+      switch (user.role) {
+        case 'student':
+          endpoint = '/student/account/delete';
+          break;
+        case 'coach':
+          endpoint = '/coach/account/delete';
+          break;
+        case 'grader':
+          endpoint = '/grader/account/delete';
+          break;
+        default:
+          return { success: false, message: '不支持当前用户角色的账号注销' };
+      }
+      
+      const response = await apiClient.post(endpoint);
+      
+      if (response.success) {
+        // 删除成功后，清除本地认证数据
+        this.clearAuthData();
+        return { success: true, message: '账号注销成功' };
+      } else {
+        return { success: false, message: response.message || '账号注销失败' };
+      }
+    } catch (error) {
+      console.error('账号注销失败:', error);
+      return { success: false, message: '账号注销请求发生错误' };
+    }
+  }
+
+  /**
    * 获取用户头像URL
    */
   getUserAvatar(): string {

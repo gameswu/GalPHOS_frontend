@@ -116,6 +116,23 @@ export const useStudentLogic = () => {
     message.success('已退出登录');
   }, []);
 
+  // 删除账号
+  const deleteAccount = useCallback(async () => {
+    try {
+      const result = await authService.deleteAccount();
+      if (result.success) {
+        message.success(result.message || '账号已注销');
+      } else {
+        message.error(result.message || '账号注销失败');
+        throw new Error(result.message);
+      }
+    } catch (error) {
+      console.error('账号注销失败:', error);
+      message.error('账号注销失败，请稍后重试或联系管理员');
+      throw error;
+    }
+  }, []);
+
   // 开始考试
   const startExam = useCallback((examId: string) => {
     message.info(`开始考试 ${examId}`);
@@ -225,6 +242,7 @@ export const useStudentLogic = () => {
     loadDashboardData,
     handleAccountSettings,
     handleLogout,
+    deleteAccount,
     startExam,
     viewExamResult,
     updateProfile,
