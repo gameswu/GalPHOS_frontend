@@ -19,6 +19,7 @@ import {
   Descriptions,
   Progress,
   Switch,
+  InputNumber,
   message
 } from 'antd';
 import {
@@ -37,80 +38,295 @@ import {
 import dayjs from 'dayjs';
 import type { Exam, ExamFile } from '../../../types/common';
 import '../../../styles/responsive.css';
-import QuestionScoreSettings from '../../../components/QuestionScoreSettings';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
 
+// 分值设置Tab组件
+interface ScoreSettingsTabProps {
+  examId?: string;
+  onSetQuestionScores: (examId: string, questions: { number: number; score: number }[]) => Promise<any>;
+  onGetQuestionScores: (examId: string) => Promise<any>;
+  onUpdateSingleQuestionScore: (examId: string, questionNumber: number, score: number) => Promise<any>;
+}
+
+const ScoreSettingsTab: React.FC<ScoreSettingsTabProps> = ({
+  examId,
+  onSetQuestionScores,
+  onGetQuestionScores,
+  onUpdateSingleQuestionScore
+}) => {
+  const [scoreForm] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [questionScores, setQuestionScores] = useState<{ number: number; score: number }[]>([]);
+  const [totalQuestions, setTotalQuestions] = useState<number>(1);
+
+  // 添加新题目
+  const addQuestion = () => {
+    const newQuestions = [...questionScores, { number: questionScores.length + 1, score: 5 }];
+    setQuestionScores(newQuestions);
+    setTotalQuestions(newQuestions.length);
+  };
+
+  // 删除题目
+  const removeQuestion = (index: number) => {
+    const newQuestions = questionScores.filter((_, i) => i !== index)
+      .map((q, i) => ({ ...q, number: i + 1 }));
+    setQuestionScores(newQuestions);
+    setTotalQuestions(newQuestions.length);
+  };
+
+  // 更新题目分值
+  const updateQuestionScore = (index: number, score: number) => {
+    const newQuestions = [...questionScores];
+    newQuestions[index].score = score;
+    setQuestionScores(newQuestions);
+  };
+
+  // 批量设置相同分值
+  const setBatchScore = async (values: { questionCount: number; defaultScore: number }) => {
+    const questions = Array.from({ length: values.questionCount }, (_, index) => ({
+      number: index + 1,
+      score: values.defaultScore
+    }));
+    setQuestionScores(questions);
+    setTotalQuestions(values.questionCount);
+    message.success(`已生成${values.questionCount}道题目，每题${values.defaultScore}分`);
+  };
+
+  // 保存分值设置
+  const saveScores = async () => {
+    if (!examId) {
+      message.error('请先保存考试基本信息');
+      return;
+    }
+
+    if (questionScores.length === 0) {
+      message.error('请至少设置一道题目的分值');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await onSetQuestionScores(examId, questionScores);
+      const totalScore = questionScores.reduce((sum, q) => sum + q.score, 0);
+      message.success(`分值设置成功！共${questionScores.length}道题，总分${totalScore}分`);
+    } catch (error) {
+      message.error('分值设置失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!examId) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <Text type="secondary">
+          请先在"基本信息"标签页保存考试信息，然后再设置分值
+        </Text>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', marginBottom: 20 }}>
+        <Text type="secondary">
+          💡 简化流程：为每道题目单独设置分值，无需填写题干内容
+        </Text>
+      </Card>
+      
+      <Form
+        form={scoreForm}
+        layout="vertical"
+        onFinish={saveScores}
+      >
+        <Card size="small" style={{ marginBottom: 16 }}>
+          <Title level={5} style={{ margin: 0, marginBottom: 16 }}>
+            📝 批量设置题目
+          </Title>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="题目数量" rules={[{ required: true, message: '请输入题目数量' }]}>
+                <InputNumber
+                  min={1}
+                  max={200}
+                  value={totalQuestions}
+                  onChange={(value) => setTotalQuestions(value || 1)}
+                  placeholder="例如：20"
+                  style={{ width: '100%' }}
+                  addonAfter="题"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="默认分值">
+                <Space>
+                  <InputNumber
+                    min={0.5}
+                    max={50}
+                    step={0.5}
+                    defaultValue={5}
+                    placeholder="例如：5"
+                    addonAfter="分"
+                  />
+                  <Button 
+                    type="dashed"
+                    onClick={() => {
+                      const questions = Array.from({ length: totalQuestions }, (_, index) => ({
+                        number: index + 1,
+                        score: 5
+                      }));
+                      setQuestionScores(questions);
+                    }}
+                  >
+                    生成题目
+                  </Button>
+                </Space>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+
+        {questionScores.length > 0 && (
+          <Card size="small" style={{ marginBottom: 16 }}>
+            <Title level={5} style={{ margin: 0, marginBottom: 16 }}>
+              📋 题目分值设置
+            </Title>
+            {questionScores.map((question, index) => (
+              <Row key={index} gutter={16} style={{ marginBottom: 8 }}>
+                <Col span={8}>
+                  <Text>第 {question.number} 题</Text>
+                </Col>
+                <Col span={8}>
+                  <InputNumber
+                    min={0.5}
+                    max={50}
+                    step={0.5}
+                    value={question.score}
+                    onChange={(value) => updateQuestionScore(index, value || 0)}
+                    addonAfter="分"
+                    style={{ width: '100%' }}
+                  />
+                </Col>
+                <Col span={8}>
+                  <Button 
+                    type="text" 
+                    danger 
+                    size="small"
+                    onClick={() => removeQuestion(index)}
+                  >
+                    删除
+                  </Button>
+                </Col>
+              </Row>
+            ))}
+            
+            <div style={{ textAlign: 'center', marginTop: 16, padding: '16px 0', border: '1px dashed #d9d9d9', borderRadius: '6px' }}>
+              <Button type="dashed" onClick={addQuestion}>
+                + 添加题目
+              </Button>
+            </div>
+            
+            <div style={{ textAlign: 'right', marginTop: 16, padding: '12px', background: '#f6ffed', borderRadius: '6px' }}>
+              <Text strong>
+                总题数：{questionScores.length} 题，总分：{questionScores.reduce((sum, q) => sum + q.score, 0)} 分
+              </Text>
+            </div>
+          </Card>
+        )}
+
+        <Form.Item style={{ marginBottom: 0, textAlign: 'center' }}>
+          <Space>
+            <Button onClick={() => setQuestionScores([])}>
+              清空
+            </Button>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              保存分值设置
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
+    </div>
+  );
+};
+
+// 主要组件接口
 interface ExamManagementProps {
   exams: Exam[];
   loading: boolean;
-  onCreateExam: (examData: Omit<Exam, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'>) => Promise<string>;
-  onUpdateExam: (examId: string, examData: Partial<Exam>) => Promise<void>;
-  onPublishExam: (examId: string) => Promise<void>;
-  onUnpublishExam: (examId: string) => Promise<void>;
-  onDeleteExam: (examId: string) => Promise<void>;
+  onCreateExam: (exam: Omit<Exam, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'>) => Promise<string>;
+  onUpdateExam: (id: string, exam: Partial<Exam>) => Promise<void>;
+  onDeleteExam: (id: string) => Promise<void>;
+  onPublishExam: (id: string) => Promise<void>;
+  onUnpublishExam: (id: string) => Promise<void>;
   onUploadFile: (file: File, type: 'question' | 'answer' | 'answerSheet') => Promise<ExamFile>;
   onDeleteFile: (fileId: string) => Promise<void>;
+  onSetQuestionScores: (examId: string, questions: { number: number; score: number }[]) => Promise<any>;
+  onGetQuestionScores: (examId: string) => Promise<any>;
+  onUpdateSingleQuestionScore: (examId: string, questionNumber: number, score: number) => Promise<any>;
 }
+
+// 状态映射
+const statusMap = {
+  draft: { text: '未发布', color: 'default' },
+  published: { text: '已发布', color: 'blue' },
+  ongoing: { text: '考试中', color: 'orange' },
+  grading: { text: '阅卷中', color: 'purple' },
+  completed: { text: '已结束', color: 'green' }
+};
 
 const ExamManagement: React.FC<ExamManagementProps> = ({
   exams,
   loading,
   onCreateExam,
   onUpdateExam,
+  onDeleteExam,
   onPublishExam,
   onUnpublishExam,
-  onDeleteExam,
   onUploadFile,
-  onDeleteFile
+  onDeleteFile,
+  onSetQuestionScores,
+  onGetQuestionScores,
+  onUpdateSingleQuestionScore
 }) => {
+  const [form] = Form.useForm();
   const [examModalVisible, setExamModalVisible] = useState(false);
   const [examDetailVisible, setExamDetailVisible] = useState(false);
+  const [scoreSettingsVisible, setScoreSettingsVisible] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [uploading, setUploading] = useState({
-    question: false,
-    answer: false,
-    answerSheet: false
-  });
-  const [form] = Form.useForm();
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [uploading, setUploading] = useState<{
+    question: boolean;
+    answer: boolean;
+    answerSheet: boolean;
+  }>({ question: false, answer: false, answerSheet: false });
   const [uploadedFiles, setUploadedFiles] = useState<{
     questionFile?: ExamFile;
     answerFile?: ExamFile;
     answerSheetFile?: ExamFile;
   }>({});
 
-  // 监听表单值变化，更新文件显示状态
-  const watchFiles = Form.useWatch(['questionFile', 'answerFile', 'answerSheetFile'], form);
-
-  // 考试状态映射
-  const statusMap = {
-    draft: { text: '未发布', color: 'default' },
-    published: { text: '已发布', color: 'blue' },
-    ongoing: { text: '考试中', color: 'orange' },
-    grading: { text: '阅卷中', color: 'purple' },
-    completed: { text: '已结束', color: 'green' }
-  };
-
-  // 考试表格列配置（简化版）
+  // 表格列定义
   const examColumns = [
     {
-      title: '考试信息',
-      key: 'examInfo',
-      width: 300,
-      render: (_: any, record: Exam) => (
+      title: '考试标题',
+      dataIndex: 'title',
+      key: 'title',
+      ellipsis: true,
+      render: (text: string, record: Exam) => (
         <div>
-          <div style={{ fontWeight: 500, marginBottom: 4 }}>{record.title}</div>
-          <div style={{ fontSize: '12px', color: '#666', marginBottom: 2 }}>
-            🕐 {dayjs(record.startTime).format('MM-DD HH:mm')} - {dayjs(record.endTime).format('MM-DD HH:mm')}
-          </div>
-          <div style={{ fontSize: '12px', color: '#999' }}>
-            📝 {record.totalQuestions || 0}题 | ⏱️ {record.duration || 0}分钟 | 👥 {record.participants?.length || 0}人
-          </div>
+          <Text strong>{text}</Text>
+          <br />
+          <Text type="secondary" style={{ fontSize: '12px' }}>
+            {record.description && record.description.length > 50 
+              ? `${record.description.substring(0, 50)}...` 
+              : record.description || '暂无描述'
+            }
+          </Text>
         </div>
       ),
     },
@@ -118,11 +334,44 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
-      render: (status: string) => {
-        const statusInfo = statusMap[status as keyof typeof statusMap];
-        return <Tag color={statusInfo?.color}>{statusInfo?.text}</Tag>;
-      },
+      width: 80,
+      render: (status: string) => (
+        <Tag color={statusMap[status as keyof typeof statusMap]?.color}>
+          {statusMap[status as keyof typeof statusMap]?.text}
+        </Tag>
+      ),
+    },
+    {
+      title: '考试时间',
+      key: 'examTime',
+      width: 160,
+      render: (_: any, record: Exam) => (
+        <div>
+          <div style={{ fontSize: '12px' }}>
+            {dayjs(record.startTime).format('MM-DD HH:mm')}
+          </div>
+          <div style={{ fontSize: '12px', color: '#999' }}>
+            至 {dayjs(record.endTime).format('MM-DD HH:mm')}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: '题目数',
+      dataIndex: 'totalQuestions',
+      key: 'totalQuestions',
+      width: 70,
+      render: (count: number) => (
+        <Tag color="cyan">{count || 0}题</Tag>
+      ),
+    },
+    {
+      title: '参与人数',
+      key: 'participants',
+      width: 80,
+      render: (_: any, record: Exam) => (
+        <Tag color="green">{record.participants?.length || 0}人</Tag>
+      ),
     },
     {
       title: '创建时间',
@@ -151,6 +400,14 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
             onClick={() => handleEditExam(record)}
           >
             编辑
+          </Button>
+          <Button
+            size="small"
+            icon={<SettingOutlined />}
+            onClick={() => handleScoreSettings(record)}
+            style={{ color: '#1890ff' }}
+          >
+            分值设置
           </Button>
           {record.status === 'draft' ? (
             <Popconfirm
@@ -204,6 +461,8 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       ),
     },
   ];
+
+  // 处理创建考试
   const handleCreateExam = () => {
     setEditingExam(null);
     setExamModalVisible(true);
@@ -325,6 +584,31 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     } catch (error) {
       message.error('文件删除失败');
       console.error('文件删除失败:', error);
+    }
+  };
+
+  // 处理分值设置
+  const handleScoreSettings = (exam: Exam) => {
+    setSelectedExam(exam);
+    setScoreSettingsVisible(true);
+  };
+
+  // 设置分值：每题单独填写
+  const handleSetQuestionScores = async (totalQuestions: number, defaultScore: number) => {
+    if (!selectedExam) return;
+    
+    try {
+      // 生成题目数组，每题单独设置分值
+      const questions = Array.from({ length: totalQuestions }, (_, index) => ({
+        number: index + 1,
+        score: defaultScore
+      }));
+      
+      await onSetQuestionScores(selectedExam.id, questions);
+      message.success(`已为考试《${selectedExam.title}》设置${totalQuestions}道题目，每题${defaultScore}分`);
+      setScoreSettingsVisible(false);
+    } catch (error) {
+      message.error('分值设置失败');
     }
   };
 
@@ -884,6 +1168,93 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                 </Col>
               </Row>
             </Card>
+          </div>
+        )}
+      </Modal>
+
+      {/* 分值设置模态框 */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <SettingOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+            <span>题目分值设置</span>
+            {selectedExam && (
+              <Text type="secondary" style={{ marginLeft: 16, fontSize: '14px' }}>
+                - {selectedExam.title}
+              </Text>
+            )}
+          </div>
+        }
+        open={scoreSettingsVisible}
+        onCancel={() => setScoreSettingsVisible(false)}
+        footer={null}
+        width={600}
+        destroyOnClose
+      >
+        {selectedExam && (
+          <div>
+            <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', marginBottom: 20 }}>
+              <Text type="secondary">
+                💡 简化流程：输入题目总数和每题分值，无需填写题干内容，题目均已包含在试题文件中
+              </Text>
+            </Card>
+            
+            <Form
+              layout="vertical"
+              onFinish={(values) => handleSetQuestionScores(values.totalQuestions, values.defaultScore)}
+              initialValues={{ defaultScore: 5, totalQuestions: selectedExam.totalQuestions }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="题目总数"
+                    name="totalQuestions"
+                    rules={[
+                      { required: true, message: '请输入题目总数' },
+                      { type: 'number', min: 1, max: 200, message: '题目数量应在1-200之间' }
+                    ]}
+                  >
+                    <InputNumber
+                      min={1}
+                      max={200}
+                      placeholder="例如：20"
+                      style={{ width: '100%' }}
+                      addonAfter="题"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="每题分值"
+                    name="defaultScore"
+                    rules={[
+                      { required: true, message: '请输入每题分值' },
+                      { type: 'number', min: 0.5, max: 50, message: '分值应在0.5-50之间' }
+                    ]}
+                  >
+                    <InputNumber
+                      min={0.5}
+                      max={50}
+                      step={0.5}
+                      placeholder="例如：5"
+                      style={{ width: '100%' }}
+                      addonAfter="分"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              
+              <Form.Item style={{ marginBottom: 0, textAlign: 'center' }}>
+                <Space>
+                  <Button onClick={() => setScoreSettingsVisible(false)}>
+                    取消
+                  </Button>
+                  <Button type="primary" htmlType="submit" loading={loading}>
+                    设置分值
+                  </Button>
+                </Space>
+              </Form.Item>
+            </Form>
           </div>
         )}
       </Modal>

@@ -101,8 +101,7 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       // 管理员阅卷管理
       '/api/admin/graders*',
       '/api/admin/grading*',
-      '/api/admin/exams/*/questions/scores*',
-      '/api/admin/exams/*/questions/*/score*',
+      '/api/admin/exams/*/question-scores*',  // 简化路径：题目分值设置
       // 阅卷员任务管理
       '/api/grader/tasks*',
       '/api/grader/exams/*/questions/scores*',

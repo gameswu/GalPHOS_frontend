@@ -62,7 +62,7 @@ class AdminAPI extends BaseAPI {
     return this.makeRequest<any>(
       `/api/admin/users/status`,
       {
-        method: 'PUT',
+        method: 'POST',
         body: JSON.stringify({ userId, status }),
       },
       '更新用户状态'
@@ -325,7 +325,25 @@ class AdminAPI extends BaseAPI {
     );
   }
 
-  // 上传考试文件
+  // 上传考试文件（统一使用文件上传服务）
+  static async uploadExamFile(examId: string, file: File, type: 'question' | 'answer' | 'answerSheet'): Promise<ApiResponse<any>> {
+    // 使用统一的文件上传服务
+    const FileUploadService = await import('../services/fileUploadService');
+    return FileUploadService.default.uploadExamFile(file, examId, type);
+  }
+
+  // 删除考试文件（统一使用文件删除服务）
+  static async deleteExamFile(fileId: string): Promise<ApiResponse<any>> {
+    this.validateRequired(fileId, '文件ID');
+
+    return this.makeRequest<any>(
+      `/api/files/${fileId}`,
+      { method: 'DELETE' },
+      '删除考试文件'
+    );
+  }
+
+  // 兼容原方法：批量上传考试文件（使用文件上传服务）
   static async uploadExamFiles(examId: string, files: FileList): Promise<ApiResponse<any>> {
     // 使用新的文件上传服务
     const FileUploadService = await import('../services/fileUploadService');
@@ -354,7 +372,7 @@ class AdminAPI extends BaseAPI {
     });
 
     return this.makeRequest<any>(
-      `/api/admin/exams/${examId}/questions/scores`,
+      `/api/admin/exams/${examId}/question-scores`,
       {
         method: 'POST',
         body: JSON.stringify({ questions }),
@@ -368,7 +386,7 @@ class AdminAPI extends BaseAPI {
     this.validateRequired(examId, '考试ID');
 
     return this.makeRequest<any>(
-      `/api/admin/exams/${examId}/questions/scores`,
+      `/api/admin/exams/${examId}/question-scores`,
       { method: 'GET' },
       '获取题目分值配置'
     );
@@ -388,24 +406,12 @@ class AdminAPI extends BaseAPI {
     }
 
     return this.makeRequest<any>(
-      `/api/admin/exams/${examId}/questions/${questionNumber}/score`,
+      `/api/admin/exams/${examId}/question-scores/${questionNumber}`,
       {
         method: 'PUT',
         body: JSON.stringify({ score }),
       },
       '更新题目分值'
-    );
-  }
-
-  // 删除题目分值配置
-  static async deleteQuestionScore(examId: string, questionNumber: number): Promise<ApiResponse<any>> {
-    this.validateRequired(examId, '考试ID');
-    this.validateRequired(questionNumber, '题目编号');
-
-    return this.makeRequest<any>(
-      `/api/admin/exams/${examId}/questions/${questionNumber}/score`,
-      { method: 'DELETE' },
-      '删除题目分值配置'
     );
   }
 

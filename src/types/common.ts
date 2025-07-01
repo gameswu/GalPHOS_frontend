@@ -363,18 +363,14 @@ export interface GradingPaper {
   gradedAt?: string;
 }
 
-// 阅卷员信息
+// 阅卷员信息（简化版：仅包含阅卷者、状态、阅卷队列数、已完成数四项）
 export interface GraderInfo {
   id: string;
   username: string;
   phone: string;
-  currentTasks: number;
-  completedTasks: number;
-  totalPapers: number;
-  avgScore: number;
-  avgGradingTime: number;
   status: 'available' | 'busy' | 'offline';
-  lastActiveAt: string;
+  currentTasks: number;    // 阅卷队列数（当前待处理任务数）
+  completedTasks: number;  // 已完成数（已完成的阅卷任务数）
 }
 
 // 阅卷进度

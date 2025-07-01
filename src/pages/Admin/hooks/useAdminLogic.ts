@@ -976,6 +976,88 @@ export const useAdminLogic = () => {
     }
   }, []);
 
+  // 设置题目分值（只支持每题单独填写分值）
+  const setQuestionScores = useCallback(async (
+    examId: string, 
+    questions: { number: number; score: number }[]
+  ) => {
+    try {
+      setLoading(true);
+      
+      const requestData = {
+        questions
+      };
+
+      const apiResponse = await fetch(`/api/admin/exams/${examId}/question-scores`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      const result = await apiResponse.json();
+      
+      if (result.success) {
+        const totalScore = questions.reduce((sum, q) => sum + q.score, 0);
+        notification.showSuccess(`成功设置${questions.length}道题目分值，总分${totalScore}分`);
+        return result.data;
+      } else {
+        notification.showError(result.message || '分值设置失败');
+        throw new Error(result.message || '分值设置失败');
+      }
+    } catch (error) {
+      console.error('设置题目分值失败:', error);
+      notification.showError('网络错误，设置题目分值失败');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 获取题目分值配置
+  const getQuestionScores = useCallback(async (examId: string) => {
+    try {
+      const response = await AdminAPI.getQuestionScores(examId);
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        notification.showError(response.message || '获取题目分值失败');
+        return null;
+      }
+    } catch (error) {
+      console.error('获取题目分值失败:', error);
+      notification.showError('网络错误，获取题目分值失败');
+      return null;
+    }
+  }, []);
+
+  // 更新单个题目分值
+  const updateSingleQuestionScore = useCallback(async (
+    examId: string,
+    questionNumber: number,
+    score: number
+  ) => {
+    try {
+      setLoading(true);
+      const response = await AdminAPI.updateQuestionScore(examId, questionNumber, score);
+      if (response.success) {
+        notification.showSuccess(`第${questionNumber}题分值已更新为${score}分`);
+        return response.data;
+      } else {
+        notification.showError(response.message || '更新题目分值失败');
+        throw new Error(response.message || '更新题目分值失败');
+      }
+    } catch (error) {
+      console.error('更新题目分值失败:', error);
+      notification.showError('网络错误，更新题目分值失败');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     // 状态
     pendingUsers,
@@ -1017,6 +1099,10 @@ export const useAdminLogic = () => {
     uploadFile,
     // 文件管理方法
     deleteFile,
+    // 题目分值管理方法
+    setQuestionScores,
+    getQuestionScores,
+    updateSingleQuestionScore,
     // 阅卷管理方法
     assignGradingTask,
     getGradingProgress,

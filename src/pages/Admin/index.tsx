@@ -48,6 +48,10 @@ const Admin: React.FC = () => {
     deleteExam,
     uploadFile,
     deleteFile,
+    // 分值设置方法
+    setQuestionScores,
+    getQuestionScores,
+    updateSingleQuestionScore,
     // 阅卷管理方法
     assignGradingTask,
     getGradingProgress,
@@ -173,6 +177,9 @@ const Admin: React.FC = () => {
             onDeleteExam={deleteExam}
             onUploadFile={uploadFile}
             onDeleteFile={deleteFile}
+            onSetQuestionScores={setQuestionScores}
+            onGetQuestionScores={getQuestionScores}
+            onUpdateSingleQuestionScore={updateSingleQuestionScore}
             onAssignGradingTask={assignGradingTask}
             onGetGradingProgress={getGradingProgress}
             onUpdateGradingProgress={updateGradingProgress}

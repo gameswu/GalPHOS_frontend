@@ -693,31 +693,96 @@ interface ApiResponse<T> {
 }
 ```
 
-### 3.2 创建考试
+### 3.2 创建考试（优化版）
 
 **接口路径：** `POST /api/admin/exams`
 
+**描述**: 创建新考试，支持同时设置基本信息和题目分值
+
 **请求参数：**
 ```typescript
 {
-  title: string,
-  description: string,
-  startTime: string,
-  endTime: string,
-  totalQuestions?: number,
-  duration?: number
+  title: string,                    // 考试标题
+  description: string,              // 考试描述
+  startTime: string,               // 开始时间（ISO格式）
+  endTime: string,                 // 结束时间（ISO格式）
+  totalQuestions: number,          // 题目总数（必填，用于分值设置）
+  duration: number,                // 考试时长（分钟）
+  autoSetScores?: {                // 可选：自动设置分值
+    defaultScore: number,          // 每题默认分值
+    customScores?: Array<{         // 自定义特定题目分值
+      number: number,              // 题目序号
+      score: number               // 分值
+    }>
+  }
 }
 ```
 
-### 3.3 更新考试
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    id: string,
+    title: string,
+    description: string,
+    startTime: string,
+    endTime: string,
+    totalQuestions: number,
+    duration: number,
+    status: 'draft',
+    createdAt: string,
+    createdBy: string,
+    scoreConfig?: {                // 如果设置了分值
+      totalScore: number,
+      questions: Array<{
+        number: number,
+        score: number
+      }>
+    }
+  },
+  message: "考试创建成功"
+}
+```
+
+### 3.3 更新考试（优化版）
 
 **接口路径：** `PUT /api/admin/exams/{examId}`
+
+**描述**: 更新考试信息，当更新题目数量时会影响分值配置
 
 **请求参数：**
 ```typescript
 {
-  title?: string,
-  description?: string,
+  title?: string,                  // 考试标题
+  description?: string,            // 考试描述
+  startTime?: string,             // 开始时间
+  endTime?: string,               // 结束时间
+  totalQuestions?: number,        // 题目总数（更新时需注意分值配置）
+  duration?: number,              // 考试时长
+  resetScoresIfNeeded?: boolean   // 当题目数量变化时是否重置分值，默认false
+}
+```
+
+**响应格式：**
+```typescript
+{
+  success: boolean,
+  data: {
+    id: string,
+    title: string,
+    description: string,
+    startTime: string,
+    endTime: string,
+    totalQuestions: number,
+    duration: number,
+    status: string,
+    updatedAt: string,
+    scoreConfigChanged?: boolean    // 是否影响了分值配置
+  },
+  message: "考试更新成功"
+}
+```
   startTime?: string,
   endTime?: string,
   totalQuestions?: number,
@@ -737,45 +802,24 @@ interface ApiResponse<T> {
 
 **接口路径：** `DELETE /api/admin/exams/{examId}`
 
-### 3.7 上传考试文件
+**注意：** 考试文件上传已统一使用文件上传服务，请参考以下接口：
+- 文件上传：`POST /api/upload/exam-files`
+- 文件删除：`DELETE /api/files/{fileId}`
 
-**接口路径：** `POST /api/admin/exams/{examId}/files`
+详细说明请参考[文件上传服务文档](./API_FILE_UPLOAD.md)
 
-**请求参数（FormData）：**
-```typescript
-{
-  file: File,
-  type: 'question' | 'answer' | 'answerSheet'
-}
-```
-
-**响应格式：**
-```typescript
-{
-  success: boolean,
-  data: {
-    id: string,
-    name: string,
-    url: string,
-    size: number,
-    uploadTime: string
-  }
-}
-```
-
-### 3.8 设置题目分值
+### 3.7 设置题目分值
 
 **接口路径：** `POST /api/admin/exams/{examId}/question-scores`
 
-**描述**: 为考试设置题目分值配置
+**描述**: 为考试设置题目分值配置。仅支持为每道题单独设置分值，无需填写题干内容。
 
 **请求参数：**
 ```typescript
 {
   questions: Array<{
-    number: number,
-    score: number,
-    content?: string
+    number: number,           // 题目序号（1-N）
+    score: number             // 该题分值
   }>
 }
 ```
@@ -786,17 +830,31 @@ interface ApiResponse<T> {
   success: boolean,
   data: {
     examId: string,
+    totalQuestions: number,
+    totalScore: number,
     questions: Array<{
-      number: number,
-      score: number,
-      content?: string
+      number: number,         // 题目序号
+      score: number           // 题目分值
     }>
   },
   message: "题目分值设置成功"
 }
 ```
 
-### 3.9 获取题目分值
+**使用示例：**
+```typescript
+// 20道题，手动为每题设置分值
+{
+  "questions": [
+    { "number": 1, "score": 5 },
+    { "number": 2, "score": 5 },
+    { "number": 3, "score": 10 },
+    // ... 其他题目
+    { "number": 20, "score": 15 }
+  ]
+}
+```
+### 3.8 获取题目分值
 
 **接口路径：** `GET /api/admin/exams/{examId}/question-scores`
 
@@ -808,39 +866,30 @@ interface ApiResponse<T> {
   success: boolean,
   data: {
     examId: string,
+    totalQuestions: number,
+    totalScore: number,
     questions: Array<{
-      number: number,
-      score: number,
-      content?: string
+      number: number,         // 题目序号
+      score: number          // 题目分值
     }>
   }
 }
 ```
 
-### 3.10 更新单个题目分值
+### 3.9 更新单个题目分值
 
 **接口路径：** `PUT /api/admin/exams/{examId}/question-scores/{questionNumber}`
+
+**描述**: 更新指定题目的分值
+
+**路径参数：**
+- `examId` (string): 考试ID
+- `questionNumber` (number): 题目序号（1-N）
 
 **请求参数：**
 ```typescript
 {
-  score: number,
-  content?: string
-}
-```
-
-### 3.11 删除题目分值
-
-**接口路径：** `DELETE /api/admin/exams/{examId}/question-scores/{questionNumber}`
-
-### 3.12 导入题目分值
-
-**接口路径：** `POST /api/admin/exams/{examId}/question-scores/import`
-
-**请求参数（FormData）：**
-```typescript
-{
-  file: File  // CSV或Excel格式的分值文件
+  score: number             // 新的题目分值
 }
 ```
 
@@ -849,22 +898,24 @@ interface ApiResponse<T> {
 {
   success: boolean,
   data: {
-    imported: number,
-    errors: Array<{
-      row: number,
-      message: string
-    }>
+    examId: string,
+    questionNumber: number,
+    score: number,
+    totalScore: number       // 更新后的总分
   },
-  message: "题目分值导入完成"
+  message: "题目分值更新成功"
 }
 ```
 
 ---
+
 ## 4. 阅卷管理模块
 
 ### 4.1 获取阅卷者列表
 
 **接口路径：** `GET /api/admin/graders`
+
+**描述**: 获取阅卷者列表，包含基本信息和阅卷状态（简化版：仅包含必要字段）
 
 **响应格式：**
 ```typescript
@@ -873,11 +924,10 @@ interface ApiResponse<T> {
   data: Array<{
     id: string,
     username: string,
-    status: 'active' | 'busy' | 'offline',
-    assignedTasks: number,
-    completedTasks: number,
-    averageScore: number,
-    lastActiveAt: string
+    phone: string,
+    status: 'available' | 'busy' | 'offline',
+    currentTasks: number,    // 阅卷队列数（当前待处理任务数）
+    completedTasks: number   // 已完成数（已完成的阅卷任务数）
   }>
 }
 ```
@@ -1376,3 +1426,67 @@ const handleApiCall = async (apiFunction: () => Promise<any>) => {
   }
 };
 ```
+
+---
+
+## 前端实现说明
+
+### 分值设置UI设计原则
+
+基于您的需求"选择好题目数量后即可设置每道题目的分值，无需题干内容"，我们优化了以下几个方面：
+
+#### 1. 极简化流程
+- **主要场景**：快速均分模式，只需输入"题目总数"和"每题分值"两个参数
+- **高级场景**：快速+自定义模式，可为个别题目设置特殊分值
+- **维护场景**：重置统一分值，批量修改已设置的分值
+
+#### 2. 去除题干内容要求
+- 所有API接口不再要求`content`字段
+- 题目内容全部依赖试题文件，前端无需处理题干
+- 分值设置仅关注"题目序号"和"分值"的映射关系
+
+#### 3. 前端组件设计
+```typescript
+// 主要操作：快速均分
+<Form onFinish={(values) => setQuestionScoresUniform(examId, values.totalQuestions, values.defaultScore)}>
+  <InputNumber placeholder="题目总数" name="totalQuestions" />
+  <InputNumber placeholder="每题分值" name="defaultScore" />
+  <Button htmlType="submit">设置分值</Button>
+</Form>
+
+// 调用示例
+setQuestionScoresUniform('exam_001', 20, 5); // 20题，每题5分
+```
+
+#### 4. API调用简化
+```typescript
+// 前端调用示例
+const handleQuickScoreSetup = async (totalQuestions: number, defaultScore: number) => {
+  const response = await fetch(`/api/admin/exams/${examId}/question-scores`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      mode: 'uniform',
+      totalQuestions,
+      defaultScore
+    })
+  });
+  
+  // 自动生成1-N题目，每题相同分值，无需题干内容
+};
+```
+
+#### 5. 用户体验优化
+- 表单预填：从考试基本信息中自动获取`totalQuestions`
+- 即时预览：显示"总分 = 题目数量 × 每题分值"
+- 操作反馈：成功后显示"已设置X道题目，每题Y分，总分Z分"
+- 错误处理：分值范围验证，题目数量合理性检查
+
+### 推荐的前端实现步骤
+
+1. **考试创建时**：只设置基本信息，暂不设置分值
+2. **文件上传后**：根据试题文件确定题目数量
+3. **分值设置时**：一键式快速均分设置
+4. **发布前检查**：确保分值已设置且合理
+
+这样的设计完全符合您的需求，实现了"题目数量+分值批量设置"的简化流程，避免了繁琐的题干内容填写。

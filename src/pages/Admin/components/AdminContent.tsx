@@ -84,6 +84,10 @@ interface AdminContentProps {
   onDeleteExam: (examId: string) => Promise<void>;
   onUploadFile: (file: File, type: 'question' | 'answer' | 'answerSheet') => Promise<any>;
   onDeleteFile: (fileId: string) => Promise<void>;
+  // 分值设置相关方法
+  onSetQuestionScores: (examId: string, questions: { number: number; score: number }[]) => Promise<any>;
+  onGetQuestionScores: (examId: string) => Promise<any>;
+  onUpdateSingleQuestionScore: (examId: string, questionNumber: number, score: number) => Promise<any>;
   onAssignGradingTask: (examId: string, questionNumber: number, graderIds: string[]) => Promise<void>;
   onGetGradingProgress: (examId: string) => any;
   onUpdateGradingProgress: (taskId: string) => Promise<void>;
@@ -739,6 +743,10 @@ const AdminContent: React.FC<AdminContentProps> = ({
   onDeleteExam,
   onUploadFile,
   onDeleteFile,
+  // 分值设置相关方法
+  onSetQuestionScores,
+  onGetQuestionScores,
+  onUpdateSingleQuestionScore,
   onAssignGradingTask,
   onGetGradingProgress,
   onUpdateGradingProgress,
@@ -809,6 +817,9 @@ const AdminContent: React.FC<AdminContentProps> = ({
           onDeleteExam={onDeleteExam}
           onUploadFile={onUploadFile}
           onDeleteFile={onDeleteFile}
+          onSetQuestionScores={onSetQuestionScores}
+          onGetQuestionScores={onGetQuestionScores}
+          onUpdateSingleQuestionScore={onUpdateSingleQuestionScore}
         />
       );
     

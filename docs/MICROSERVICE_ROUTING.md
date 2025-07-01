@@ -14,13 +14,13 @@
 | 3002 | User Management Service | `userManagement` | 用户生命周期管理服务 | 22个 |
 | 3003 | Exam Management Service | `examManagement` | 考试完整生命周期管理服务 | 8个 |
 | 3004 | Submission Service | `submission` | 答题卡提交和管理服务 | 6个 |
-| 3005 | Grading Service | `grading` | 阅卷任务分配和过程管理服务 | 18个 |
+| 3005 | Grading Service | `grading` | 阅卷任务分配和过程管理服务 | 17个 |
 | 3006 | Score Statistics Service | `scoreStatistics` | 成绩数据分析和排名计算服务 | 12个 |
 | 3007 | Region Management Service | `regionManagement` | 省份学校等地理信息管理服务 | 17个 |
 | 3008 | File Storage Service | `fileStorage` | 文件上传存储和访问管理服务 | 8个 |
 | 3009 | System Configuration Service | `systemConfig` | 系统全局配置管理服务 | 4个 |
 
-**总计**: 100个API接口
+**总计**: 99个API接口
 
 ## API 路径分配策略
 
@@ -173,10 +173,9 @@
 /api/admin/grading/progress/{examId}   # 阅卷进度监控
 /api/admin/grading/tasks               # 阅卷任务管理
 
-# 题目分数管理
-/api/admin/exams/{examId}/questions/scores        # 题目分数查看
-/api/admin/exams/{examId}/questions/scores/import # 题目分数批量导入
-/api/admin/exams/{examId}/questions/{questionNumber}/score # 单题分数设置
+# 题目分数管理（简化版 v1.3.0）
+/api/admin/exams/{examId}/question-scores        # 题目分数设置和查看
+/api/admin/exams/{examId}/question-scores/{questionNumber} # 单题分数更新
 
 # 阅卷员任务管理
 /api/grader/tasks                      # 阅卷任务列表
@@ -475,36 +474,36 @@ const allConfigs = microserviceRouter.getAllServiceConfigs();
 
 ## 版本信息
 
-- **文档版本**: 1.2.0
+- **文档版本**: 1.3.0
 - **架构版本**: 基于 docs/README.md 微服务设计
-- **API覆盖**: 完整映射所有100个前端API接口
-- **更新日期**: 2025年6月30日
-- **主要更新**: API规范统一化 - 个人资料、密码修改、仪表板、地区变更接口统一
+- **API覆盖**: 完整映射所有前端API接口（99个接口）
+- **更新日期**: 2025年7月1日
+- **主要更新**: API精简优化 - 分值设置、阅卷者管理、文件上传等接口简化统一
 
 ## 文档说明
 
 本文档替代了原有的 `API_COVERAGE_REPORT.md` 和 `API_DOCS_UPDATE_REPORT.md`，成为微服务架构下API接口映射的唯一权威文档。
 
-### v1.2.0 更新内容：
+### v1.3.0 更新内容：
 
-1. **个人资料管理API统一化**：
-   - 所有角色使用 `GET/PUT /api/{role}/profile`
-   - 支持统一的基础字段：name, phone, email, avatar
+1. **API接口精简优化**：
+   - 移除未使用的删除题目分值API接口
+   - 精简分值设置为单题分值设置模式
+   - 简化阅卷者管理表格字段，仅保留核心信息
 
-2. **密码修改API统一化**：
-   - 所有角色使用 `PUT /api/{role}/password`
-   - 统一参数：oldPassword + newPassword
+2. **文件上传API统一化**：
+   - 所有考试文件上传统一使用 `/api/upload/*` 路径
+   - 移除特定考试的文件上传接口，避免路径冲突
 
-3. **仪表板API统一化**：
-   - 所有角色使用 `GET /api/{role}/dashboard/stats`
-   - 统一方法名：getDashboardStats()
+3. **微服务路由优化**：
+   - 优化分值设置API路由到阅卷管理服务
+   - 确保文件上传API正确路由到文件存储服务
+   - 移除过时的API路径配置
 
-4. **地区变更API统一化**：
-   - 学生和教练使用 `/api/{role}/region-change*`
-   - 统一方法：requestRegionChange() 和 getRegionChangeStatus()
-
-5. **头像上传API统一化**：
-   - 所有角色使用 `POST /api/upload/avatar`
+4. **文档内容同步**：
+   - API文档、前端实现、微服务路由三方完全一致
+   - 移除过时和冗余的接口说明
+   - 确保所有前端功能都有对应的后端API支持
 
 ### 每个微服务部分详细列出了：
 

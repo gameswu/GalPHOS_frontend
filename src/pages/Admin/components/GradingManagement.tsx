@@ -81,7 +81,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
   // 获取可分配阅卷的考试（阅卷中状态）
   const gradingExams = exams.filter(exam => exam.status === 'grading');
 
-  // 阅卷者表格列
+  // 阅卷者表格列（简化版：仅包含阅卷者、状态、阅卷队列数、已完成数四项）
   const graderColumns = [
     {
       title: '阅卷者',
@@ -110,59 +110,19 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
       },
     },
     {
-      title: '当前任务',
+      title: '阅卷队列数',
       dataIndex: 'currentTasks',
       key: 'currentTasks',
-      className: 'mobile-hidden',
       render: (count: number) => (
         <Tag color={count > 0 ? 'orange' : 'green'}>{count} 个</Tag>
       ),
     },
     {
-      title: '已完成任务',
+      title: '已完成数',
       dataIndex: 'completedTasks',
       key: 'completedTasks',
-      className: 'mobile-hidden',
       render: (count: number) => (
         <Tag color="blue">{count} 个</Tag>
-      ),
-    },
-    {
-      title: '总阅卷数',
-      dataIndex: 'totalPapers',
-      key: 'totalPapers',
-      className: 'mobile-hidden',
-      render: (count: number) => (
-        <Text>{count} 份</Text>
-      ),
-    },
-    {
-      title: '平均分',
-      dataIndex: 'avgScore',
-      key: 'avgScore',
-      className: 'mobile-hidden',
-      render: (score: number) => (
-        <Text>{score.toFixed(1)} 分</Text>
-      ),
-    },
-    {
-      title: '平均时间',
-      dataIndex: 'avgGradingTime',
-      key: 'avgGradingTime',
-      className: 'mobile-hidden',
-      render: (time: number) => (
-        <Text>{time} 秒</Text>
-      ),
-    },
-    {
-      title: '最后活跃',
-      dataIndex: 'lastActiveAt',
-      key: 'lastActiveAt',
-      className: 'mobile-hidden',
-      render: (time: string) => (
-        <Text type="secondary">
-          {dayjs(time).format('MM-DD HH:mm')}
-        </Text>
       ),
     },
   ];

@@ -123,7 +123,25 @@ export class FileUploadService extends BaseAPI {
   }
 
   /**
-   * 管理员上传考试文件
+   * 管理员上传单个考试文件
+   */
+  static async uploadExamFile(
+    file: File,
+    examId: string,
+    type: 'question' | 'answer' | 'answerSheet',
+    onProgress?: (progress: number) => void
+  ): Promise<ApiResponse<FileUploadResult>> {
+    return this.uploadFile(file, {
+      category: 'exam-file',
+      relatedId: examId,
+      allowedTypes: [...this.defaultConfig.allowedImageTypes, ...this.defaultConfig.allowedDocumentTypes],
+      maxSize: 50 * 1024 * 1024, // 考试文件限制50MB
+      onProgress
+    });
+  }
+
+  /**
+   * 管理员批量上传考试文件
    */
   static async uploadExamFiles(
     files: FileList,
