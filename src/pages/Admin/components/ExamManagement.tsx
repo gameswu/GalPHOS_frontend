@@ -200,8 +200,6 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       ),
     },
   ];
-
-  // 处理创建考试
   const handleCreateExam = () => {
     setEditingExam(null);
     setExamModalVisible(true);
@@ -236,7 +234,6 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     setSelectedExam(exam);
     setExamDetailVisible(true);
   };
-
   // 文件上传处理
   const handleFileUpload = async (file: File, type: 'question' | 'answer' | 'answerSheet') => {
     setUploading(prev => ({ ...prev, [type]: true }));
@@ -263,42 +260,63 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       setUploading(prev => ({ ...prev, [type]: false }));
     }
   };
-
-  // 提交考试表单
+  
+  // 表单提交处理
   const handleExamSubmit = async (values: any) => {
+    const examTime = values.examTime;
+    const status: 'draft' | 'published' = values.shouldPublish ? 'published' : 'draft';
+    
+    const examData = {
+      title: values.title,
+      description: values.description,
+      startTime: examTime[0].toISOString(),
+      endTime: examTime[1].toISOString(),
+      totalQuestions: values.totalQuestions,
+      duration: values.duration,
+      status,
+      questionFile: values.questionFile,
+      answerFile: values.answerFile,
+      answerSheetFile: values.answerSheetFile
+    };
+    
     try {
-      const examTime = values.examTime;
-      const status: 'draft' | 'published' = values.shouldPublish ? 'published' : 'draft';
-      
-      const examData = {
-        title: values.title,
-        description: values.description,
-        startTime: examTime[0].toISOString(),
-        endTime: examTime[1].toISOString(),
-        totalQuestions: values.totalQuestions,
-        duration: values.duration,
-        status,
-        questionFile: values.questionFile,
-        answerFile: values.answerFile,
-        answerSheetFile: values.answerSheetFile
-      };
-
       if (editingExam) {
         await onUpdateExam(editingExam.id, examData);
       } else {
-        // 对于创建考试，需要确保类型完整
         const createExamData: Omit<Exam, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'> = {
           ...examData,
           participants: []
         };
         await onCreateExam(createExamData);
       }
-
+      
       setExamModalVisible(false);
-      form.resetFields();
-      setEditingExam(null);
     } catch (error) {
       console.error('提交失败:', error);
+      message.error('考试保存失败，请重试');
+    }
+  };
+  
+  // 删除上传的文件
+  const handleDeleteFile = async (fieldName: 'questionFile' | 'answerFile' | 'answerSheetFile') => {
+    const file = form.getFieldValue(fieldName);
+    if (!file || !file.id) return;
+    
+    try {
+      // 仅清除表单和本地状态，因为接口中没有定义删除文件的函数
+      form.setFieldsValue({ [fieldName]: undefined });
+      setUploadedFiles(prev => ({ ...prev, [fieldName]: undefined }));
+      
+      const fileTypeMap = {
+        questionFile: '试题',
+        answerFile: '答案',
+        answerSheetFile: '答题卡'
+      };
+      
+      message.success(`${fileTypeMap[fieldName]}文件已移除`);
+    } catch (error) {
+      message.error('文件移除失败');
+      console.error('文件移除失败:', error);
     }
   };
 

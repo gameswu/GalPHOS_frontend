@@ -70,23 +70,23 @@ const SYSTEM_INFO = {
   systemName: 'GalPHOS 考试管理系统',
   version: 'v1.3.0',
   buildTime: '2025-7-1 01:15:00',
-  developer: 'gameswu, X-02Y, laoli006',
-  repository: 'https://github.com/gameswu/GalPHOS_frontend',
+  developers: [
+    'gameswu',
+    'X-02Y', 
+    'laoli006'
+  ],
+  repositories: {
+    frontend: 'https://github.com/gameswu/GalPHOS_frontend',
+    backend: 'https://github.com/X-02Y/GalPHOS_backend/'
+  },
   supporters: [
     '小夜',
     'SuddeИ',
     '岭华廷阳',
-    '东方地灵殿全体'
+    'Zzz',
+    '东方地灵殿 全体'
   ],
-  description: '基于微服务架构的现代化考试管理平台',
-  features: [
-    '多角色权限管理',
-    '在线考试与阅卷',
-    '智能成绩统计',
-    '实时数据监控',
-    '微服务架构',
-    '响应式界面设计'
-  ]
+  description: '基于微服务架构的现代化考试管理平台'
 };
 
 const SystemSettings: React.FC<SystemSettingsProps> = ({
@@ -617,13 +617,23 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                 <Card size="small" title="开发信息">
                   <Descriptions column={1} size="small">
                     <Descriptions.Item label="开发者">
-                      {SYSTEM_INFO.developer}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {SYSTEM_INFO.developers.map((developer, index) => (
+                          <Tag key={index} color="green">{developer}</Tag>
+                        ))}
+                      </div>
                     </Descriptions.Item>
                     <Descriptions.Item label="项目仓库">
-                      <a href={SYSTEM_INFO.repository} target="_blank" rel="noopener noreferrer">
-                        <GithubOutlined style={{ marginRight: 4 }} />
-                        GitHub 仓库
-                      </a>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <a href={SYSTEM_INFO.repositories.frontend} target="_blank" rel="noopener noreferrer">
+                          <GithubOutlined style={{ marginRight: 4 }} />
+                          前端仓库
+                        </a>
+                        <a href={SYSTEM_INFO.repositories.backend} target="_blank" rel="noopener noreferrer">
+                          <GithubOutlined style={{ marginRight: 4 }} />
+                          后端仓库
+                        </a>
+                      </div>
                     </Descriptions.Item>
                   </Descriptions>
                 </Card>
@@ -636,16 +646,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                       <Tag key={index} icon={<HeartOutlined />} color="pink">
                         {supporter}
                       </Tag>
-                    ))}
-                  </div>
-                </Card>
-              </Col>
-
-              <Col span={24}>
-                <Card size="small" title="系统特性">
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {SYSTEM_INFO.features.map((feature, index) => (
-                      <Tag key={index} color="blue">{feature}</Tag>
                     ))}
                   </div>
                 </Card>
