@@ -92,6 +92,59 @@ const Admin: React.FC = () => {
           </Title>
         </div>
 
+        {/* 用户信息 */}
+        {!collapsed && currentAdmin && (
+          <div style={{
+            padding: '0 16px 16px',
+            borderBottom: '1px solid #f0f0f0',
+            marginBottom: '16px'
+          }}>
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-avatar" style={{ textAlign: 'center', marginBottom: '8px' }}>
+                <Avatar 
+                  src={currentAdmin.avatar} 
+                  size={48} 
+                  icon={<UserOutlined />}
+                  style={{ 
+                    border: '2px solid #1890ff',
+                    objectFit: 'cover'
+                  }}
+                />
+              </div>
+              <div className="user-name" style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', textAlign: 'center' }}>
+                {currentAdmin.username}
+              </div>
+              <div className="user-role" style={{ fontSize: '12px', color: '#666', textAlign: 'center' }}>
+                {currentAdmin.role === 'super_admin' ? '超级管理员' : '管理员'}
+              </div>
+              <div className="user-status" style={{ fontSize: '12px', color: '#999', textAlign: 'center', marginTop: '4px' }}>
+                状态: {currentAdmin.status === 'active' ? '活跃' : '禁用'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 折叠时的用户头像 */}
+        {collapsed && currentAdmin && (
+          <div style={{
+            padding: '8px',
+            display: 'flex',
+            justifyContent: 'center',
+            borderBottom: '1px solid #f0f0f0',
+            marginBottom: '16px'
+          }}>
+            <Avatar 
+              src={currentAdmin.avatar} 
+              size={32} 
+              icon={<UserOutlined />}
+              style={{ 
+                border: '1px solid #1890ff',
+                objectFit: 'cover'
+              }}
+            />
+          </div>
+        )}
+
         {/* 菜单 */}
         <Menu
           mode="inline"
@@ -117,18 +170,6 @@ const Admin: React.FC = () => {
             {getTitleByKey(selectedKey)}
           </Title>
           <Space>
-            {/* 显示当前管理员头像 */}
-            {currentAdmin && (
-              <Space>
-                <Avatar 
-                  src={currentAdmin.avatar} 
-                  icon={!currentAdmin.avatar && <UserOutlined />} 
-                  size="small"
-                  style={{ backgroundColor: !currentAdmin.avatar ? '#1890ff' : 'transparent' }}
-                />
-                <Text>{currentAdmin.username}</Text>
-              </Space>
-            )}
             <Button 
               icon={<LogoutOutlined />}
               onClick={handleLogout}

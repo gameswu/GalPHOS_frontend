@@ -126,10 +126,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
   const handleUpdateProfile = async (values: any) => {
     try {
       if (!currentAdmin) return;
-      await onUpdateAdmin(currentAdmin.id, {
-        name: values.name
-      });
-      message.success('个人信息更新成功');
+      // 由于删除了显示名称，这里不再需要更新任何内容
+      // 保留此函数以备将来可能添加其他个人信息字段
+      message.success('个人信息已更新');
     } catch (error) {
       message.error('个人信息更新失败');
     }
@@ -141,7 +140,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
       await onCreateAdmin({
         username: values.username,
         password: values.password,
-        name: values.name,
         role: 'admin'
       });
       message.success('管理员创建成功');
@@ -157,7 +155,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
     
     try {
       await onUpdateAdmin(editingAdmin.id, {
-        name: values.name,
         status: values.status
       });
       message.success('管理员信息更新成功');
@@ -195,7 +192,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
     setEditingAdmin(admin);
     adminForm.setFieldsValue({
       username: admin.username,
-      name: admin.name,
       status: admin.status
     });
     setAdminModalVisible(true);
@@ -302,14 +298,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                     </Col>
                   </Row>
 
-                  <Row gutter={16}>
-                    <Col span={24}>
-                      <Form.Item label="显示名称" name="name">
-                        <Input placeholder="请输入显示名称" />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-
                   <Form.Item>
                     <Space>
                       <Button type="primary" htmlType="submit" loading={loading}>
@@ -358,7 +346,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                   )}
                 />
                 <Table.Column title="用户名" dataIndex="username" />
-                <Table.Column title="显示名称" dataIndex="name" />
                 <Table.Column
                   title="角色"
                   dataIndex="role"
@@ -527,7 +514,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
           onFinish={editingAdmin ? handleUpdateAdmin : handleCreateAdmin}
         >
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={24}>
               <Form.Item
                 label="用户名"
                 name="username"
@@ -541,17 +528,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                   placeholder="请输入用户名" 
                   disabled={!!editingAdmin} // 编辑时禁用用户名修改
                 />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="显示名称"
-                name="name"
-                rules={[
-                  { required: true, message: '请输入显示名称' }
-                ]}
-              >
-                <Input placeholder="请输入显示名称" />
               </Form.Item>
             </Col>
           </Row>
