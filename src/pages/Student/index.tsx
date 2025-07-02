@@ -135,9 +135,20 @@ const Student: React.FC = () => {
           borderBottom: '1px solid #f0f0f0',
           marginBottom: '16px'
         }}>
-          <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
-            {collapsed ? 'G' : 'GalPHOS'}
-          </Title>
+          <img 
+            src="/icon.png"
+            alt="GalPHOS Logo" 
+            style={{ 
+              height: '28px', 
+              width: '28px', 
+              marginRight: collapsed ? '0' : '8px' 
+            }} 
+          />
+          {!collapsed && (
+            <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
+              GalPHOS
+            </Title>
+          )}
         </div>
 
         {/* 用户信息 */}
