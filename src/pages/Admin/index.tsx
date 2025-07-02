@@ -62,6 +62,7 @@ const Admin: React.FC = () => {
     createAdmin,
     deleteAdmin,
     updateSystemSettings,
+    updateProfile,
     uploadAvatar
   } = useAdminLogic();
 
@@ -237,6 +238,7 @@ const Admin: React.FC = () => {
             onUpdateGradingProgress={updateGradingProgress}
             onChangeAdminPassword={changeAdminPassword}
             onUpdateAdmin={updateAdminInfo}
+            onUpdateProfile={updateProfile}
             onCreateAdmin={createAdmin}
             onDeleteAdmin={deleteAdmin}
             onUpdateSystemSettings={updateSystemSettings}

@@ -1050,7 +1050,7 @@ interface ApiResponse<T> {
 
 **接口路径：** `GET /api/admin/system/settings`
 
-**描述**: 获取系统全局配置，包含系统公告等配置
+**描述**: 获取系统基础设置信息
 
 **响应格式：**
 ```typescript
@@ -1065,16 +1065,17 @@ interface ApiResponse<T> {
 }
 ```
 
-### 5.2 更新系统设置（简化版 v1.3.2）
+### 5.2 更新系统设置（精简版 v1.3.3）
 
 **接口路径：** `PUT /api/admin/system/settings`
 
-**描述**: 更新系统设置，支持部分字段更新
+**描述**: 更新系统设置，仅限超级管理员使用
 
 **请求参数：**
 ```typescript
 {
-  // 系统设置参数（暂无可配置参数）
+  // 系统设置参数（可配置参数）
+  systemName?: string
 }
 ```
 
@@ -1085,11 +1086,10 @@ interface ApiResponse<T> {
   data: {
     updated: boolean,
     settings: {
-      // 返回更新后的完整系统设置
+      // 返回更新后的系统设置
       systemName: string,
       version: string,
-      buildTime: string,
-      // ...其他系统设置
+      buildTime: string
     }
   },
   message: "系统设置更新成功"
@@ -1196,6 +1196,7 @@ interface ApiResponse<T> {
 **请求参数：**
 ```typescript
 {
+  username?: string,
   avatar?: string
 }
 ```
@@ -1395,7 +1396,8 @@ interface ApiResponse<T> {
   - 考试管理（创建、编辑、删除、发布）
   - 阅卷管理（分配任务、查看进度）
   - 赛区管理（添加省份/学校、处理变更申请）
-  - 系统设置（系统配置、管理员管理）
+  - 管理员管理（创建、编辑、删除、启用/禁用管理员账号）
+  - 系统基础配置
   - 仪表板查看
 
 - **admin（普通管理员）**: 拥有除以下外的所有权限：

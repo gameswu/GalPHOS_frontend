@@ -662,11 +662,29 @@ class AdminAPI extends BaseAPI {
 
   // ===================== 文件上传模块 =====================
   
-  // 上传头像
+  // 上传头像（通过profile API处理，与其他角色统一）
   static async uploadAvatar(file: File): Promise<ApiResponse<any>> {
-    // 使用新的文件上传服务
-    const FileUploadService = await import('../services/fileUploadService');
-    return FileUploadService.default.uploadAvatar(file);
+    try {
+      // 使用文件上传服务处理文件（验证和转base64）
+      const FileUploadService = await import('../services/fileUploadService');
+      const fileResult = await FileUploadService.default.uploadAvatar(file);
+      
+      if (!fileResult.success || !fileResult.data) {
+        return fileResult;
+      }
+      
+      // 使用profile API更新头像
+      return this.updateProfile({
+        avatar: fileResult.data.fileUrl
+      });
+    } catch (error) {
+      console.error('处理头像上传失败:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : '头像上传失败',
+        data: null
+      };
+    }
   }
 
   // ===================== 个人资料模块 =====================
@@ -689,8 +707,9 @@ class AdminAPI extends BaseAPI {
     );
   }
 
-  // 更新个人资料（管理员只支持更新头像）
+  // 更新个人资料
   static async updateProfile(profileData: {
+    username?: string;
     avatar?: string;
   }): Promise<ApiResponse<any>> {
     this.validateRequired(profileData, '个人资料');

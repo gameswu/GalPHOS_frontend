@@ -88,17 +88,58 @@ export class FileUploadService extends BaseAPI {
   }
 
   /**
-   * 用户上传头像
+   * 用户上传头像 - 通过各角色profile API内部处理（后端会自动调用文件服务）
+   * 此方法仅用于文件验证和编码为base64字符串，实际上传由各角色API处理
    */
   static async uploadAvatar(
     file: File,
     onProgress?: (progress: number) => void
   ): Promise<ApiResponse<FileUploadResult>> {
-    return this.uploadFile(file, {
-      category: 'avatar',
-      allowedTypes: this.defaultConfig.allowedImageTypes,
-      maxSize: 5 * 1024 * 1024, // 头像限制5MB
-      onProgress
+    console.log('头像上传请求开始 - 验证文件并转为base64，交由对应角色profile API处理');
+    
+    try {
+      // 验证文件
+      this.validateFile(file, {
+        category: 'avatar',
+        allowedTypes: this.defaultConfig.allowedImageTypes,
+        maxSize: 5 * 1024 * 1024, // 头像限制5MB
+      });
+      
+      // 读取文件为base64字符串
+      const base64Data = await this.readFileAsBase64(file);
+      
+      // 返回base64格式，由角色API调用处理具体上传
+      return {
+        success: true,
+        data: {
+          fileId: '',
+          fileName: file.name,
+          fileUrl: base64Data,
+          fileSize: file.size,
+          fileType: file.type,
+          uploadTime: new Date().toISOString()
+        },
+        message: '头像文件处理成功'
+      };
+    } catch (error) {
+      console.error('头像处理错误:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : '头像处理失败',
+        data: undefined
+      };
+    }
+  }
+  
+  /**
+   * 将文件转换为base64编码字符串
+   */
+  private static readFileAsBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
     });
   }
 
@@ -213,7 +254,11 @@ export class FileUploadService extends BaseAPI {
 
     switch (category) {
       case 'avatar':
-        return '/api/upload/avatar';
+        // 头像上传已调整为通过各角色profile API处理
+        // 此路径实际已不直接使用，仅保留用于兼容处理
+        console.log('警告: 头像上传应使用角色profile API而非直接上传路径');
+        return '/api/upload/file'; // 返回通用上传路径作为兼容
+        
       case 'answer-image':
         if (studentUsername) {
           // 教练代理上传

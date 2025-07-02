@@ -36,14 +36,14 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/admin/users/*',
       '/api/admin/coach-students*',
       '/api/admin/student-registrations*',
-      // 所有角色个人资料管理（统一规范 v1.2.0）
-      '/api/admin/profile*',
+      // 所有角色个人资料管理（统一规范 v1.2.0，v1.3.4头像上传也通过此API）
+      '/api/admin/profile*',      // 包含管理员头像上传
       '/api/admin/password*',      // 新增统一密码修改接口
-      '/api/student/profile*',
+      '/api/student/profile*',    // 包含学生头像上传
       '/api/student/password*',
-      '/api/coach/profile*',
+      '/api/coach/profile*',      // 包含教练头像上传
       '/api/coach/password*',      // 统一路径：原 /api/coach/profile/change-password
-      '/api/grader/profile*',
+      '/api/grader/profile*',     // 包含阅卷员头像上传
       '/api/grader/password*',      // 统一路径：原 /api/grader/change-password
       // 账号注销功能（新增 v1.3.0）
       '/api/student/account/delete',
@@ -178,12 +178,14 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/coach/exams/*/ranking*',
       '/api/coach/exams/*/scores/export*',
       '/api/coach/exams/*/scores/statistics*',
-      // 通用文件API（统一头像上传 v1.2.0）
-      '/api/upload*',        // 包含 /api/upload/avatar
+      
+      // 通用文件API（不包含头像上传，头像由各角色profile API内部处理）
+      '/api/upload/file*',
+      '/api/upload/document*',
       '/api/download*',
       '/api/files*'
     ],
-    description: '文件上传存储和访问管理服务 - v1.2.0统一头像上传接口',
+    description: '文件上传存储和访问管理服务 - v1.3.4版：头像上传通过各角色profile API内部处理',
     healthCheck: '/health'
   },
 
@@ -193,12 +195,18 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
     baseUrl: process.env.REACT_APP_SYSTEM_CONFIG_SERVICE_URL || 'http://localhost:3009',
     port: 3009,
     paths: [
-      '/api/admin/system*',
-      '/api/system/settings',
-      '/api/config*',
-      '/api/system*'
+      // 超级管理员管理其他管理员的API (v1.3.3最精简版)
+      '/api/admin/system/settings',      // 系统基础设置
+      '/api/admin/system/admins',        // 管理员列表
+      '/api/admin/system/admins/create', // 创建管理员
+      '/api/admin/system/admins/{id}',   // 单个管理员操作
+      '/api/admin/system/admins/{id}/password', // 管理员密码重置
+
+      // 通用系统设置接口 (其他角色访问)
+      '/api/system/settings',            // 全局系统设置
+      '/api/system/version'              // 系统版本信息
     ],
-    description: '系统全局配置管理服务',
+    description: '系统配置管理服务 - v1.3.3精简版，仅保留管理员管理和基础系统配置',
     healthCheck: '/health'
   }
 };
@@ -340,14 +348,21 @@ export class MicroserviceRouter {
       return MICROSERVICE_CONFIG.regionManagement;
     }
     
-    // 8. 文件存储相关（通用文件上传，排除特定提交上传）
+    // 8. 文件存储相关（通用文件上传，排除特定提交上传和头像上传）
     if (path.includes('/files') || path.includes('/download') || path.includes('/images') ||
-        (path.includes('/upload') && !path.includes('/upload-answer'))) {
+        (path.includes('/upload/file') || path.includes('/upload/document'))) {
       return MICROSERVICE_CONFIG.fileStorage;
     }
     
-    if (path.includes('/system') || path.includes('/settings') || path.includes('/config')) {
-      return MICROSERVICE_CONFIG.systemConfig;
+    // 9. 系统配置相关（仅匹配精确的系统配置路径 - 增强版精确匹配）
+    if (path.startsWith('/api/admin/system/settings') || 
+        path.startsWith('/api/admin/system/admins') || 
+        path.startsWith('/api/system/settings') || 
+        path.startsWith('/api/system/version')) {
+      // 确保是明确的系统配置路径，排除所有上传相关
+      if (!path.includes('upload') && !path.includes('files')) {
+        return MICROSERVICE_CONFIG.systemConfig;
+      }
     }
     
     // 根据角色前缀进行二级推断
@@ -466,6 +481,10 @@ export class MicroserviceRouter {
         // 精确匹配 - 最高优先级
         if (servicePath === requestPath) {
           priority = 4;
+          // 为头像上传路径提供更高的优先级
+          if (servicePath === '/api/upload/avatar') {
+            priority = 5; // 确保头像上传被正确路由到文件服务
+          }
           matchLength = servicePath.length;
         }
         // 路径参数匹配
@@ -718,11 +737,11 @@ export const DEPRECATED_PATH_MAPPING: Record<string, string> = {
   // 仪表板API路径变更
   '/api/student/dashboard': '/api/student/dashboard/stats',
   
-  // 头像上传API路径统一
-  '/api/student/profile/upload-avatar': '/api/upload/avatar',
-  '/api/coach/profile/upload-avatar': '/api/upload/avatar',
-  '/api/grader/upload-avatar': '/api/upload/avatar',
-  '/api/admin/profile/upload-avatar': '/api/upload/avatar'
+  // 头像上传API路径修正为对应角色的profile API
+  '/api/student/profile/upload-avatar': '/api/student/profile',
+  '/api/coach/profile/upload-avatar': '/api/coach/profile',
+  '/api/grader/upload-avatar': '/api/grader/profile',
+  '/api/admin/profile/upload-avatar': '/api/admin/profile'
 };
 
 /**

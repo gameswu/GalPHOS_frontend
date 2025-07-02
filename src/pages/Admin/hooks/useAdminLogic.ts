@@ -911,20 +911,36 @@ export const useAdminLogic = () => {
     }
   }, [loadSystemSettings]);
 
-  // 上传头像文件
+  // 上传头像文件（直接通过profile API处理）
   const uploadAvatar = useCallback(async (file: File): Promise<string> => {
     try {
+      setLoading(true);
       const response = await AdminAPI.uploadAvatar(file);
-      if (response.success && response.data) {
-        return response.data.url;
+      
+      if (response.success) {
+        // 更新已成功，通过profile获取新头像URL
+        const profileResponse = await AdminAPI.getProfile();
+        if (profileResponse.success && profileResponse.data && profileResponse.data.avatar) {
+          return profileResponse.data.avatar;
+        }
+        
+        // 如果无法获取到更新后的头像URL，尝试使用响应中的信息
+        if (response.data && response.data.avatar) {
+          return response.data.avatar;
+        }
+        
+        throw new Error('无法获取更新后的头像地址');
       } else {
         throw new Error(response.message || '上传失败');
       }
     } catch (error) {
       console.error('上传头像失败:', error);
+      console.error(error instanceof Error ? error.message : '未知错误');
       throw error;
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [setLoading]);
 
   // 加载教练管理学生统计
   const loadCoachStudentsStats = useCallback(async () => {
@@ -1080,6 +1096,41 @@ export const useAdminLogic = () => {
     }
   }, []);
 
+  // 更新个人资料
+  const updateProfile = useCallback(async (data: { username: string; avatar?: string }) => {
+    try {
+      setLoading(true);
+      const response = await AdminAPI.updateProfile({
+        username: data.username,
+        avatar: data.avatar
+      });
+      
+      if (response.success) {
+        // 使用 authService 更新用户信息
+        const currentUser = authService.getCurrentUser();
+        if (currentUser) {
+          const updatedUserInfo = {
+            ...currentUser,
+            username: data.username,
+            avatar: data.avatar
+          };
+          authService.setAuthData(updatedUserInfo, authService.getToken() || '');
+        }
+        
+        notification.showSuccess('个人资料更新成功');
+        // 重新加载当前管理员信息
+        await loadCurrentAdmin();
+      } else {
+        notification.showError(response.message || '更新个人资料失败');
+      }
+    } catch (error) {
+      console.error('更新个人资料失败:', error);
+      notification.showError('网络错误，更新个人资料失败');
+    } finally {
+      setLoading(false);
+    }
+  }, [loadCurrentAdmin]);
+
   return {
     // 状态
     pendingUsers,
@@ -1137,6 +1188,7 @@ export const useAdminLogic = () => {
     updateAdminInfo,
     createAdmin,
     deleteAdmin,
+    updateProfile,
     updateSystemSettings,
     loadAdminUsers,
     loadSystemSettings,

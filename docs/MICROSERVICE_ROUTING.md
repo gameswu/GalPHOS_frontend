@@ -94,13 +94,13 @@
 /api/admin/coach-students/{relationId}  # 教练学生关系操作
 /api/admin/coach-students/stats     # 教练学生统计
 
-# 所有角色个人资料管理
-/api/admin/profile                  # 管理员个人资料
-/api/student/profile               # 学生个人资料
+# 所有角色个人资料管理（包含头像上传 v1.3.4）
+/api/admin/profile                  # 管理员个人资料与头像管理 (GET, PUT)
+/api/student/profile               # 学生个人资料与头像管理 (GET, PUT)
 /api/student/password              # 学生密码修改 (PUT)
-/api/coach/profile                 # 教练个人信息 (GET, PUT)
+/api/coach/profile                 # 教练个人信息与头像管理 (GET, PUT)
 /api/coach/password                # 教练密码修改 (PUT) 
-/api/grader/profile                # 阅卷员个人信息 (GET, PUT)
+/api/grader/profile                # 阅卷员个人信息与头像管理 (GET, PUT)
 /api/grader/password               # 阅卷员密码修改 (PUT)
 
 # 账号注销功能（新增 v1.3.0）
@@ -293,15 +293,15 @@
 /api/coach/exams/{examId}/scores/export # 教练成绩导出
 /api/coach/exams/{examId}/scores/statistics # 教练成绩统计
 
-# 通用文件上传（统一规范 v1.2.0）
-/api/upload/avatar                     # 统一头像上传接口
-/api/upload/*                          # 其他文件上传
+# 通用文件上传（统一规范 v1.3.4）
+/api/upload/file*                      # 通用文件上传
+/api/upload/document*                  # 文档类型上传
 /api/files/*                           # 文件管理
 /api/files/{fileId}                    # 文件删除 (DELETE)
 ```
 
 **功能说明**：
-- **统一文件上传管理**：所有角色使用相同的头像上传接口
+- **头像上传通过用户管理服务**：各角色通过各自的profile API上传头像，后端实现微服务通信
 - 文件存储与访问控制
 - 文件权限控制
 - **统一文件删除接口**：通过DELETE方法删除文件
@@ -311,23 +311,24 @@
 
 ### 9. 系统配置服务 (localhost:3009)
 
-**负责系统全局配置管理，共4个API端点**
+**负责管理员管理和基础系统配置，共6个API端点**
 
 ```
-# 系统管理员管理
-/api/admin/system/admins               # 系统管理员列表
-/api/admin/system/admins/{adminId}     # 系统管理员操作
-/api/admin/system/admins/{adminId}/password # 管理员密码修改
+# 系统管理员管理（超级管理员专用）
+/api/admin/system/admins                    # 管理员列表和创建
+/api/admin/system/admins/{adminId}          # 单个管理员操作（编辑/删除）
+/api/admin/system/admins/{adminId}/password # 管理员密码重置
 
-# 系统配置（简化版 v1.3.0）
-/api/admin/system/settings             # 系统全局配置
+# 系统基础配置
+/api/admin/system/settings                  # 管理员视图系统设置
+/api/system/settings                        # 公共系统设置 
+/api/system/version                         # 系统版本信息
 ```
 
 **功能说明**：
-- **简化的系统配置管理**：仅保留系统公告功能
-- 系统管理员账户管理
-- **系统公告管理**：支持多条公告轮播显示
-- **系统信息展示**：硬编码的系统版本和技术信息
+- **超级管理员专用功能**：管理其他管理员账号
+- **系统基础配置**：系统名称等基础信息
+- **系统信息展示**：系统版本和技术信息
 
 ## 路由匹配算法
 

@@ -60,6 +60,7 @@ interface SystemSettingsProps {
   onUpdateSystemSettings: (settings: Partial<SystemSettingsType>) => Promise<void>;
   onCreateAdmin: (adminData: AdminCreateData) => Promise<void>;
   onUpdateAdmin: (adminId: string, adminData: Partial<AdminUser>) => Promise<void>;
+  onUpdateProfile: (profileData: { username: string; avatar?: string }) => Promise<void>;
   onDeleteAdmin: (adminId: string) => Promise<void>;
   onResetAdminPassword: (adminId: string, newPassword: string) => Promise<void>;
   onUploadAvatar: (file: File) => Promise<string>;
@@ -97,6 +98,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
   onUpdateSystemSettings,
   onCreateAdmin,
   onUpdateAdmin,
+  onUpdateProfile,
   onDeleteAdmin,
   onResetAdminPassword,
   onUploadAvatar
@@ -125,7 +127,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
   const handleUpdateProfile = async (values: any) => {
     try {
       if (!currentAdmin) return;
-      await onUpdateAdmin(currentAdmin.id, {
+      await onUpdateProfile({
         username: values.username
       });
       message.success('个人信息更新成功');
@@ -216,7 +218,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
       setAvatarUploading(true);
       const avatarUrl = await onUploadAvatar(file);
       if (currentAdmin) {
-        await onUpdateAdmin(currentAdmin.id, { avatar: avatarUrl });
+        await onUpdateProfile({ username: currentAdmin.username, avatar: avatarUrl });
         message.success('头像上传成功');
       }
     } catch (error) {
