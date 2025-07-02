@@ -704,7 +704,21 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.getAdmins();
       if (response.success && response.data) {
-        setAdminUsers(response.data);
+        // 处理可能的数据结构差异
+        // 使用类型断言来处理数据
+        const responseData = response.data as any;
+        
+        if (responseData.data && Array.isArray(responseData.data)) {
+          // 响应格式: { data: { data: [...adminUsers] } }
+          setAdminUsers(responseData.data);
+        } else if (Array.isArray(responseData)) {
+          // 响应格式: { data: [...adminUsers] }
+          setAdminUsers(responseData);
+        } else {
+          console.error('无法解析管理员数据格式:', responseData);
+          notification.showError('数据格式错误，无法加载管理员数据');
+          setAdminUsers([]);
+        }
       } else {
         notification.showError(response.message || '获取管理员数据失败');
         setAdminUsers([]);
@@ -743,7 +757,17 @@ export const useAdminLogic = () => {
     try {
       const response = await AdminAPI.getCurrentAdmin();
       if (response.success && response.data) {
-        setCurrentAdmin(response.data);
+        // 处理可能的数据结构差异，根据后端响应调整
+        // 使用类型断言处理数据
+        const responseData = response.data as any;
+        
+        if (responseData.data && Array.isArray(responseData.data) && responseData.data.length > 0) {
+          // 响应格式: { data: { data: [...adminUsers] } }
+          setCurrentAdmin(responseData.data[0]);
+        } else {
+          // 响应格式: { data: adminUser }
+          setCurrentAdmin(responseData);
+        }
       } else {
         // 静默失败，不显示错误消息
         setCurrentAdmin(null);
