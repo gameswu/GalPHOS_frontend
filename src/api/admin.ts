@@ -589,14 +589,10 @@ class AdminAPI extends BaseAPI {
   static async createAdmin(adminData: {
     username: string;
     password: string;
-    name?: string;
     role?: string;
   }): Promise<ApiResponse<any>> {
     this.validateRequired(adminData.username, '用户名');
     this.validateRequired(adminData.password, '密码');
-
-    // 为可选字段提供默认值
-    const name = adminData.name || adminData.username;
 
     // 密码哈希处理
     const hashedPassword = PasswordHasher.hashPasswordWithSalt(adminData.password);
@@ -607,7 +603,6 @@ class AdminAPI extends BaseAPI {
         method: 'POST',
         body: JSON.stringify({
           ...adminData,
-          name,
           password: hashedPassword,
         }),
       },

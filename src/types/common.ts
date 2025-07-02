@@ -504,7 +504,6 @@ export interface ApprovedUser {
 export interface AdminUser {
   id: string;
   username: string;
-  name?: string; // 显示名称
   avatar?: string; // 头像字段
   role: 'super_admin' | 'admin';
   status: 'active' | 'disabled';
@@ -531,7 +530,6 @@ export interface PasswordChangeData {
 export interface AdminCreateData {
   username: string;
   password: string;
-  name?: string; // 显示名称
   role?: 'admin'; // 只能创建普通管理员
 }
 

@@ -808,7 +808,8 @@ export const useAdminLogic = () => {
       const response = await AdminAPI.updateAdmin(adminId, {
         username: updateData.username,
         avatar: updateData.avatar,
-        role: updateData.role
+        role: updateData.role,
+        status: updateData.status
       });
       
       if (response.success) {

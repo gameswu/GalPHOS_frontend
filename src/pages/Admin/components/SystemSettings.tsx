@@ -116,7 +116,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
     if (currentAdmin) {
       profileForm.setFieldsValue({
         username: currentAdmin.username,
-        name: currentAdmin.name,
         role: currentAdmin.role
       });
     }
@@ -126,9 +125,10 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
   const handleUpdateProfile = async (values: any) => {
     try {
       if (!currentAdmin) return;
-      // 由于删除了显示名称，这里不再需要更新任何内容
-      // 保留此函数以备将来可能添加其他个人信息字段
-      message.success('个人信息已更新');
+      await onUpdateAdmin(currentAdmin.id, {
+        username: values.username
+      });
+      message.success('个人信息更新成功');
     } catch (error) {
       message.error('个人信息更新失败');
     }
@@ -284,16 +284,25 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                 >
                   <Row gutter={16}>
                     <Col span={12}>
-                      <Form.Item label="用户名" name="username">
-                        <Input disabled />
+                      <Form.Item 
+                        label="用户名" 
+                        name="username" 
+                        rules={[
+                          { required: true, message: '请输入用户名' },
+                          { min: 3, message: '用户名至少3个字符' },
+                          { max: 20, message: '用户名不能超过20个字符' }
+                        ]}
+                      >
+                        <Input placeholder="请输入用户名" />
                       </Form.Item>
                     </Col>
                     <Col span={12}>
-                      <Form.Item label="角色" name="role">
-                        <Select disabled>
-                          <Option value="super_admin">超级管理员</Option>
-                          <Option value="admin">普通管理员</Option>
-                        </Select>
+                      <Form.Item label="角色">
+                        <Input 
+                          value={currentAdmin?.role === 'super_admin' ? '超级管理员' : '普通管理员'} 
+                          disabled 
+                          style={{ color: currentAdmin?.role === 'super_admin' ? '#f5222d' : '#1890ff' }}
+                        />
                       </Form.Item>
                     </Col>
                   </Row>
