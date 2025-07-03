@@ -20,8 +20,8 @@ export interface BaseExam {
   id: string;
   title: string;
   description: string;
-  startTime: string;
-  endTime: string;
+  startTime: string; // ISO格式字符串（YYYY-MM-DDTHH:mm:ss.sssZ）
+  endTime: string; // ISO格式字符串（YYYY-MM-DDTHH:mm:ss.sssZ）
   status: 'draft' | 'published' | 'ongoing' | 'grading' | 'completed';
   createdAt: string;
   updatedAt: string;

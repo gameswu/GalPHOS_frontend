@@ -174,7 +174,7 @@ export interface ExamBasicInfoForm {
   totalQuestions: number;
   totalScore: number;
   duration: number;
-  examTime: [any, any]; // 考试时间范围，使用dayjs类型
+  examTime: [any, any]; // 考试时间范围，使用dayjs类型，提交时转换为ISO字符串
 }
 
 // 考试题目分数设置表单数据
@@ -185,20 +185,4 @@ export interface ExamScoreSettingsForm {
 // 考试发布设置表单数据
 export interface ExamPublishSettingsForm {
   shouldPublish: boolean; // 是否立即发布
-}
-
-// 考试创建API请求
-export interface CreateExamRequest {
-  title: string;
-  description: string;
-  totalQuestions: number;
-  totalScore: number;
-  duration: number;
-  startTime: string; // ISO格式
-  endTime: string; // ISO格式
-  questions: {
-    number: number;
-    score: number;
-  }[];
-  status: 'draft' | 'published';
 }

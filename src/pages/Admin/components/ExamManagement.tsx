@@ -39,12 +39,12 @@ import {
 import dayjs from 'dayjs';
 import type { Exam, ExamFile } from '../../../types/common';
 import { 
-  ExamCreationStepEnum, 
+  ExamCreationStepEnum,
   ExamBasicInfoForm, 
   ExamScoreSettingsForm, 
-  ExamPublishSettingsForm, 
-  CreateExamRequest 
+  ExamPublishSettingsForm 
 } from '../../../types/exam';
+import { CreateExamRequest } from '../../../types/api';
 import '../../../styles/responsive.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -305,6 +305,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
   const [examModalVisible, setExamModalVisible] = useState(false);
   const [examDetailVisible, setExamDetailVisible] = useState(false);
   const [scoreSettingsVisible, setScoreSettingsVisible] = useState(false);
+  const [activeTabKey, setActiveTabKey] = useState<string>('basicInfo');
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -364,6 +365,8 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     scoreSettingsForm.resetFields();
     publishSettingsForm.resetFields();
     setGeneratedQuestions([]);
+    // 重置上传文件状态
+    setUploadedFiles({});
     setExamCreationVisible(true);
   };
 
@@ -379,22 +382,50 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       const scoreSettings = await scoreSettingsForm.validateFields();
       const publishSettings = await publishSettingsForm.validateFields();
       
+      // 确保使用正确的ISO日期格式
+      const startTime = basicInfo.examTime[0].toISOString();
+      const endTime = basicInfo.examTime[1].toISOString();
+      console.log('考试时间ISO格式:', { startTime, endTime });
+      
       const examRequest: CreateExamRequest = {
         title: basicInfo.title,
-        description: basicInfo.description,
+        description: basicInfo.description, // 表单验证确保不为空
         totalQuestions: basicInfo.totalQuestions,
         totalScore: basicInfo.totalScore,
         duration: basicInfo.duration,
-        startTime: basicInfo.examTime[0].toISOString(),
-        endTime: basicInfo.examTime[1].toISOString(),
+        startTime: startTime,
+        endTime: endTime,
         questions: scoreSettings.questions.map(q => ({ number: q.number, score: q.score })),
         status: publishSettings.shouldPublish ? 'published' : 'draft'
       };
       
-      await onCreateExam({
+      // 创建考试基本信息
+      const examId = await onCreateExam({
         ...examRequest,
         participants: []
       });
+      
+      // 上传相关文件
+      try {
+        // 上传考试文件
+        if (uploadedFiles.questionFile) {
+          console.log('关联试题文件到考试:', uploadedFiles.questionFile);
+          // 此处需要API支持关联文件到考试ID
+        }
+        
+        if (uploadedFiles.answerFile) {
+          console.log('关联答案文件到考试:', uploadedFiles.answerFile);
+          // 此处需要API支持关联文件到考试ID
+        }
+        
+        if (uploadedFiles.answerSheetFile) {
+          console.log('关联答题卡文件到考试:', uploadedFiles.answerSheetFile);
+          // 此处需要API支持关联文件到考试ID
+        }
+      } catch (fileError) {
+        console.error('文件关联失败:', fileError);
+        message.warning('考试创建成功，但部分文件关联失败，请在编辑考试中重新上传');
+      }
       
       message.success('考试创建成功');
       closeExamCreation();
@@ -511,17 +542,9 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
           <Button
             size="small"
             icon={<EditOutlined />}
-            onClick={() => handleEditExam(record)}
+            onClick={() => handleEditExam(record, true)}
           >
-            编辑
-          </Button>
-          <Button
-            size="small"
-            icon={<SettingOutlined />}
-            onClick={() => handleScoreSettings(record)}
-            style={{ color: '#1890ff' }}
-          >
-            分值设置
+            编辑与设置
           </Button>
           {record.status === 'draft' ? (
             <Popconfirm
@@ -582,14 +605,17 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
   };
 
   // 处理编辑考试
-  const handleEditExam = (exam: Exam) => {
+  const handleEditExam = (exam: Exam, showScoreSettings = false) => {
     setEditingExam(exam);
+    setSelectedExam(exam); // 确保选中的考试被设置，以便后续分数设置操作
     setExamModalVisible(true);
     setUploadedFiles({
       questionFile: exam.questionFile,
       answerFile: exam.answerFile,
       answerSheetFile: exam.answerSheetFile
     });
+    
+    // 重置基本表单字段
     form.setFieldsValue({
       title: exam.title,
       description: exam.description,
@@ -601,6 +627,19 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       answerFile: exam.answerFile,
       answerSheetFile: exam.answerSheetFile
     });
+    
+    // 设置是否直接跳转到分数设置标签页
+    setActiveTabKey(showScoreSettings ? 'scoreSettings' : 'basicInfo');
+    
+    // 为分数设置准备，可以在这里加载考试的分数设置
+    if (showScoreSettings) {
+      // 为分数设置准备初始数据，如果需要可以在这里调用API加载实际分数设置
+      const questions = Array.from({ length: exam.totalQuestions || 0 }, (_, idx) => ({
+        number: idx + 1,
+        score: 5 // 默认分数，可从API获取实际分数
+      }));
+      setGeneratedQuestions(questions);
+    }
   };
 
   // 处理查看考试详情
@@ -829,212 +868,302 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
         footer={null}
         width={800}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleExamSubmit}
-        >
-          <Form.Item
-            label="考试标题"
-            name="title"
-            rules={[
-              { required: true, message: '请输入考试标题' },
-              { min: 2, max: 100, message: '考试标题长度应在2-100个字符之间' }
-            ]}
-          >
-            <Input placeholder="请输入考试标题" />
-          </Form.Item>
+        <Tabs 
+          activeKey={activeTabKey} 
+          onChange={setActiveTabKey}
+          items={[
+            {
+              key: 'basicInfo',
+              label: '基本信息',
+              children: (
+                <Form
+                  form={form}
+                  layout="vertical"
+                  onFinish={handleExamSubmit}
+                >
+                  <Form.Item
+                    label="考试标题"
+                    name="title"
+                    rules={[
+                      { required: true, message: '请输入考试标题' },
+                      { min: 2, max: 100, message: '考试标题长度应在2-100个字符之间' }
+                    ]}
+                  >
+                    <Input placeholder="请输入考试标题" />
+                  </Form.Item>
 
-          <Form.Item
-            label="详细信息"
-            name="description"
-            rules={[
-              { required: true, message: '请输入考试详细信息' },
-              { min: 10, max: 1000, message: '详细信息长度应在10-1000个字符之间' }
-            ]}
-          >
-            <TextArea 
-              rows={4} 
-              placeholder="请输入考试的详细信息，包括考试内容、注意事项等"
-            />
-          </Form.Item>
+                  <Form.Item
+                    label="详细信息"
+                    name="description"
+                    rules={[
+                      { required: true, message: '请输入考试详细信息' },
+                      { min: 10, max: 1000, message: '详细信息长度应在10-1000个字符之间' }
+                    ]}
+                  >
+                    <TextArea 
+                      rows={4} 
+                      placeholder="请输入考试的详细信息，包括考试内容、注意事项等"
+                    />
+                  </Form.Item>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="题目数量"
-                name="totalQuestions"
-                rules={[{ required: true, message: '请输入题目数量' }]}
-              >
-                <Input type="number" placeholder="请输入题目数量" min={1} max={200} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="考试时长（分钟）"
-                name="duration"
-                rules={[{ required: true, message: '请输入考试时长' }]}
-              >
-                <Input type="number" placeholder="请输入考试时长" min={30} max={600} />
-              </Form.Item>
-            </Col>
-          </Row>
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item
+                        label="题目数量"
+                        name="totalQuestions"
+                        rules={[{ required: true, message: '请输入题目数量' }]}
+                      >
+                        <Input type="number" placeholder="请输入题目数量" min={1} max={200} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        label="考试时长（分钟）"
+                        name="duration"
+                        rules={[{ required: true, message: '请输入考试时长' }]}
+                      >
+                        <Input type="number" placeholder="请输入考试时长" min={30} max={600} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
 
-          <Form.Item
-            label="考试时间"
-            name="examTime"
-            rules={[{ required: true, message: '请选择考试时间' }]}
-          >
-            <RangePicker
-              showTime
-              format="YYYY-MM-DD HH:mm"
-              placeholder={['开始时间', '结束时间']}
-              style={{ width: '100%' }}
-            />
-          </Form.Item>
+                  <Form.Item
+                    label="考试时间"
+                    name="examTime"
+                    rules={[{ required: true, message: '请选择考试时间' }]}
+                  >
+                    <RangePicker
+                      showTime
+                      format="YYYY-MM-DD HH:mm"
+                      placeholder={['开始时间', '结束时间']}
+                      style={{ width: '100%' }}
+                    />
+                  </Form.Item>
 
-          {/* 文件上传区域 */}
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item label="试题文件" name="questionFile">
+                  {/* 文件上传区域 */}
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Form.Item label="试题文件" name="questionFile">
+                        <div>
+                          <Upload
+                            accept=".pdf,.doc,.docx"
+                            showUploadList={false}
+                            beforeUpload={(file) => {
+                              handleFileUpload(file, 'question');
+                              return false;
+                            }}
+                          >
+                            <Button 
+                              icon={<CloudUploadOutlined />} 
+                              loading={uploading.question}
+                              block
+                            >
+                              上传试题文件
+                            </Button>
+                          </Upload>
+                          {form.getFieldValue('questionFile') && (
+                            <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text type="success" style={{ fontSize: '12px' }}>
+                                  📄 {form.getFieldValue('questionFile').name}
+                                </Text>
+                                <Button 
+                                  type="text"
+                                  danger
+                                  size="small"
+                                  onClick={() => handleDeleteFile('questionFile')}
+                                  style={{ marginLeft: 8, padding: '0 4px' }}
+                                >
+                                  删除
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item label="答案文件" name="answerFile">
+                        <div>
+                          <Upload
+                            accept=".pdf,.doc,.docx"
+                            showUploadList={false}
+                            beforeUpload={(file) => {
+                              handleFileUpload(file, 'answer');
+                              return false;
+                            }}
+                          >
+                            <Button 
+                              icon={<CloudUploadOutlined />} 
+                              loading={uploading.answer}
+                              block
+                            >
+                              上传答案文件
+                            </Button>
+                          </Upload>
+                          {form.getFieldValue('answerFile') && (
+                            <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text type="success" style={{ fontSize: '12px' }}>
+                                  📄 {form.getFieldValue('answerFile').name}
+                                </Text>
+                                <Button 
+                                  type="text"
+                                  danger
+                                  size="small"
+                                  onClick={() => handleDeleteFile('answerFile')}
+                                  style={{ marginLeft: 8, padding: '0 4px' }}
+                                >
+                                  删除
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item label="答题卡文件" name="answerSheetFile">
+                        <div>
+                          <Upload
+                            accept=".pdf,.doc,.docx"
+                            showUploadList={false}
+                            beforeUpload={(file) => {
+                              handleFileUpload(file, 'answerSheet');
+                              return false;
+                            }}
+                          >
+                            <Button 
+                              icon={<CloudUploadOutlined />} 
+                              loading={uploading.answerSheet}
+                              block
+                            >
+                              上传答题卡
+                            </Button>
+                          </Upload>
+                          {form.getFieldValue('answerSheetFile') && (
+                            <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text type="success" style={{ fontSize: '12px' }}>
+                                  📄 {form.getFieldValue('answerSheetFile').name}
+                                </Text>
+                                <Button 
+                                  type="text"
+                                  danger
+                                  size="small"
+                                  onClick={() => handleDeleteFile('answerSheetFile')}
+                                  style={{ marginLeft: 8, padding: '0 4px' }}
+                                >
+                                  删除
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+
+                  <Form.Item name="shouldPublish" valuePropName="checked">
+                    <Space>
+                      <Switch />
+                      <Text>创建后立即发布考试</Text>
+                    </Space>
+                  </Form.Item>
+
+                  <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+                    <Space>
+                      <Button onClick={() => setExamModalVisible(false)}>
+                        取消
+                      </Button>
+                      <Button type="primary" htmlType="submit" loading={loading}>
+                        {editingExam ? '更新考试' : '创建考试'}
+                      </Button>
+                    </Space>
+                  </Form.Item>
+                </Form>
+              )
+            },
+            {
+              key: 'scoreSettings',
+              label: '分值设置',
+              children: (
                 <div>
-                  <Upload
-                    accept=".pdf,.doc,.docx"
-                    showUploadList={false}
-                    beforeUpload={(file) => {
-                      handleFileUpload(file, 'question');
-                      return false;
+                  <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', marginBottom: 20 }}>
+                    <Text type="secondary">
+                      💡 简化流程：输入题目总数和每题分值，无需填写题干内容，题目均已包含在试题文件中
+                    </Text>
+                  </Card>
+                  
+                  <Form
+                    layout="vertical"
+                    onFinish={(values) => {
+                      if (editingExam) {
+                        handleSetQuestionScores(values.totalQuestions, values.defaultScore);
+                      }
+                      setExamModalVisible(false);
+                    }}
+                    initialValues={{ 
+                      defaultScore: 5, 
+                      totalQuestions: editingExam?.totalQuestions || 0 
                     }}
                   >
-                    <Button 
-                      icon={<CloudUploadOutlined />} 
-                      loading={uploading.question}
-                      block
-                    >
-                      上传试题文件
-                    </Button>
-                  </Upload>
-                  {form.getFieldValue('questionFile') && (
-                    <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text type="success" style={{ fontSize: '12px' }}>
-                          📄 {form.getFieldValue('questionFile').name}
-                        </Text>
-                        <Button 
-                          type="text"
-                          danger
-                          size="small"
-                          onClick={() => handleDeleteFile('questionFile')}
-                          style={{ marginLeft: 8, padding: '0 4px' }}
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item
+                          label="题目总数"
+                          name="totalQuestions"
+                          rules={[
+                            { required: true, message: '请输入题目总数' },
+                            { type: 'number', min: 1, max: 200, message: '题目数量应在1-200之间' }
+                          ]}
                         >
-                          删除
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item label="答案文件" name="answerFile">
-                <div>
-                  <Upload
-                    accept=".pdf,.doc,.docx"
-                    showUploadList={false}
-                    beforeUpload={(file) => {
-                      handleFileUpload(file, 'answer');
-                      return false;
-                    }}
-                  >
-                    <Button 
-                      icon={<CloudUploadOutlined />} 
-                      loading={uploading.answer}
-                      block
-                    >
-                      上传答案文件
-                    </Button>
-                  </Upload>
-                  {form.getFieldValue('answerFile') && (
-                    <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text type="success" style={{ fontSize: '12px' }}>
-                          📄 {form.getFieldValue('answerFile').name}
-                        </Text>
-                        <Button 
-                          type="text"
-                          danger
-                          size="small"
-                          onClick={() => handleDeleteFile('answerFile')}
-                          style={{ marginLeft: 8, padding: '0 4px' }}
+                          <InputNumber
+                            min={1}
+                            max={200}
+                            placeholder="例如：20"
+                            style={{ width: '100%' }}
+                            addonAfter="题"
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          label="每题分值"
+                          name="defaultScore"
+                          rules={[
+                            { required: true, message: '请输入每题分值' },
+                            { type: 'number', min: 0.5, max: 50, message: '分值应在0.5-50之间' }
+                          ]}
                         >
-                          删除
+                          <InputNumber
+                            min={0.5}
+                            max={50}
+                            step={0.5}
+                            placeholder="例如：5"
+                            style={{ width: '100%' }}
+                            addonAfter="分"
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    
+                    <Form.Item style={{ marginBottom: 0, textAlign: 'center' }}>
+                      <Space>
+                        <Button onClick={() => setActiveTabKey('basicInfo')}>
+                          返回基本信息
                         </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item label="答题卡文件" name="answerSheetFile">
-                <div>
-                  <Upload
-                    accept=".pdf,.doc,.docx"
-                    showUploadList={false}
-                    beforeUpload={(file) => {
-                      handleFileUpload(file, 'answerSheet');
-                      return false;
-                    }}
-                  >
-                    <Button 
-                      icon={<CloudUploadOutlined />} 
-                      loading={uploading.answerSheet}
-                      block
-                    >
-                      上传答题卡
-                    </Button>
-                  </Upload>
-                  {form.getFieldValue('answerSheetFile') && (
-                    <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text type="success" style={{ fontSize: '12px' }}>
-                          📄 {form.getFieldValue('answerSheetFile').name}
-                        </Text>
-                        <Button 
-                          type="text"
-                          danger
-                          size="small"
-                          onClick={() => handleDeleteFile('answerSheetFile')}
-                          style={{ marginLeft: 8, padding: '0 4px' }}
-                        >
-                          删除
+                        <Button type="primary" htmlType="submit" loading={loading}>
+                          设置分值
                         </Button>
-                      </div>
-                    </div>
-                  )}
+                      </Space>
+                    </Form.Item>
+                  </Form>
                 </div>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item name="shouldPublish" valuePropName="checked">
-            <Space>
-              <Switch />
-              <Text>创建后立即发布考试</Text>
-            </Space>
-          </Form.Item>
-
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-            <Space>
-              <Button onClick={() => setExamModalVisible(false)}>
-                取消
-              </Button>
-              <Button type="primary" htmlType="submit" loading={loading}>
-                {editingExam ? '更新考试' : '创建考试'}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+              )
+            }
+          ]}
+        />
       </Modal>
 
       {/* 考试详情模态框 */}
@@ -1044,8 +1173,8 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
             <FileTextOutlined style={{ marginRight: 8, color: '#1890ff' }} />
             <span>考试详情</span>
             {selectedExam && (
-              <Tag color={statusMap[selectedExam.status]?.color} style={{ marginLeft: 8 }}>
-                {statusMap[selectedExam.status]?.text}
+              <Tag color={statusMap[selectedExam.status]?.color || 'default'} style={{ marginLeft: 8 }}>
+                {statusMap[selectedExam.status]?.text || '未知状态'}
               </Tag>
             )}
           </div>
@@ -1063,7 +1192,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
               icon={<EditOutlined />}
               onClick={() => {
                 setExamDetailVisible(false);
-                handleEditExam(selectedExam);
+                selectedExam && handleEditExam(selectedExam);
               }}
             >
               编辑考试
@@ -1081,30 +1210,30 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
               </Title>
               <Descriptions column={2} size="small">
                 <Descriptions.Item label="考试标题" span={2}>
-                  <Text strong style={{ fontSize: '16px' }}>{selectedExam.title}</Text>
+                  <Text strong style={{ fontSize: '16px' }}>{selectedExam?.title}</Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="考试时间" span={2}>
                   <Space>
                     <CalendarOutlined />
                     <Text>
-                      {dayjs(selectedExam.startTime).format('YYYY年MM月DD日 HH:mm')} 
+                      {selectedExam && selectedExam.startTime && dayjs(selectedExam.startTime).format('YYYY年MM月DD日 HH:mm')} 
                       <Text type="secondary"> 至 </Text>
-                      {dayjs(selectedExam.endTime).format('MM月DD日 HH:mm')}
+                      {selectedExam && selectedExam.endTime && dayjs(selectedExam.endTime).format('MM月DD日 HH:mm')}
                     </Text>
                   </Space>
                 </Descriptions.Item>
                 <Descriptions.Item label="考试时长">
-                  <Tag color="blue" icon="⏱️">{selectedExam.duration || 0} 分钟</Tag>
+                  <Tag color="blue" icon="⏱️">{selectedExam?.duration || 0} 分钟</Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="题目数量">
-                  <Tag color="cyan" icon="📝">{selectedExam.totalQuestions || 0} 题</Tag>
+                  <Tag color="cyan" icon="📝">{selectedExam?.totalQuestions || 0} 题</Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="参与人数">
-                  <Tag color="green" icon="👥">{selectedExam.participants?.length || 0} 人</Tag>
+                  <Tag color="green" icon="👥">{selectedExam?.participants?.length || 0} 人</Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="考试状态">
-                  <Tag color={statusMap[selectedExam.status]?.color}>
-                    {statusMap[selectedExam.status]?.text}
+                  <Tag color={selectedExam && selectedExam.status ? statusMap[selectedExam.status]?.color : 'default'}>
+                    {selectedExam && selectedExam.status ? statusMap[selectedExam.status]?.text : '未知状态'}
                   </Tag>
                 </Descriptions.Item>
               </Descriptions>
@@ -1288,12 +1417,11 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
         title={
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <SettingOutlined style={{ marginRight: 8, color: '#1890ff' }} />
-            <span>题目分值设置</span>
-            {selectedExam && (
+            <span>题目分值设置</span>              {selectedExam ? (
               <Text type="secondary" style={{ marginLeft: 16, fontSize: '14px' }}>
                 - {selectedExam.title}
               </Text>
-            )}
+            ) : null}
           </div>
         }
         open={scoreSettingsVisible}
@@ -1563,27 +1691,159 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                 </Descriptions>
               </div>
               
+              {/* 添加文件上传区域 */}
+              <div style={{ background: '#f8f8f8', padding: '16px', borderRadius: '8px', margin: '24px 0', textAlign: 'left' }}>
+                <Title level={5}>考试文件上传</Title>
+                <Row gutter={[16, 16]}>
+                  <Col span={8}>
+                    <div>
+                      <div style={{marginBottom: 8}}>
+                        <Text strong>试题文件:</Text>
+                      </div>
+                      <Upload
+                        accept=".pdf,.doc,.docx"
+                        showUploadList={false}
+                        beforeUpload={(file) => {
+                          handleFileUpload(file, 'question');
+                          return false;
+                        }}
+                      >
+                        <Button 
+                          icon={<CloudUploadOutlined />} 
+                          loading={uploading.question}
+                          block
+                        >
+                          上传试题文件
+                        </Button>
+                      </Upload>
+                      {uploadedFiles.questionFile && (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text type="success" style={{ fontSize: '12px' }}>
+                              📄 {uploadedFiles.questionFile.name}
+                            </Text>
+                            <Button 
+                              type="text"
+                              danger
+                              size="small"
+                              onClick={() => handleDeleteFile('questionFile')}
+                              style={{ marginLeft: 8, padding: '0 4px' }}
+                            >
+                              删除
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Col>
+                  <Col span={8}>
+                    <div>
+                      <div style={{marginBottom: 8}}>
+                        <Text strong>答案文件:</Text>
+                      </div>
+                      <Upload
+                        accept=".pdf,.doc,.docx"
+                        showUploadList={false}
+                        beforeUpload={(file) => {
+                          handleFileUpload(file, 'answer');
+                          return false;
+                        }}
+                      >
+                        <Button 
+                          icon={<CloudUploadOutlined />} 
+                          loading={uploading.answer}
+                          block
+                        >
+                          上传答案文件
+                        </Button>
+                      </Upload>
+                      {uploadedFiles.answerFile && (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text type="success" style={{ fontSize: '12px' }}>
+                              📄 {uploadedFiles.answerFile.name}
+                            </Text>
+                            <Button 
+                              type="text"
+                              danger
+                              size="small"
+                              onClick={() => handleDeleteFile('answerFile')}
+                              style={{ marginLeft: 8, padding: '0 4px' }}
+                            >
+                              删除
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Col>
+                  <Col span={8}>
+                    <div>
+                      <div style={{marginBottom: 8}}>
+                        <Text strong>答题卡文件:</Text>
+                      </div>
+                      <Upload
+                        accept=".pdf,.doc,.docx"
+                        showUploadList={false}
+                        beforeUpload={(file) => {
+                          handleFileUpload(file, 'answerSheet');
+                          return false;
+                        }}
+                      >
+                        <Button 
+                          icon={<CloudUploadOutlined />} 
+                          loading={uploading.answerSheet}
+                          block
+                        >
+                          上传答题卡文件
+                        </Button>
+                      </Upload>
+                      {uploadedFiles.answerSheetFile && (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text type="success" style={{ fontSize: '12px' }}>
+                              📄 {uploadedFiles.answerSheetFile.name}
+                            </Text>
+                            <Button 
+                              type="text"
+                              danger
+                              size="small"
+                              onClick={() => handleDeleteFile('answerSheetFile')}
+                              style={{ marginLeft: 8, padding: '0 4px' }}
+                            >
+                              删除
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Col>
+                </Row>
+              </div>
+              
               <Form.Item
                 name="shouldPublish"
                 valuePropName="checked"
               >
-                <Switch checkedChildren="立即发布" unCheckedChildren="保存为草稿" />
+                <Switch />
               </Form.Item>
-              <Text type="secondary">
+              <Text type="secondary" style={{ marginBottom: 16 }}>
                 {publishSettingsForm.getFieldValue('shouldPublish') 
                   ? '考试将被立即发布，学生将能够看到并参加考试。' 
                   : '考试将被保存为草稿，您可以稍后再发布。'}
               </Text>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
-              <Button onClick={() => setCurrentStep(ExamCreationStepEnum.ScoreSettings)}>
-                上一步
-              </Button>
-              <Button type="primary" onClick={handleExamCreationSubmit}>
-                完成创建
-              </Button>
-            </div>
+            <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+              <Space>
+                <Button onClick={() => setCurrentStep(ExamCreationStepEnum.ScoreSettings)}>
+                  上一步
+                </Button>
+                <Button type="primary" onClick={handleExamCreationSubmit}>
+                  完成创建
+                </Button>
+              </Space>
+            </Form.Item>
           </Form>
         )}
       </Modal>

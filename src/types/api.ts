@@ -138,3 +138,51 @@ export class BaseAPI {
     }
   }
 }
+
+// ===================== 考试API请求类型 =====================
+export interface CreateExamRequest {
+  title: string;
+  description: string; // 必需字段，与Exam接口保持一致
+  startTime: string; // ISO格式字符串
+  endTime: string; // ISO格式字符串
+  duration: number; // 考试时长（分钟）
+  totalScore: number;
+  totalQuestions: number;
+  questions: { number: number; score: number }[];
+  status: 'draft' | 'published';
+  instructions?: string;
+}
+
+export interface UpdateExamRequest {
+  title?: string;
+  description?: string; // 更新时可选
+  startTime?: string; // ISO格式字符串
+  endTime?: string; // ISO格式字符串
+  duration?: number;
+  totalScore?: number;
+  totalQuestions?: number;
+  questions?: { number: number; score: number }[];
+  status?: 'draft' | 'published' | 'ongoing' | 'grading' | 'completed';
+  instructions?: string;
+}
+
+// 时间格式验证辅助函数
+export const validateISOString = (dateString: string): boolean => {
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date.getTime()) && dateString.includes('T');
+};
+
+// 时间格式转换辅助函数
+export const ensureISOString = (date: Date | string | any): string => {
+  if (typeof date === 'string') {
+    return date;
+  }
+  if (date && typeof date.toISOString === 'function') {
+    return date.toISOString();
+  }
+  if (date && typeof date.format === 'function') {
+    // dayjs 对象
+    return date.toDate().toISOString();
+  }
+  throw new Error('Invalid date format');
+};

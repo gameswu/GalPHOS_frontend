@@ -706,8 +706,8 @@ interface ApiResponse<T> {
 {
   title: string,                    // 考试标题
   description: string,              // 考试描述
-  startTime: string,               // 开始时间（ISO格式）
-  endTime: string,                 // 结束时间（ISO格式）
+  startTime: string,               // 开始时间（ISO格式：YYYY-MM-DDTHH:mm:ss.sssZ）
+  endTime: string,                 // 结束时间（ISO格式：YYYY-MM-DDTHH:mm:ss.sssZ）
   totalQuestions: number,          // 题目总数
   duration: number,                // 考试时长（分钟）
   status: 'draft'                  // 状态：草稿

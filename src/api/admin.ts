@@ -1,6 +1,12 @@
 // 管理员相关API接口
 import { PasswordHasher } from '../utils/passwordHasher';
-import { ApiResponse, BaseAPI, PaginatedResponse } from '../types/api';
+import { 
+  ApiResponse, 
+  BaseAPI, 
+  PaginatedResponse, 
+  CreateExamRequest,
+  UpdateExamRequest 
+} from '../types/api';
 import { 
   Exam,
   ExamWithQuestions,
@@ -251,18 +257,7 @@ class AdminAPI extends BaseAPI {
   }
 
   // 创建考试
-  static async createExam(examData: {
-    title: string;
-    description?: string;
-    startTime: string;
-    endTime: string;
-    duration: number;
-    totalScore: number;
-    totalQuestions: number;
-    questions: { number: number; score: number }[];
-    status: 'draft' | 'published';
-    instructions?: string;
-  }): Promise<ApiResponse<any>> {
+  static async createExam(examData: CreateExamRequest): Promise<ApiResponse<any>> {
     this.validateRequired(examData.title, '考试标题');
     this.validateRequired(examData.startTime, '开始时间');
     this.validateRequired(examData.endTime, '结束时间');
@@ -282,7 +277,7 @@ class AdminAPI extends BaseAPI {
   }
 
   // 更新考试
-  static async updateExam(examId: string, examData: any): Promise<ApiResponse<any>> {
+  static async updateExam(examId: string, examData: UpdateExamRequest): Promise<ApiResponse<any>> {
     this.validateRequired(examId, '考试ID');
     this.validateRequired(examData, '考试数据');
 
