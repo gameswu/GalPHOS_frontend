@@ -174,10 +174,25 @@ export const validateISOString = (dateString: string): boolean => {
 
 // 时间格式转换辅助函数
 export const ensureISOString = (date: Date | string | any): string => {
+  // 处理空值
+  if (!date) {
+    throw new Error('Date value is required');
+  }
+  
   if (typeof date === 'string') {
-    return date;
+    // 如果已经是字符串，验证格式并返回
+    if (validateISOString(date)) {
+      return date;
+    }
+    // 尝试解析字符串为Date再转换
+    const parsedDate = new Date(date);
+    if (!isNaN(parsedDate.getTime())) {
+      return parsedDate.toISOString();
+    }
+    throw new Error('Invalid date string format');
   }
   if (date && typeof date.toISOString === 'function') {
+    // 原生Date对象
     return date.toISOString();
   }
   if (date && typeof date.format === 'function') {
@@ -185,4 +200,34 @@ export const ensureISOString = (date: Date | string | any): string => {
     return date.toDate().toISOString();
   }
   throw new Error('Invalid date format');
+};
+
+// 安全的时间格式转换函数（处理可能为空的值）
+export const safeEnsureISOString = (date: Date | string | any | null | undefined): string | null => {
+  try {
+    return ensureISOString(date);
+  } catch (error) {
+    console.warn('Date conversion failed:', error);
+    return null;
+  }
+};
+
+// 验证时间范围的辅助函数
+export const validateTimeRange = (startTime: any, endTime: any): { isValid: boolean; message?: string } => {
+  if (!startTime || !endTime) {
+    return { isValid: false, message: '请选择考试开始和结束时间' };
+  }
+  
+  try {
+    const start = ensureISOString(startTime);
+    const end = ensureISOString(endTime);
+    
+    if (new Date(start) >= new Date(end)) {
+      return { isValid: false, message: '结束时间必须晚于开始时间' };
+    }
+    
+    return { isValid: true };
+  } catch (error) {
+    return { isValid: false, message: '时间格式无效' };
+  }
 };

@@ -21,7 +21,8 @@ import {
   Switch,
   InputNumber,
   message,
-  Steps
+  Steps,
+  Divider
 } from 'antd';
 import {
   PlusOutlined,
@@ -34,7 +35,9 @@ import {
   PlayCircleOutlined,
   StopOutlined,
   DownloadOutlined,
-  SettingOutlined
+  SettingOutlined,
+  InfoCircleOutlined,
+  FilePdfOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Exam, ExamFile } from '../../../types/common';
@@ -44,7 +47,7 @@ import {
   ExamScoreSettingsForm, 
   ExamPublishSettingsForm 
 } from '../../../types/exam';
-import { CreateExamRequest } from '../../../types/api';
+import { CreateExamRequest, ensureISOString, validateTimeRange } from '../../../types/api';
 import '../../../styles/responsive.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -326,6 +329,13 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
   const [publishSettingsForm] = Form.useForm<ExamPublishSettingsForm>();
   const [examCreationVisible, setExamCreationVisible] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<{number: number; score: number}[]>([]);
+  
+  // 编辑考试状态 - 使用与创建考试相同的表单结构
+  const [editCurrentStep, setEditCurrentStep] = useState<ExamCreationStepEnum>(ExamCreationStepEnum.BasicInfo);
+  const [editBasicInfoForm] = Form.useForm<ExamBasicInfoForm>();
+  const [editScoreSettingsForm] = Form.useForm<ExamScoreSettingsForm>();
+  const [editPublishSettingsForm] = Form.useForm<ExamPublishSettingsForm>();
+  const [editGeneratedQuestions, setEditGeneratedQuestions] = useState<{number: number; score: number}[]>([]);
 
   // 步骤变更处理函数
   const handleStepChange = (step: number) => {
@@ -358,6 +368,41 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     }
   };
 
+  // 编辑考试步骤变更处理函数
+  const handleEditStepChange = (step: number) => {
+    if (step < editCurrentStep) {
+      setEditCurrentStep(step as ExamCreationStepEnum);
+      return;
+    }
+
+    if (editCurrentStep === ExamCreationStepEnum.BasicInfo) {
+      editBasicInfoForm.validateFields().then(values => {
+        // 创建题目数量的空数组或使用现有分值设置
+        const questions = editGeneratedQuestions.length > 0 
+          ? editGeneratedQuestions
+          : Array.from({ length: values.totalQuestions }, (_, idx) => ({
+              number: idx + 1,
+              score: Math.round(values.totalScore / values.totalQuestions * 10) / 10
+            }));
+        setEditGeneratedQuestions(questions);
+        editScoreSettingsForm.setFieldsValue({ questions });
+        setEditCurrentStep(ExamCreationStepEnum.ScoreSettings);
+      }).catch(err => {
+        console.error('表单验证失败:', err);
+      });
+    } else if (editCurrentStep === ExamCreationStepEnum.ScoreSettings) {
+      editScoreSettingsForm.validateFields().then(() => {
+        // 设置当前发布状态
+        editPublishSettingsForm.setFieldsValue({ 
+          shouldPublish: editingExam?.status === 'published' 
+        });
+        setEditCurrentStep(ExamCreationStepEnum.PublishSettings);
+      }).catch(err => {
+        console.error('分值设置验证失败:', err);
+      });
+    }
+  };
+
   // 打开创建考试模态框
   const openExamCreation = () => {
     setCurrentStep(ExamCreationStepEnum.BasicInfo);
@@ -382,10 +427,24 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       const scoreSettings = await scoreSettingsForm.validateFields();
       const publishSettings = await publishSettingsForm.validateFields();
       
-      // 确保使用正确的ISO日期格式
-      const startTime = basicInfo.examTime[0].toISOString();
-      const endTime = basicInfo.examTime[1].toISOString();
-      console.log('考试时间ISO格式:', { startTime, endTime });
+      // 验证考试时间
+      const timeValidation = validateTimeRange(basicInfo.examTime[0], basicInfo.examTime[1]);
+      if (!timeValidation.isValid) {
+        message.error(timeValidation.message);
+        return;
+      }
+      
+      // 确保使用正确的ISO日期格式（包含时区信息）
+      let startTime: string, endTime: string;
+      try {
+        startTime = ensureISOString(basicInfo.examTime[0]);
+        endTime = ensureISOString(basicInfo.examTime[1]);
+        console.log('考试时间ISO格式（含时区）:', { startTime, endTime });
+      } catch (error) {
+        console.error('时间格式转换失败:', error);
+        message.error('时间格式转换失败，请重新选择考试时间');
+        return;
+      }
       
       const examRequest: CreateExamRequest = {
         title: basicInfo.title,
@@ -435,7 +494,82 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     }
   };
 
-  // 分数输入变化处理
+  // 编辑考试提交处理
+  const handleEditExamSubmit = async () => {
+    try {
+      const basicInfo = await editBasicInfoForm.validateFields();
+      const scoreSettings = await editScoreSettingsForm.validateFields();
+      const publishSettings = await editPublishSettingsForm.validateFields();
+      
+      if (!editingExam) {
+        message.error('未找到要编辑的考试');
+        return;
+      }
+      
+      // 验证考试时间
+      const timeValidation = validateTimeRange(basicInfo.examTime[0], basicInfo.examTime[1]);
+      if (!timeValidation.isValid) {
+        message.error(timeValidation.message);
+        return;
+      }
+      
+      // 确保使用正确的ISO日期格式（包含时区信息）
+      let startTime: string, endTime: string;
+      try {
+        startTime = ensureISOString(basicInfo.examTime[0]);
+        endTime = ensureISOString(basicInfo.examTime[1]);
+        console.log('编辑考试时间ISO格式（含时区）:', { startTime, endTime });
+      } catch (error) {
+        console.error('时间格式转换失败:', error);
+        message.error('时间格式转换失败，请重新选择考试时间');
+        return;
+      }
+      
+      const status: 'draft' | 'published' = publishSettings.shouldPublish ? 'published' : 'draft';
+      
+      const examData = {
+        title: basicInfo.title,
+        description: basicInfo.description,
+        totalQuestions: basicInfo.totalQuestions,
+        maxScore: basicInfo.totalScore, // 使用 maxScore 字段
+        duration: basicInfo.duration,
+        startTime: startTime,
+        endTime: endTime,
+        status: status,
+        questionFile: uploadedFiles.questionFile,
+        answerFile: uploadedFiles.answerFile,
+        answerSheetFile: uploadedFiles.answerSheetFile
+      };
+      
+      // 更新考试基本信息
+      await onUpdateExam(editingExam.id, examData);
+      
+      // 设置题目分值
+      if (scoreSettings.questions && scoreSettings.questions.length > 0) {
+        try {
+          await onSetQuestionScores(editingExam.id, scoreSettings.questions);
+          console.log('分值设置成功');
+        } catch (scoreError) {
+          console.error('分值设置失败:', scoreError);
+          message.warning('考试更新成功，但分值设置失败，请重新设置');
+        }
+      }
+      
+      message.success('考试更新成功');
+      setExamModalVisible(false);
+      
+      // 重置编辑状态
+      setEditingExam(null);
+      setEditCurrentStep(ExamCreationStepEnum.BasicInfo);
+      setEditGeneratedQuestions([]);
+      
+    } catch (error) {
+      console.error('更新考试失败:', error);
+      message.error('更新考试失败，请检查表单数据');
+    }
+  };
+
+  // 分数输入变化处理函数
   const handleScoreChange = (value: number | null, index: number) => {
     const questions = scoreSettingsForm.getFieldValue('questions');
     if (questions && value !== null) {
@@ -453,6 +587,26 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
   const calculateTotalSetScore = () => {
     const questions = scoreSettingsForm.getFieldValue('questions') || [];
     return questions.reduce((sum: number, q: {number: number; score: number}) => sum + (q.score || 0), 0);
+  };
+  
+  // 计算编辑模式下当前设置分数的总和
+  const calculateEditTotalSetScore = () => {
+    const questions = editScoreSettingsForm.getFieldValue('questions') || [];
+    return questions.reduce((sum: number, q: {number: number; score: number}) => sum + (q.score || 0), 0);
+  };
+  
+  // 编辑模式下分数输入变化处理
+  const handleEditScoreChange = (value: number | null, index: number) => {
+    const questions = editScoreSettingsForm.getFieldValue('questions');
+    if (questions && value !== null) {
+      questions[index].score = value;
+      editScoreSettingsForm.setFieldsValue({ questions });
+      
+      // 计算总分
+      const totalScore = questions.reduce((sum: number, q: {number: number; score: number}) => sum + (q.score || 0), 0);
+      // 更新基本信息中的总分
+      editBasicInfoForm.setFieldValue('totalScore', totalScore);
+    }
   };
   
   // 表格列定义
@@ -607,39 +761,46 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
   // 处理编辑考试
   const handleEditExam = (exam: Exam, showScoreSettings = false) => {
     setEditingExam(exam);
-    setSelectedExam(exam); // 确保选中的考试被设置，以便后续分数设置操作
-    setExamModalVisible(true);
+    setSelectedExam(exam);
+    
+    // 重置编辑步骤和表单
+    setEditCurrentStep(showScoreSettings ? ExamCreationStepEnum.ScoreSettings : ExamCreationStepEnum.BasicInfo);
+    
+    // 设置基本信息表单
+    editBasicInfoForm.setFieldsValue({
+      title: exam.title,
+      description: exam.description,
+      examTime: [dayjs(exam.startTime), dayjs(exam.endTime)],
+      totalQuestions: exam.totalQuestions,
+      totalScore: exam.maxScore || 100, // 使用 maxScore 或默认值
+      duration: exam.duration
+    });
+    
+    // 设置发布状态表单
+    editPublishSettingsForm.setFieldsValue({
+      shouldPublish: exam.status === 'published'
+    });
+    
+    // 设置上传文件状态
     setUploadedFiles({
       questionFile: exam.questionFile,
       answerFile: exam.answerFile,
       answerSheetFile: exam.answerSheetFile
     });
     
-    // 重置基本表单字段
-    form.setFieldsValue({
-      title: exam.title,
-      description: exam.description,
-      examTime: [dayjs(exam.startTime), dayjs(exam.endTime)],
-      totalQuestions: exam.totalQuestions,
-      duration: exam.duration,
-      shouldPublish: exam.status === 'published',
-      questionFile: exam.questionFile,
-      answerFile: exam.answerFile,
-      answerSheetFile: exam.answerSheetFile
-    });
-    
-    // 设置是否直接跳转到分数设置标签页
-    setActiveTabKey(showScoreSettings ? 'scoreSettings' : 'basicInfo');
-    
-    // 为分数设置准备，可以在这里加载考试的分数设置
-    if (showScoreSettings) {
-      // 为分数设置准备初始数据，如果需要可以在这里调用API加载实际分数设置
-      const questions = Array.from({ length: exam.totalQuestions || 0 }, (_, idx) => ({
+    // 加载或初始化分值设置
+    if (exam.totalQuestions && exam.totalQuestions > 0) {
+      // 这里可以调用API获取实际的分值设置，现在先用默认值
+      const totalQuestions = exam.totalQuestions || 1; // 确保不为undefined
+      const questions = Array.from({ length: totalQuestions }, (_, idx) => ({
         number: idx + 1,
-        score: 5 // 默认分数，可从API获取实际分数
+        score: Math.round((exam.maxScore || 100) / totalQuestions * 10) / 10
       }));
-      setGeneratedQuestions(questions);
+      setEditGeneratedQuestions(questions);
+      editScoreSettingsForm.setFieldsValue({ questions });
     }
+    
+    setExamModalVisible(true);
   };
 
   // 处理查看考试详情
@@ -680,11 +841,28 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     const examTime = values.examTime;
     const status: 'draft' | 'published' = values.shouldPublish ? 'published' : 'draft';
     
+    // 验证考试时间
+    const timeValidation = validateTimeRange(examTime[0], examTime[1]);
+    if (!timeValidation.isValid) {
+      message.error(timeValidation.message);
+      return;
+    }
+    
+    let startTimeISO: string, endTimeISO: string;
+    try {
+      startTimeISO = ensureISOString(examTime[0]);
+      endTimeISO = ensureISOString(examTime[1]);
+    } catch (error) {
+      console.error('时间格式转换失败:', error);
+      message.error('时间格式转换失败，请重新选择考试时间');
+      return;
+    }
+    
     const examData = {
       title: values.title,
       description: values.description,
-      startTime: examTime[0].toISOString(),
-      endTime: examTime[1].toISOString(),
+      startTime: startTimeISO,
+      endTime: endTimeISO,
       totalQuestions: values.totalQuestions,
       duration: values.duration,
       status,
@@ -860,77 +1038,123 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
         </div>
       </Card>
 
-      {/* 创建/编辑考试模态框 */}
+      {/* 创建考试三步模态框 */}
       <Modal
-        title={editingExam ? '编辑考试' : '创建考试'}
-        open={examModalVisible}
-        onCancel={() => setExamModalVisible(false)}
+        title="创建考试"
+        open={examCreationVisible}
+        onCancel={closeExamCreation}
         footer={null}
         width={800}
       >
-        <Tabs 
-          activeKey={activeTabKey} 
-          onChange={setActiveTabKey}
-          items={[
-            {
-              key: 'basicInfo',
-              label: '基本信息',
-              children: (
-                <Form
-                  form={form}
-                  layout="vertical"
-                  onFinish={handleExamSubmit}
-                >
-                  <Form.Item
-                    label="考试标题"
-                    name="title"
-                    rules={[
-                      { required: true, message: '请输入考试标题' },
-                      { min: 2, max: 100, message: '考试标题长度应在2-100个字符之间' }
-                    ]}
-                  >
-                    <Input placeholder="请输入考试标题" />
-                  </Form.Item>
+        <div>
+          <Steps
+            current={currentStep}
+            onChange={handleStepChange}
+            style={{ marginBottom: 24 }}
+          >
+            <Step title="基本信息" description="填写考试基本信息" />
+            <Step title="分值设置" description="设置题目分数" />
+            <Step title="发布设置" description="设置发布状态" />
+          </Steps>
+          
+          <div style={{ display: currentStep === ExamCreationStepEnum.BasicInfo ? 'block' : 'none' }}>
+            <Form
+              form={basicInfoForm}
+              layout="vertical"
+            >
+              <Form.Item
+                label="考试标题"
+                name="title"
+                rules={[
+                  { required: true, message: '请输入考试标题' },
+                  { min: 2, max: 100, message: '考试标题长度应在2-100个字符之间' }
+                ]}
+              >
+                <Input placeholder="请输入考试标题" />
+              </Form.Item>
 
+              <Form.Item
+                label="详细信息"
+                name="description"
+                rules={[
+                  { required: true, message: '请输入考试详细信息' },
+                  { min: 10, max: 1000, message: '详细信息长度应在10-1000个字符之间' }
+                ]}
+              >
+                <TextArea 
+                  rows={4} 
+                  placeholder="请输入考试的详细信息，包括考试内容、注意事项等"
+                />
+              </Form.Item>
+
+              <Row gutter={16}>
+                <Col span={12}>
                   <Form.Item
-                    label="详细信息"
-                    name="description"
-                    rules={[
-                      { required: true, message: '请输入考试详细信息' },
-                      { min: 10, max: 1000, message: '详细信息长度应在10-1000个字符之间' }
-                    ]}
+                    label="题目数量"
+                    name="totalQuestions"
+                    rules={[{ required: true, message: '请输入题目数量' }]}
+                    initialValue={20}
                   >
-                    <TextArea 
-                      rows={4} 
-                      placeholder="请输入考试的详细信息，包括考试内容、注意事项等"
+                    <InputNumber
+                      min={1}
+                      max={200}
+                      style={{ width: '100%' }}
+                      placeholder="请输入题目数量"
                     />
                   </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="总分值"
+                    name="totalScore"
+                    rules={[{ required: true, message: '请输入考试总分值' }]}
+                    initialValue={100}
+                  >
+                    <InputNumber
+                      min={10}
+                      max={1000}
+                      style={{ width: '100%' }}
+                      placeholder="请输入考试总分值"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Form.Item
-                        label="题目数量"
-                        name="totalQuestions"
-                        rules={[{ required: true, message: '请输入题目数量' }]}
-                      >
-                        <Input type="number" placeholder="请输入题目数量" min={1} max={200} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item
-                        label="考试时长（分钟）"
-                        name="duration"
-                        rules={[{ required: true, message: '请输入考试时长' }]}
-                      >
-                        <Input type="number" placeholder="请输入考试时长" min={30} max={600} />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="考试时长（分钟）"
+                    name="duration"
+                    rules={[{ required: true, message: '请输入考试时长' }]}
+                    initialValue={120}
+                  >
+                    <InputNumber
+                      min={30}
+                      max={600}
+                      style={{ width: '100%' }}
+                      placeholder="请输入考试时长（分钟）"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={24}>
                   <Form.Item
                     label="考试时间"
                     name="examTime"
-                    rules={[{ required: true, message: '请选择考试时间' }]}
+                    rules={[
+                      { required: true, message: '请选择考试时间' },
+                      {
+                        validator: (_, value) => {
+                          if (!value || !value[0] || !value[1]) {
+                            return Promise.reject(new Error('请选择完整的考试时间段'));
+                          }
+                          const timeValidation = validateTimeRange(value[0], value[1]);
+                          if (!timeValidation.isValid) {
+                            return Promise.reject(new Error(timeValidation.message));
+                          }
+                          return Promise.resolve();
+                        }
+                      }
+                    ]}
                   >
                     <RangePicker
                       showTime
@@ -939,231 +1163,1177 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                       style={{ width: '100%' }}
                     />
                   </Form.Item>
+                </Col>
+              </Row>
 
-                  {/* 文件上传区域 */}
-                  <Row gutter={16}>
-                    <Col span={8}>
-                      <Form.Item label="试题文件" name="questionFile">
-                        <div>
-                          <Upload
-                            accept=".pdf,.doc,.docx"
-                            showUploadList={false}
-                            beforeUpload={(file) => {
-                              handleFileUpload(file, 'question');
-                              return false;
-                            }}
-                          >
+              {/* 文件上传区域 */}
+              <Divider orientation="left">考试文件</Divider>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item label="试题文件">
+                    <div>
+                      {uploadedFiles.questionFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                              {uploadedFiles.questionFile.filename}
+                            </Text>
                             <Button 
-                              icon={<CloudUploadOutlined />} 
-                              loading={uploading.question}
-                              block
-                            >
-                              上传试题文件
-                            </Button>
-                          </Upload>
-                          {form.getFieldValue('questionFile') && (
-                            <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Text type="success" style={{ fontSize: '12px' }}>
-                                  📄 {form.getFieldValue('questionFile').name}
-                                </Text>
-                                <Button 
-                                  type="text"
-                                  danger
-                                  size="small"
-                                  onClick={() => handleDeleteFile('questionFile')}
-                                  style={{ marginLeft: 8, padding: '0 4px' }}
-                                >
-                                  删除
-                                </Button>
-                              </div>
-                            </div>
-                          )}
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.questionFile?.id) {
+                                  onDeleteFile(uploadedFiles.questionFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, questionFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
                         </div>
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item label="答案文件" name="answerFile">
-                        <div>
-                          <Upload
-                            accept=".pdf,.doc,.docx"
-                            showUploadList={false}
-                            beforeUpload={(file) => {
-                              handleFileUpload(file, 'answer');
-                              return false;
-                            }}
-                          >
-                            <Button 
-                              icon={<CloudUploadOutlined />} 
-                              loading={uploading.answer}
-                              block
-                            >
-                              上传答案文件
-                            </Button>
-                          </Upload>
-                          {form.getFieldValue('answerFile') && (
-                            <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Text type="success" style={{ fontSize: '12px' }}>
-                                  📄 {form.getFieldValue('answerFile').name}
-                                </Text>
-                                <Button 
-                                  type="text"
-                                  danger
-                                  size="small"
-                                  onClick={() => handleDeleteFile('answerFile')}
-                                  style={{ marginLeft: 8, padding: '0 4px' }}
-                                >
-                                  删除
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item label="答题卡文件" name="answerSheetFile">
-                        <div>
-                          <Upload
-                            accept=".pdf,.doc,.docx"
-                            showUploadList={false}
-                            beforeUpload={(file) => {
-                              handleFileUpload(file, 'answerSheet');
-                              return false;
-                            }}
-                          >
-                            <Button 
-                              icon={<CloudUploadOutlined />} 
-                              loading={uploading.answerSheet}
-                              block
-                            >
-                              上传答题卡
-                            </Button>
-                          </Upload>
-                          {form.getFieldValue('answerSheetFile') && (
-                            <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Text type="success" style={{ fontSize: '12px' }}>
-                                  📄 {form.getFieldValue('answerSheetFile').name}
-                                </Text>
-                                <Button 
-                                  type="text"
-                                  danger
-                                  size="small"
-                                  onClick={() => handleDeleteFile('answerSheetFile')}
-                                  style={{ marginLeft: 8, padding: '0 4px' }}
-                                >
-                                  删除
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </Form.Item>
-                    </Col>
-                  </Row>
-
-                  <Form.Item name="shouldPublish" valuePropName="checked">
-                    <Space>
-                      <Switch />
-                      <Text>创建后立即发布考试</Text>
-                    </Space>
-                  </Form.Item>
-
-                  <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-                    <Space>
-                      <Button onClick={() => setExamModalVisible(false)}>
-                        取消
-                      </Button>
-                      <Button type="primary" htmlType="submit" loading={loading}>
-                        {editingExam ? '更新考试' : '创建考试'}
-                      </Button>
-                    </Space>
-                  </Form.Item>
-                </Form>
-              )
-            },
-            {
-              key: 'scoreSettings',
-              label: '分值设置',
-              children: (
-                <div>
-                  <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', marginBottom: 20 }}>
-                    <Text type="secondary">
-                      💡 简化流程：输入题目总数和每题分值，无需填写题干内容，题目均已包含在试题文件中
-                    </Text>
-                  </Card>
-                  
-                  <Form
-                    layout="vertical"
-                    onFinish={(values) => {
-                      if (editingExam) {
-                        handleSetQuestionScores(values.totalQuestions, values.defaultScore);
-                      }
-                      setExamModalVisible(false);
-                    }}
-                    initialValues={{ 
-                      defaultScore: 5, 
-                      totalQuestions: editingExam?.totalQuestions || 0 
-                    }}
-                  >
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <Form.Item
-                          label="题目总数"
-                          name="totalQuestions"
-                          rules={[
-                            { required: true, message: '请输入题目总数' },
-                            { type: 'number', min: 1, max: 200, message: '题目数量应在1-200之间' }
-                          ]}
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'question').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, questionFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
                         >
-                          <InputNumber
-                            min={1}
-                            max={200}
-                            placeholder="例如：20"
-                            style={{ width: '100%' }}
-                            addonAfter="题"
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col span={12}>
-                        <Form.Item
-                          label="每题分值"
-                          name="defaultScore"
-                          rules={[
-                            { required: true, message: '请输入每题分值' },
-                            { type: 'number', min: 0.5, max: 50, message: '分值应在0.5-50之间' }
-                          ]}
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.question}
+                            block
+                          >
+                            上传试题文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="答案文件">
+                    <div>
+                      {uploadedFiles.answerFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                              {uploadedFiles.answerFile.filename}
+                            </Text>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.answerFile?.id) {
+                                  onDeleteFile(uploadedFiles.answerFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, answerFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'answer').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, answerFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
                         >
-                          <InputNumber
-                            min={0.5}
-                            max={50}
-                            step={0.5}
-                            placeholder="例如：5"
-                            style={{ width: '100%' }}
-                            addonAfter="分"
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.answer}
+                            block
+                          >
+                            上传答案文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="答题卡文件">
+                    <div>
+                      {uploadedFiles.answerSheetFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                              {uploadedFiles.answerSheetFile.filename}
+                            </Text>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.answerSheetFile?.id) {
+                                  onDeleteFile(uploadedFiles.answerSheetFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, answerSheetFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'answerSheet').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, answerSheetFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
+                        >
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.answerSheet}
+                            block
+                          >
+                            上传答题卡文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={closeExamCreation}>取消</Button>
+                <Button type="primary" onClick={() => handleStepChange(ExamCreationStepEnum.ScoreSettings)}>
+                  下一步
+                </Button>
+              </Space>
+            </div>
+          </div>
+          
+          <div style={{ display: currentStep === ExamCreationStepEnum.ScoreSettings ? 'block' : 'none' }}>
+            <Form
+              form={scoreSettingsForm}
+              layout="vertical"
+              initialValues={{ questions: generatedQuestions }}
+            >
+              <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', marginBottom: 20 }}>
+                <Text type="secondary">
+                  💡 提示：可以调整每道题的分值，总分应与基本信息中设置的总分保持一致
+                </Text>
+              </Card>
+              
+              <Form.List name="questions">
+                {(fields, { add, remove }) => (
+                  <>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '0 10px' }}>
+                      {fields.map(({ key, name }) => (
+                        <Row key={key} gutter={16} style={{ marginBottom: 8, alignItems: 'center' }}>
+                          <Col span={6}>
+                            <Text>第 {name + 1} 题</Text>
+                          </Col>
+                          <Col span={12}>
+                            <Form.Item
+                              name={[name, 'score']}
+                              noStyle
+                            >
+                              <InputNumber
+                                min={0.5}
+                                max={100}
+                                step={0.5}
+                                onChange={(value) => handleScoreChange(value, name)}
+                                addonAfter="分"
+                                style={{ width: '100%' }}
+                              />
+                            </Form.Item>
+                          </Col>
+                          <Col span={6}>
+                            <Button 
+                              type="text" 
+                              danger 
+                              size="small"
+                              onClick={() => {
+                                remove(name);
+                                // 重新计算序号和总分
+                                const questions = scoreSettingsForm.getFieldValue('questions') || [];
+                                const updatedQuestions = questions.map((q: any, idx: number) => ({
+                                  ...q,
+                                  number: idx + 1
+                                }));
+                                scoreSettingsForm.setFieldsValue({ questions: updatedQuestions });
+                                setGeneratedQuestions(updatedQuestions);
+                                
+                                // 更新总分
+                                const totalScore = updatedQuestions.reduce((sum: number, q: any) => sum + (q.score || 0), 0);
+                                basicInfoForm.setFieldValue('totalScore', totalScore);
+                              }}
+                            >
+                              删除
+                            </Button>
+                          </Col>
+                        </Row>
+                      ))}
+                    </div>
                     
-                    <Form.Item style={{ marginBottom: 0, textAlign: 'center' }}>
-                      <Space>
-                        <Button onClick={() => setActiveTabKey('basicInfo')}>
-                          返回基本信息
-                        </Button>
-                        <Button type="primary" htmlType="submit" loading={loading}>
-                          设置分值
-                        </Button>
-                      </Space>
-                    </Form.Item>
-                  </Form>
-                </div>
-              )
-            }
-          ]}
-        />
+                    <div style={{ textAlign: 'center', marginTop: 16, padding: '16px 0', border: '1px dashed #d9d9d9', borderRadius: '6px' }}>
+                      <Button 
+                        type="dashed" 
+                        onClick={() => {
+                          const questions = scoreSettingsForm.getFieldValue('questions') || [];
+                          add({ number: questions.length + 1, score: 5 });
+                        }}
+                      >
+                        + 添加题目
+                      </Button>
+                    </div>
+                    
+                    <div style={{ textAlign: 'right', marginTop: 16, padding: '12px', background: '#f6ffed', borderRadius: '6px' }}>
+                      <Text strong>
+                        总题数：{scoreSettingsForm.getFieldValue('questions')?.length || 0} 题，
+                        总分：{calculateTotalSetScore()} 分，
+                        基本信息设置总分：{basicInfoForm.getFieldValue('totalScore') || 0} 分
+                      </Text>
+                    </div>
+                  </>
+                )}
+              </Form.List>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={() => setCurrentStep(ExamCreationStepEnum.BasicInfo)}>上一步</Button>
+                <Button type="primary" onClick={() => handleStepChange(ExamCreationStepEnum.PublishSettings)}>
+                  下一步
+                </Button>
+              </Space>
+            </div>
+          </div>
+          
+          <div style={{ display: currentStep === ExamCreationStepEnum.PublishSettings ? 'block' : 'none' }}>
+            <Form
+              form={publishSettingsForm}
+              layout="vertical"
+              initialValues={{ shouldPublish: false }}
+            >
+              <Card size="small" style={{ marginBottom: 16, background: '#e6f7ff', border: '1px solid #91d5ff' }}>
+                <Text>
+                  <InfoCircleOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+                  考试创建完成后，您可以选择立即发布或保存为草稿。发布后，学生将能够看到此考试。
+                </Text>
+              </Card>
+              
+              <Form.Item name="shouldPublish" valuePropName="checked">
+                <Switch checkedChildren="发布" unCheckedChildren="草稿" />
+                <Text style={{ marginLeft: 8 }}>
+                  创建后立即发布考试
+                </Text>
+              </Form.Item>
+              
+              <div style={{ padding: 16, background: '#f5f5f5', borderRadius: 4 }}>
+                <Title level={5}>考试信息确认</Title>
+                <Descriptions column={1} bordered size="small">
+                  <Descriptions.Item label="考试标题">{basicInfoForm.getFieldValue('title')}</Descriptions.Item>
+                  <Descriptions.Item label="详细信息">{basicInfoForm.getFieldValue('description')}</Descriptions.Item>
+                  <Descriptions.Item label="题目数量">{basicInfoForm.getFieldValue('totalQuestions')} 题</Descriptions.Item>
+                  <Descriptions.Item label="总分值">{basicInfoForm.getFieldValue('totalScore')} 分</Descriptions.Item>
+                  <Descriptions.Item label="考试时长">{basicInfoForm.getFieldValue('duration')} 分钟</Descriptions.Item>
+                  <Descriptions.Item label="考试时间">
+                    {basicInfoForm.getFieldValue('examTime') ? 
+                      `${dayjs(basicInfoForm.getFieldValue('examTime')[0]).format('YYYY-MM-DD HH:mm')} 至 ${dayjs(basicInfoForm.getFieldValue('examTime')[1]).format('YYYY-MM-DD HH:mm')}` :
+                      '未设置'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="考试文件">
+                    {uploadedFiles.questionFile ? <Tag color="success">已上传试题</Tag> : <Tag color="warning">未上传试题</Tag>}
+                    {uploadedFiles.answerFile ? <Tag color="success">已上传答案</Tag> : <Tag color="warning">未上传答案</Tag>}
+                    {uploadedFiles.answerSheetFile ? <Tag color="success">已上传答题卡</Tag> : <Tag color="warning">未上传答题卡</Tag>}
+                  </Descriptions.Item>
+                </Descriptions>
+              </div>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={() => setCurrentStep(ExamCreationStepEnum.ScoreSettings)}>上一步</Button>
+                <Button type="primary" onClick={handleExamCreationSubmit} loading={loading}>
+                  创建考试
+                </Button>
+              </Space>
+            </div>
+          </div>
+        </div>
+      </Modal>
+      
+      {/* 编辑考试模态框 - 三步流程 */}
+      <Modal
+        title="编辑考试"
+        open={examModalVisible}
+        onCancel={() => setExamModalVisible(false)}
+        footer={null}
+        width={800}
+      >
+        <div>
+          <Steps
+            current={editCurrentStep}
+            onChange={handleEditStepChange}
+            style={{ marginBottom: 24 }}
+          >
+            <Step title="基本信息" description="编辑考试基本信息" />
+            <Step title="分值设置" description="设置题目分数" />
+            <Step title="发布设置" description="设置发布状态" />
+          </Steps>
+          
+          <div style={{ display: editCurrentStep === ExamCreationStepEnum.BasicInfo ? 'block' : 'none' }}>
+            <Form
+              form={editBasicInfoForm}
+              layout="vertical"
+            >
+              <Form.Item
+                label="考试标题"
+                name="title"
+                rules={[
+                  { required: true, message: '请输入考试标题' },
+                  { min: 2, max: 100, message: '考试标题长度应在2-100个字符之间' }
+                ]}
+              >
+                <Input placeholder="请输入考试标题" />
+              </Form.Item>
+
+              <Form.Item
+                label="详细信息"
+                name="description"
+                rules={[
+                  { required: true, message: '请输入考试详细信息' },
+                  { min: 10, max: 1000, message: '详细信息长度应在10-1000个字符之间' }
+                ]}
+              >
+                <TextArea 
+                  rows={4} 
+                  placeholder="请输入考试的详细信息，包括考试内容、注意事项等"
+                />
+              </Form.Item>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="题目数量"
+                    name="totalQuestions"
+                    rules={[{ required: true, message: '请输入题目数量' }]}
+                  >
+                    <InputNumber
+                      min={1}
+                      max={200}
+                      style={{ width: '100%' }}
+                      placeholder="请输入题目数量"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="总分值"
+                    name="totalScore"
+                    rules={[{ required: true, message: '请输入考试总分值' }]}
+                  >
+                    <InputNumber
+                      min={10}
+                      max={1000}
+                      style={{ width: '100%' }}
+                      placeholder="请输入考试总分值"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="考试时长（分钟）"
+                    name="duration"
+                    rules={[{ required: true, message: '请输入考试时长' }]}
+                  >
+                    <InputNumber
+                      min={30}
+                      max={600}
+                      style={{ width: '100%' }}
+                      placeholder="请输入考试时长（分钟）"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={24}>
+                  <Form.Item
+                    label="考试时间"
+                    name="examTime"
+                    rules={[
+                      { required: true, message: '请选择考试时间' },
+                      {
+                        validator: (_, value) => {
+                          if (!value || !value[0] || !value[1]) {
+                            return Promise.reject(new Error('请选择完整的考试时间段'));
+                          }
+                          const timeValidation = validateTimeRange(value[0], value[1]);
+                          if (!timeValidation.isValid) {
+                            return Promise.reject(new Error(timeValidation.message));
+                          }
+                          return Promise.resolve();
+                        }
+                      }
+                    ]}
+                  >
+                    <RangePicker
+                      showTime
+                      format="YYYY-MM-DD HH:mm"
+                      placeholder={['开始时间', '结束时间']}
+                      style={{ width: '100%' }}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* 文件上传区域 */}
+              <Divider orientation="left">考试文件</Divider>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item label="试题文件">
+                    <div>
+                      {uploadedFiles.questionFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                              {uploadedFiles.questionFile.filename}
+                            </Text>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.questionFile?.id) {
+                                  onDeleteFile(uploadedFiles.questionFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, questionFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'question').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, questionFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
+                        >
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.question}
+                            block
+                          >
+                            上传试题文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="答案文件">
+                    <div>
+                      {uploadedFiles.answerFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                              {uploadedFiles.answerFile.filename}
+                            </Text>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.answerFile?.id) {
+                                  onDeleteFile(uploadedFiles.answerFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, answerFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'answer').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, answerFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
+                        >
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.answer}
+                            block
+                          >
+                            上传答案文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="答题卡文件">
+                    <div>
+                      {uploadedFiles.answerSheetFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                              {uploadedFiles.answerSheetFile.filename}
+                            </Text>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.answerSheetFile?.id) {
+                                  onDeleteFile(uploadedFiles.answerSheetFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, answerSheetFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'answerSheet').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, answerSheetFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
+                        >
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.answerSheet}
+                            block
+                          >
+                            上传答题卡文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={closeExamCreation}>取消</Button>
+                <Button type="primary" onClick={() => handleStepChange(ExamCreationStepEnum.ScoreSettings)}>
+                  下一步
+                </Button>
+              </Space>
+            </div>
+          </div>
+          
+          <div style={{ display: currentStep === ExamCreationStepEnum.ScoreSettings ? 'block' : 'none' }}>
+            <Form
+              form={scoreSettingsForm}
+              layout="vertical"
+              initialValues={{ questions: generatedQuestions }}
+            >
+              <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', marginBottom: 20 }}>
+                <Text type="secondary">
+                  💡 提示：可以调整每道题的分值，总分应与基本信息中设置的总分保持一致
+                </Text>
+              </Card>
+              
+              <Form.List name="questions">
+                {(fields, { add, remove }) => (
+                  <>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '0 10px' }}>
+                      {fields.map(({ key, name }) => (
+                        <Row key={key} gutter={16} style={{ marginBottom: 8, alignItems: 'center' }}>
+                          <Col span={6}>
+                            <Text>第 {name + 1} 题</Text>
+                          </Col>
+                          <Col span={12}>
+                            <Form.Item
+                              name={[name, 'score']}
+                              noStyle
+                            >
+                              <InputNumber
+                                min={0.5}
+                                max={100}
+                                step={0.5}
+                                onChange={(value) => handleScoreChange(value, name)}
+                                addonAfter="分"
+                                style={{ width: '100%' }}
+                              />
+                            </Form.Item>
+                          </Col>
+                          <Col span={6}>
+                            <Button 
+                              type="text" 
+                              danger 
+                              size="small"
+                              onClick={() => {
+                                remove(name);
+                                // 重新计算序号和总分
+                                const questions = scoreSettingsForm.getFieldValue('questions') || [];
+                                const updatedQuestions = questions.map((q: any, idx: number) => ({
+                                  ...q,
+                                  number: idx + 1
+                                }));
+                                scoreSettingsForm.setFieldsValue({ questions: updatedQuestions });
+                                setGeneratedQuestions(updatedQuestions);
+                                
+                                // 更新总分
+                                const totalScore = updatedQuestions.reduce((sum: number, q: any) => sum + (q.score || 0), 0);
+                                basicInfoForm.setFieldValue('totalScore', totalScore);
+                              }}
+                            >
+                              删除
+                            </Button>
+                          </Col>
+                        </Row>
+                      ))}
+                    </div>
+                    
+                    <div style={{ textAlign: 'center', marginTop: 16, padding: '16px 0', border: '1px dashed #d9d9d9', borderRadius: '6px' }}>
+                      <Button 
+                        type="dashed" 
+                        onClick={() => {
+                          const questions = scoreSettingsForm.getFieldValue('questions') || [];
+                          add({ number: questions.length + 1, score: 5 });
+                        }}
+                      >
+                        + 添加题目
+                      </Button>
+                    </div>
+                    
+                    <div style={{ textAlign: 'right', marginTop: 16, padding: '12px', background: '#f6ffed', borderRadius: '6px' }}>
+                      <Text strong>
+                        总题数：{scoreSettingsForm.getFieldValue('questions')?.length || 0} 题，
+                        总分：{calculateTotalSetScore()} 分，
+                        基本信息设置总分：{basicInfoForm.getFieldValue('totalScore') || 0} 分
+                      </Text>
+                    </div>
+                  </>
+                )}
+              </Form.List>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={() => setCurrentStep(ExamCreationStepEnum.BasicInfo)}>上一步</Button>
+                <Button type="primary" onClick={() => handleStepChange(ExamCreationStepEnum.PublishSettings)}>
+                  下一步
+                </Button>
+              </Space>
+            </div>
+          </div>
+          
+          <div style={{ display: currentStep === ExamCreationStepEnum.PublishSettings ? 'block' : 'none' }}>
+            <Form
+              form={publishSettingsForm}
+              layout="vertical"
+              initialValues={{ shouldPublish: false }}
+            >
+              <Card size="small" style={{ marginBottom: 16, background: '#e6f7ff', border: '1px solid #91d5ff' }}>
+                <Text>
+                  <InfoCircleOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+                  考试创建完成后，您可以选择立即发布或保存为草稿。发布后，学生将能够看到此考试。
+                </Text>
+              </Card>
+              
+              <Form.Item name="shouldPublish" valuePropName="checked">
+                <Switch checkedChildren="发布" unCheckedChildren="草稿" />
+                <Text style={{ marginLeft: 8 }}>
+                  创建后立即发布考试
+                </Text>
+              </Form.Item>
+              
+              <div style={{ padding: 16, background: '#f5f5f5', borderRadius: 4 }}>
+                <Title level={5}>考试信息确认</Title>
+                <Descriptions column={1} bordered size="small">
+                  <Descriptions.Item label="考试标题">{basicInfoForm.getFieldValue('title')}</Descriptions.Item>
+                  <Descriptions.Item label="详细信息">{basicInfoForm.getFieldValue('description')}</Descriptions.Item>
+                  <Descriptions.Item label="题目数量">{basicInfoForm.getFieldValue('totalQuestions')} 题</Descriptions.Item>
+                  <Descriptions.Item label="总分值">{basicInfoForm.getFieldValue('totalScore')} 分</Descriptions.Item>
+                  <Descriptions.Item label="考试时长">{basicInfoForm.getFieldValue('duration')} 分钟</Descriptions.Item>
+                  <Descriptions.Item label="考试时间">
+                    {basicInfoForm.getFieldValue('examTime') ? 
+                      `${dayjs(basicInfoForm.getFieldValue('examTime')[0]).format('YYYY-MM-DD HH:mm')} 至 ${dayjs(basicInfoForm.getFieldValue('examTime')[1]).format('YYYY-MM-DD HH:mm')}` :
+                      '未设置'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="考试文件">
+                    {uploadedFiles.questionFile ? <Tag color="success">已上传试题</Tag> : <Tag color="warning">未上传试题</Tag>}
+                    {uploadedFiles.answerFile ? <Tag color="success">已上传答案</Tag> : <Tag color="warning">未上传答案</Tag>}
+                    {uploadedFiles.answerSheetFile ? <Tag color="success">已上传答题卡</Tag> : <Tag color="warning">未上传答题卡</Tag>}
+                  </Descriptions.Item>
+                </Descriptions>
+              </div>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={() => setCurrentStep(ExamCreationStepEnum.ScoreSettings)}>上一步</Button>
+                <Button type="primary" onClick={handleExamCreationSubmit} loading={loading}>
+                  创建考试
+                </Button>
+              </Space>
+            </div>
+          </div>
+        </div>
+      </Modal>
+      
+      {/* 编辑考试模态框 - 三步流程 */}
+      <Modal
+        title="编辑考试"
+        open={examModalVisible}
+        onCancel={() => setExamModalVisible(false)}
+        footer={null}
+        width={800}
+      >
+        <div>
+          <Steps
+            current={editCurrentStep}
+            onChange={handleEditStepChange}
+            style={{ marginBottom: 24 }}
+          >
+            <Step title="基本信息" description="编辑考试基本信息" />
+            <Step title="分值设置" description="设置题目分数" />
+            <Step title="发布设置" description="设置发布状态" />
+          </Steps>
+          
+          <div style={{ display: editCurrentStep === ExamCreationStepEnum.BasicInfo ? 'block' : 'none' }}>
+            <Form
+              form={editBasicInfoForm}
+              layout="vertical"
+            >
+              <Form.Item
+                label="考试标题"
+                name="title"
+                rules={[
+                  { required: true, message: '请输入考试标题' },
+                  { min: 2, max: 100, message: '考试标题长度应在2-100个字符之间' }
+                ]}
+              >
+                <Input placeholder="请输入考试标题" />
+              </Form.Item>
+
+              <Form.Item
+                label="详细信息"
+                name="description"
+                rules={[
+                  { required: true, message: '请输入考试详细信息' },
+                  { min: 10, max: 1000, message: '详细信息长度应在10-1000个字符之间' }
+                ]}
+              >
+                <TextArea 
+                  rows={4} 
+                  placeholder="请输入考试的详细信息，包括考试内容、注意事项等"
+                />
+              </Form.Item>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="题目数量"
+                    name="totalQuestions"
+                    rules={[{ required: true, message: '请输入题目数量' }]}
+                  >
+                    <InputNumber
+                      min={1}
+                      max={200}
+                      style={{ width: '100%' }}
+                      placeholder="请输入题目数量"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="总分值"
+                    name="totalScore"
+                    rules={[{ required: true, message: '请输入考试总分值' }]}
+                  >
+                    <InputNumber
+                      min={10}
+                      max={1000}
+                      style={{ width: '100%' }}
+                      placeholder="请输入考试总分值"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="考试时长（分钟）"
+                    name="duration"
+                    rules={[{ required: true, message: '请输入考试时长' }]}
+                  >
+                    <InputNumber
+                      min={30}
+                      max={600}
+                      style={{ width: '100%' }}
+                      placeholder="请输入考试时长（分钟）"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={24}>
+                  <Form.Item
+                    label="考试时间"
+                    name="examTime"
+                    rules={[
+                      { required: true, message: '请选择考试时间' },
+                      {
+                        validator: (_, value) => {
+                          if (!value || !value[0] || !value[1]) {
+                            return Promise.reject(new Error('请选择完整的考试时间段'));
+                          }
+                          const timeValidation = validateTimeRange(value[0], value[1]);
+                          if (!timeValidation.isValid) {
+                            return Promise.reject(new Error(timeValidation.message));
+                          }
+                          return Promise.resolve();
+                        }
+                      }
+                    ]}
+                  >
+                    <RangePicker
+                      showTime
+                      format="YYYY-MM-DD HH:mm"
+                      placeholder={['开始时间', '结束时间']}
+                      style={{ width: '100%' }}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* 文件上传区域 */}
+              <Divider orientation="left">考试文件</Divider>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item label="试题文件">
+                    <div>
+                      {uploadedFiles.questionFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                                                           {uploadedFiles.questionFile.filename}
+                            </Text>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.questionFile?.id) {
+                                  onDeleteFile(uploadedFiles.questionFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, questionFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'question').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, questionFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
+                        >
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.question}
+                            block
+                          >
+                            上传试题文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="答案文件">
+                    <div>
+                      {uploadedFiles.answerFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                              {uploadedFiles.answerFile.filename}
+                            </Text>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.answerFile?.id) {
+                                  onDeleteFile(uploadedFiles.answerFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, answerFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'answer').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, answerFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
+                        >
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.answer}
+                            block
+                          >
+                            上传答案文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="答题卡文件">
+                    <div>
+                      {uploadedFiles.answerSheetFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                              {uploadedFiles.answerSheetFile.filename}
+                            </Text>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.answerSheetFile?.id) {
+                                  onDeleteFile(uploadedFiles.answerSheetFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, answerSheetFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'answerSheet').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, answerSheetFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
+                        >
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.answerSheet}
+                            block
+                          >
+                            上传答题卡文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={closeExamCreation}>取消</Button>
+                <Button type="primary" onClick={() => handleEditStepChange(ExamCreationStepEnum.ScoreSettings)}>
+                  下一步
+                </Button>
+              </Space>
+            </div>
+          </div>
+          
+          <div style={{ display: editCurrentStep === ExamCreationStepEnum.ScoreSettings ? 'block' : 'none' }}>
+            <Form
+              form={editScoreSettingsForm}
+              layout="vertical"
+              initialValues={{ questions: editGeneratedQuestions }}
+            >
+              <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', marginBottom: 20 }}>
+                <Text type="secondary">
+                  💡 提示：可以调整每道题的分值，总分应与基本信息中设置的总分保持一致
+                </Text>
+              </Card>
+              
+              <Form.List name="questions">
+                {(fields, { add, remove }) => (
+                  <>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '0 10px' }}>
+                      {fields.map(({ key, name }) => (
+                        <Row key={key} gutter={16} style={{ marginBottom: 8, alignItems: 'center' }}>
+                          <Col span={6}>
+                            <Text>第 {name + 1} 题</Text>
+                          </Col>
+                          <Col span={12}>
+                            <Form.Item
+                              name={[name, 'score']}
+                              noStyle
+                            >
+                              <InputNumber
+                                min={0.5}
+                                max={100}
+                                step={0.5}
+                                onChange={(value) => handleEditScoreChange(value, name)}
+                                addonAfter="分"
+                                style={{ width: '100%' }}
+                              />
+                            </Form.Item>
+                          </Col>
+                          <Col span={6}>
+                            <Button 
+                              type="text" 
+                              danger 
+                              size="small"
+                              onClick={() => {
+                                remove(name);
+                                // 重新计算序号和总分
+                                const questions = editScoreSettingsForm.getFieldValue('questions') || [];
+                                const updatedQuestions = questions.map((q: any, idx: number) => ({
+                                  ...q,
+                                  number: idx + 1
+                                }));
+                                editScoreSettingsForm.setFieldsValue({ questions: updatedQuestions });
+                                setEditGeneratedQuestions(updatedQuestions);
+                                
+                                // 更新总分
+                                const totalScore = updatedQuestions.reduce((sum: number, q: any) => sum + (q.score || 0), 0);
+                                editBasicInfoForm.setFieldValue('totalScore', totalScore);
+                              }}
+                            >
+                              删除
+                            </Button>
+                          </Col>
+                        </Row>
+                      ))}
+                    </div>
+                    
+                    <div style={{ textAlign: 'center', marginTop: 16, padding: '16px 0', border: '1px dashed #d9d9d9', borderRadius: '6px' }}>
+                      <Button 
+                        type="dashed" 
+                        onClick={() => {
+                          const questions = editScoreSettingsForm.getFieldValue('questions') || [];
+                          add({ number: questions.length + 1, score: 5 });
+                        }}
+                      >
+                        + 添加题目
+                      </Button>
+                    </div>
+                    
+                    <div style={{ textAlign: 'right', marginTop: 16, padding: '12px', background: '#f6ffed', borderRadius: '6px' }}>
+                      <Text strong>
+                        总题数：{editScoreSettingsForm.getFieldValue('questions')?.length || 0} 题，
+                        总分：{calculateEditTotalSetScore()} 分，
+                        基本信息设置总分：{editBasicInfoForm.getFieldValue('totalScore') || 0} 分
+                      </Text>
+                    </div>
+                  </>
+                )}
+              </Form.List>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={() => setEditCurrentStep(ExamCreationStepEnum.BasicInfo)}>上一步</Button>
+                <Button type="primary" onClick={() => handleEditStepChange(ExamCreationStepEnum.PublishSettings)}>
+                  下一步
+                </Button>
+              </Space>
+            </div>
+          </div>
+          
+          <div style={{ display: editCurrentStep === ExamCreationStepEnum.PublishSettings ? 'block' : 'none' }}>
+            <Form
+              form={editPublishSettingsForm}
+              layout="vertical"
+              initialValues={{ 
+                shouldPublish: editingExam?.status === 'published' 
+              }}
+            >
+              <Card size="small" style={{ marginBottom: 16, background: '#e6f7ff', border: '1px solid #91d5ff' }}>
+                <Text>
+                  <InfoCircleOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+                  编辑完成后，您可以选择发布或保存为草稿。发布后，学生将能够看到此考试。
+                </Text>
+              </Card>
+              
+              <Form.Item name="shouldPublish" valuePropName="checked">
+                <Switch checkedChildren="发布" unCheckedChildren="草稿" />
+                <Text style={{ marginLeft: 8 }}>
+                  更新后发布考试
+                </Text>
+              </Form.Item>
+              
+              <div style={{ padding: 16, background: '#f5f5f5', borderRadius: 4 }}>
+                <Title level={5}>考试信息确认</Title>
+                <Descriptions column={1} bordered size="small">
+                  <Descriptions.Item label="考试标题">{editBasicInfoForm.getFieldValue('title')}</Descriptions.Item>
+                  <Descriptions.Item label="详细信息">{editBasicInfoForm.getFieldValue('description')}</Descriptions.Item>
+                  <Descriptions.Item label="题目数量">{editBasicInfoForm.getFieldValue('totalQuestions')} 题</Descriptions.Item>
+                  <Descriptions.Item label="总分值">{editBasicInfoForm.getFieldValue('totalScore')} 分</Descriptions.Item>
+                  <Descriptions.Item label="考试时长">{editBasicInfoForm.getFieldValue('duration')} 分钟</Descriptions.Item>
+                  <Descriptions.Item label="考试时间">
+                    {editBasicInfoForm.getFieldValue('examTime') ? 
+                      `${dayjs(editBasicInfoForm.getFieldValue('examTime')[0]).format('YYYY-MM-DD HH:mm')} 至 ${dayjs(editBasicInfoForm.getFieldValue('examTime')[1]).format('YYYY-MM-DD HH:mm')}` :
+                      '未设置'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="考试文件">
+                    {uploadedFiles.questionFile ? <Tag color="success">已上传试题</Tag> : <Tag color="warning">未上传试题</Tag>}
+                    {uploadedFiles.answerFile ? <Tag color="success">已上传答案</Tag> : <Tag color="warning">未上传答案</Tag>}
+                    {uploadedFiles.answerSheetFile ? <Tag color="success">已上传答题卡</Tag> : <Tag color="warning">未上传答题卡</Tag>}
+                  </Descriptions.Item>
+                </Descriptions>
+              </div>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={() => setEditCurrentStep(ExamCreationStepEnum.ScoreSettings)}>上一步</Button>
+                <Button type="primary" onClick={handleEditExamSubmit} loading={loading}>
+                  更新考试
+                </Button>
+              </Space>
+            </div>
+          </div>
+        </div>
       </Modal>
 
       {/* 考试详情模态框 */}
@@ -1276,6 +2446,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                         color: selectedExam.questionFile ? '#52c41a' : '#d9d9d9',
                         marginBottom: 8
                       }} 
+                    
                     />
                     <div>
                       <Text strong>试题文件</Text>
@@ -1440,8 +2611,16 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
             
             <Form
               layout="vertical"
-              onFinish={(values) => handleSetQuestionScores(values.totalQuestions, values.defaultScore)}
-              initialValues={{ defaultScore: 5, totalQuestions: selectedExam.totalQuestions }}
+              onFinish={(values) => {
+                if (editingExam) {
+                  handleSetQuestionScores(values.totalQuestions, values.defaultScore);
+                }
+                setExamModalVisible(false);
+              }}
+              initialValues={{ 
+                defaultScore: 5, 
+                totalQuestions: editingExam?.totalQuestions || 0 
+              }}
             >
               <Row gutter={16}>
                 <Col span={12}>
@@ -1485,8 +2664,8 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
               
               <Form.Item style={{ marginBottom: 0, textAlign: 'center' }}>
                 <Space>
-                  <Button onClick={() => setScoreSettingsVisible(false)}>
-                    取消
+                  <Button onClick={() => setActiveTabKey('basicInfo')}>
+                    返回基本信息
                   </Button>
                   <Button type="primary" htmlType="submit" loading={loading}>
                     设置分值
@@ -1495,356 +2674,6 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
               </Form.Item>
             </Form>
           </div>
-        )}
-      </Modal>
-
-      {/* 三步创建考试的模态框 */}
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <PlusOutlined style={{ marginRight: 8, color: '#1890ff' }} />
-            <span>创建新考试</span>
-          </div>
-        }
-        open={examCreationVisible}
-        onCancel={closeExamCreation}
-        footer={null}
-        width={800}
-        destroyOnClose
-      >
-        <div style={{ marginBottom: 24 }}>
-          <Steps current={currentStep} onChange={handleStepChange}>
-            <Step title="基本信息" description="设置考试基本信息" />
-            <Step title="分值设置" description="设置各题分数" />
-            <Step title="发布设置" description="选择是否立即发布" />
-          </Steps>
-        </div>
-
-        {/* 步骤1: 基本信息 */}
-        {currentStep === ExamCreationStepEnum.BasicInfo && (
-          <Form
-            form={basicInfoForm}
-            layout="vertical"
-            requiredMark="optional"
-          >
-            <Row gutter={16}>
-              <Col span={24}>
-                <Form.Item
-                  name="title"
-                  label="考试标题"
-                  rules={[{ required: true, message: '请输入考试标题' }]}
-                >
-                  <Input placeholder="请输入考试标题" />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col span={24}>
-                <Form.Item
-                  name="description"
-                  label="考试描述"
-                  rules={[{ required: true, message: '请输入考试描述' }]}
-                >
-                  <TextArea rows={4} placeholder="请输入考试描述" />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="totalQuestions"
-                  label="题目数量"
-                  rules={[{ required: true, message: '请输入题目数量' }]}
-                >
-                  <InputNumber min={1} max={100} style={{ width: '100%' }} placeholder="请输入题目数量" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="totalScore"
-                  label="总分值"
-                  rules={[{ required: true, message: '请输入总分值' }]}
-                >
-                  <InputNumber min={1} style={{ width: '100%' }} placeholder="请输入总分值" />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="duration"
-                  label="考试时长(分钟)"
-                  rules={[{ required: true, message: '请输入考试时长' }]}
-                >
-                  <InputNumber min={1} max={600} style={{ width: '100%' }} placeholder="请输入考试时长（分钟）" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="examTime"
-                  label="考试时间段"
-                  rules={[{ required: true, message: '请选择考试时间段' }]}
-                >
-                  <RangePicker 
-                    showTime 
-                    format="YYYY-MM-DD HH:mm:ss" 
-                    style={{ width: '100%' }}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-              <Button type="primary" onClick={() => handleStepChange(currentStep + 1)}>
-                下一步
-              </Button>
-            </div>
-          </Form>
-        )}
-
-        {/* 步骤2: 分值设置 */}
-        {currentStep === ExamCreationStepEnum.ScoreSettings && (
-          <Form
-            form={scoreSettingsForm}
-            layout="vertical"
-            requiredMark="optional"
-          >
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Title level={5} style={{ margin: 0 }}>题目分值设置</Title>
-              <div>
-                <Text>总分: </Text>
-                <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
-                  {calculateTotalSetScore()} / {basicInfoForm.getFieldValue('totalScore')}
-                </Text>
-              </div>
-            </div>
-
-            <Form.List name="questions">
-              {(fields) => (
-                <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '0 10px' }}>
-                  {fields.map((field, index) => (
-                    <Row key={field.key} gutter={16} style={{ marginBottom: 16 }}>
-                      <Col span={4}>
-                        <Text strong>第 {index + 1} 题</Text>
-                      </Col>
-                      <Col span={20}>
-                        <Form.Item
-                          {...field}
-                          name={[field.name, 'score']}
-                          rules={[{ required: true, message: '请输入分值' }]}
-                        >
-                          <InputNumber
-                            min={0}
-                            step={0.5}
-                            style={{ width: '100%' }}
-                            placeholder="分值"
-                            onChange={(value) => handleScoreChange(value, index)}
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                  ))}
-                </div>
-              )}
-            </Form.List>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
-              <Button onClick={() => setCurrentStep(ExamCreationStepEnum.BasicInfo)}>
-                上一步
-              </Button>
-              <Button type="primary" onClick={() => handleStepChange(currentStep + 1)}>
-                下一步
-              </Button>
-            </div>
-          </Form>
-        )}
-
-        {/* 步骤3: 发布设置 */}
-        {currentStep === ExamCreationStepEnum.PublishSettings && (
-          <Form
-            form={publishSettingsForm}
-            layout="vertical"
-            requiredMark="optional"
-          >
-            <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <Title level={4} style={{ marginBottom: 24 }}>考试创建完成!</Title>
-              <Paragraph>
-                您已成功设置了考试的基本信息和题目分值。现在，您可以选择是否要立即发布这个考试。
-              </Paragraph>
-              
-              <div style={{ background: '#f5f5f5', padding: '16px', borderRadius: '8px', margin: '24px 0', textAlign: 'left' }}>
-                <Descriptions column={2} bordered size="small">
-                  <Descriptions.Item label="考试标题" span={2}>
-                    {basicInfoForm.getFieldValue('title')}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="考试时间" span={2}>
-                    {basicInfoForm.getFieldValue('examTime')?.[0]?.format('YYYY-MM-DD HH:mm:ss')} 至 {basicInfoForm.getFieldValue('examTime')?.[1]?.format('YYYY-MM-DD HH:mm:ss')}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="题目数量">
-                    {basicInfoForm.getFieldValue('totalQuestions')} 题
-                  </Descriptions.Item>
-                  <Descriptions.Item label="总分值">
-                    {calculateTotalSetScore()} 分
-                  </Descriptions.Item>
-                  <Descriptions.Item label="考试时长">
-                    {basicInfoForm.getFieldValue('duration')} 分钟
-                  </Descriptions.Item>
-                </Descriptions>
-              </div>
-              
-              {/* 添加文件上传区域 */}
-              <div style={{ background: '#f8f8f8', padding: '16px', borderRadius: '8px', margin: '24px 0', textAlign: 'left' }}>
-                <Title level={5}>考试文件上传</Title>
-                <Row gutter={[16, 16]}>
-                  <Col span={8}>
-                    <div>
-                      <div style={{marginBottom: 8}}>
-                        <Text strong>试题文件:</Text>
-                      </div>
-                      <Upload
-                        accept=".pdf,.doc,.docx"
-                        showUploadList={false}
-                        beforeUpload={(file) => {
-                          handleFileUpload(file, 'question');
-                          return false;
-                        }}
-                      >
-                        <Button 
-                          icon={<CloudUploadOutlined />} 
-                          loading={uploading.question}
-                          block
-                        >
-                          上传试题文件
-                        </Button>
-                      </Upload>
-                      {uploadedFiles.questionFile && (
-                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text type="success" style={{ fontSize: '12px' }}>
-                              📄 {uploadedFiles.questionFile.name}
-                            </Text>
-                            <Button 
-                              type="text"
-                              danger
-                              size="small"
-                              onClick={() => handleDeleteFile('questionFile')}
-                              style={{ marginLeft: 8, padding: '0 4px' }}
-                            >
-                              删除
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-                  <Col span={8}>
-                    <div>
-                      <div style={{marginBottom: 8}}>
-                        <Text strong>答案文件:</Text>
-                      </div>
-                      <Upload
-                        accept=".pdf,.doc,.docx"
-                        showUploadList={false}
-                        beforeUpload={(file) => {
-                          handleFileUpload(file, 'answer');
-                          return false;
-                        }}
-                      >
-                        <Button 
-                          icon={<CloudUploadOutlined />} 
-                          loading={uploading.answer}
-                          block
-                        >
-                          上传答案文件
-                        </Button>
-                      </Upload>
-                      {uploadedFiles.answerFile && (
-                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text type="success" style={{ fontSize: '12px' }}>
-                              📄 {uploadedFiles.answerFile.name}
-                            </Text>
-                            <Button 
-                              type="text"
-                              danger
-                              size="small"
-                              onClick={() => handleDeleteFile('answerFile')}
-                              style={{ marginLeft: 8, padding: '0 4px' }}
-                            >
-                              删除
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-                  <Col span={8}>
-                    <div>
-                      <div style={{marginBottom: 8}}>
-                        <Text strong>答题卡文件:</Text>
-                      </div>
-                      <Upload
-                        accept=".pdf,.doc,.docx"
-                        showUploadList={false}
-                        beforeUpload={(file) => {
-                          handleFileUpload(file, 'answerSheet');
-                          return false;
-                        }}
-                      >
-                        <Button 
-                          icon={<CloudUploadOutlined />} 
-                          loading={uploading.answerSheet}
-                          block
-                        >
-                          上传答题卡文件
-                        </Button>
-                      </Upload>
-                      {uploadedFiles.answerSheetFile && (
-                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text type="success" style={{ fontSize: '12px' }}>
-                              📄 {uploadedFiles.answerSheetFile.name}
-                            </Text>
-                            <Button 
-                              type="text"
-                              danger
-                              size="small"
-                              onClick={() => handleDeleteFile('answerSheetFile')}
-                              style={{ marginLeft: 8, padding: '0 4px' }}
-                            >
-                              删除
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-                </Row>
-              </div>
-              
-              <Form.Item
-                name="shouldPublish"
-                valuePropName="checked"
-              >
-                <Switch />
-              </Form.Item>
-              <Text type="secondary" style={{ marginBottom: 16 }}>
-                {publishSettingsForm.getFieldValue('shouldPublish') 
-                  ? '考试将被立即发布，学生将能够看到并参加考试。' 
-                  : '考试将被保存为草稿，您可以稍后再发布。'}
-              </Text>
-            </div>
-
-            <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-              <Space>
-                <Button onClick={() => setCurrentStep(ExamCreationStepEnum.ScoreSettings)}>
-                  上一步
-                </Button>
-                <Button type="primary" onClick={handleExamCreationSubmit}>
-                  完成创建
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
         )}
       </Modal>
     </div>
