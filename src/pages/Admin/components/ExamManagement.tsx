@@ -558,10 +558,10 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       
       message.success('考试创建成功');
       
-      // 清除预获取的ID状态（创建成功后不需要删除服务器端ID）
+      // 创建考试成功后关闭模态框，但不删除预申请ID（因为它已变成真正的考试ID）
+      setExamCreationVisible(false);
+      // 清除预获取的ID状态
       setReservedExamId(null);
-      
-      closeExamCreation();
     } catch (error) {
       console.error('创建考试失败:', error);
       message.error('创建考试失败，请检查表单数据');
