@@ -310,7 +310,7 @@ interface ExamManagementProps {
   onDeleteExam: (id: string) => Promise<void>;
   onPublishExam: (id: string) => Promise<void>;
   onUnpublishExam: (id: string) => Promise<void>;
-  onUploadFile: (file: File, type: 'question' | 'answer' | 'answerSheet') => Promise<ExamFile>;
+  onUploadFile: (file: File, type: 'question' | 'answer' | 'answerSheet', examId?: string) => Promise<ExamFile>;
   onDeleteFile: (fileId: string) => Promise<void>;
   onSetQuestionScores: (examId: string, questions: { number: number; score: number }[]) => Promise<any>;
   onGetQuestionScores: (examId: string) => Promise<any>;
@@ -883,10 +883,12 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
   };
 
   // 文件上传处理
-  const handleFileUpload = async (file: File, type: 'question' | 'answer' | 'answerSheet') => {
+  const handleFileUpload = async (file: File, type: 'question' | 'answer' | 'answerSheet', examId?: string) => {
     setUploading(prev => ({ ...prev, [type]: true }));
     try {
-      const uploadedFile = await onUploadFile(file, type);
+      // 在创建考试时使用预申请的ID，在编辑考试时使用现有的考试ID
+      const uploadExamId = examId || reservedExamId || (editingExam?.id);
+      const uploadedFile = await onUploadFile(file, type, uploadExamId);
       const fieldName = `${type}File` as 'questionFile' | 'answerFile' | 'answerSheetFile';
       
       // 更新表单和本地状态
@@ -1251,7 +1253,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text ellipsis style={{ maxWidth: '70%' }}>
                               <FilePdfOutlined style={{ marginRight: 8 }} />
-                              {uploadedFiles.questionFile.filename}
+                                                           {uploadedFiles.questionFile.filename}
                             </Text>
                             <Button 
                               type="text" 
@@ -1683,7 +1685,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text ellipsis style={{ maxWidth: '70%' }}>
                               <FilePdfOutlined style={{ marginRight: 8 }} />
-                              {uploadedFiles.questionFile.filename}
+                                                           {uploadedFiles.questionFile.filename}
                             </Text>
                             <Button 
                               type="text" 
@@ -1859,6 +1861,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                                 onChange={(value) => handleScoreChange(value, name)}
                                 addonAfter="分"
                                 style={{ width: '100%' }}
+                                precision={1}
                               />
                             </Form.Item>
                           </Col>
@@ -1890,23 +1893,11 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                       ))}
                     </div>
                     
-                    <div style={{ textAlign: 'center', marginTop: 16, padding: '16px 0', border: '1px dashed #d9d9d9', borderRadius: '6px' }}>
-                      <Button 
-                        type="dashed" 
-                        onClick={() => {
-                          const questions = scoreSettingsForm.getFieldValue('questions') || [];
-                          add({ number: questions.length + 1, score: 5 });
-                        }}
-                      >
-                        + 添加题目
-                      </Button>
-                    </div>
-                    
                     <div style={{ textAlign: 'right', marginTop: 16, padding: '12px', background: '#f6ffed', borderRadius: '6px' }}>
                       <Text strong>
                         总题数：{scoreSettingsForm.getFieldValue('questions')?.length || 0} 题，
-                        总分：{calculateTotalSetScore()} 分，
-                        基本信息设置总分：{basicInfoForm.getFieldValue('totalScore') || 0} 分
+                        总分：{calculateTotalSetScore().toFixed(1)} 分，
+                        基本信息设置总分：{(basicInfoForm.getFieldValue('totalScore') || 0).toFixed(1)} 分
                       </Text>
                     </div>
                   </>
@@ -1950,7 +1941,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                   <Descriptions.Item label="考试标题">{basicInfoForm.getFieldValue('title')}</Descriptions.Item>
                   <Descriptions.Item label="详细信息">{basicInfoForm.getFieldValue('description')}</Descriptions.Item>
                   <Descriptions.Item label="题目数量">{basicInfoForm.getFieldValue('totalQuestions')} 题</Descriptions.Item>
-                  <Descriptions.Item label="总分值">{basicInfoForm.getFieldValue('totalScore')} 分</Descriptions.Item>
+                  <Descriptions.Item label="总分值">{(basicInfoForm.getFieldValue('totalScore') || 0).toFixed(1)} 分</Descriptions.Item>
                   <Descriptions.Item label="考试时长">{basicInfoForm.getFieldValue('duration')} 分钟</Descriptions.Item>
                   <Descriptions.Item label="考试时间">
                     {basicInfoForm.getFieldValue('examTime') ? 
@@ -2114,7 +2105,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text ellipsis style={{ maxWidth: '70%' }}>
                               <FilePdfOutlined style={{ marginRight: 8 }} />
-                                                           {uploadedFiles.questionFile.filename}
+                              {uploadedFiles.questionFile.filename}
                             </Text>
                             <Button 
                               type="text" 

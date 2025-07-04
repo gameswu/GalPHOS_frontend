@@ -82,7 +82,7 @@ interface AdminContentProps {
   onPublishExam: (examId: string) => Promise<void>;
   onUnpublishExam: (examId: string) => Promise<void>;
   onDeleteExam: (examId: string) => Promise<void>;
-  onUploadFile: (file: File, type: 'question' | 'answer' | 'answerSheet') => Promise<any>;
+  onUploadFile: (file: File, type: 'question' | 'answer' | 'answerSheet', examId?: string) => Promise<any>;
   onDeleteFile: (fileId: string) => Promise<void>;
   // 分值设置相关方法
   onSetQuestionScores: (examId: string, questions: { number: number; score: number }[]) => Promise<any>;

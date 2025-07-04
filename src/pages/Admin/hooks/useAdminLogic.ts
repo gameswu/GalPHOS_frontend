@@ -576,13 +576,13 @@ export const useAdminLogic = () => {
   }, [loadExams]);
 
   // 文件上传
-  const uploadFile = useCallback(async (file: File, type: 'question' | 'answer' | 'answerSheet'): Promise<ExamFile> => {
+  const uploadFile = useCallback(async (file: File, type: 'question' | 'answer' | 'answerSheet', examId?: string): Promise<ExamFile> => {
     try {
       // 使用文件上传服务的通用文件上传方法
       const FileUploadService = await import('../../../services/fileUploadService');
       const result = await FileUploadService.default.uploadFile(file, {
         category: 'exam-file',
-        relatedId: '', // examId暂时为空，实际使用时需要传入
+        relatedId: examId || '', // 使用传入的examId或空字符串
         allowedTypes: [
           'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
           'application/pdf', 'application/msword',
