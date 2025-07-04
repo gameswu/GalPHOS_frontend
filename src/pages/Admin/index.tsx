@@ -48,6 +48,9 @@ const Admin: React.FC = () => {
     deleteExam,
     uploadFile,
     deleteFile,
+    // 考试ID管理方法
+    reserveExamId,
+    deleteReservedExamId,
     // 分值设置方法
     setQuestionScores,
     getQuestionScores,
@@ -243,6 +246,8 @@ const Admin: React.FC = () => {
             onDeleteAdmin={deleteAdmin}
             onUpdateSystemSettings={updateSystemSettings}
             onUploadAvatar={uploadAvatar}
+            onReserveExamId={reserveExamId}
+            onDeleteReservedExamId={deleteReservedExamId}
           />
         </Content>
       </Layout>

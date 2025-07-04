@@ -22,7 +22,9 @@ import {
   InputNumber,
   message,
   Steps,
-  Divider
+  Divider,
+  Dropdown,
+  Menu
 } from 'antd';
 import {
   PlusOutlined,
@@ -37,7 +39,8 @@ import {
   DownloadOutlined,
   SettingOutlined,
   InfoCircleOutlined,
-  FilePdfOutlined
+  FilePdfOutlined,
+  MoreOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Exam, ExamFile } from '../../../types/common';
@@ -55,6 +58,37 @@ const { TextArea } = Input;
 const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
 const { Step } = Steps;
+
+
+// 分值计算辅助函数
+const calculateTotalSetScore = (form: any): number => {
+  const questionsData = form.getFieldsValue();
+  const totalQuestions = questionsData.questionCount || 0;
+  const scorePerQuestion = questionsData.defaultScore || 0;
+  const total = totalQuestions * scorePerQuestion;
+  return Math.round(total * 10) / 10; // 保留一位小数
+};
+
+const calculateEditTotalSetScore = (questions: { number: number; score: number }[]): number => {
+  const total = questions.reduce((sum, q) => sum + (q.score || 0), 0);
+  return Math.round(total * 10) / 10; // 保留一位小数
+};
+
+// 分值输入变化处理
+const handleScoreChange = (value: number | null, form: any, setTotalScore: (score: number) => void) => {
+  if (value !== null) {
+    const roundedValue = Math.round(value * 10) / 10;
+    setTotalScore(calculateTotalSetScore(form));
+  }
+};
+
+const handleEditScoreChange = (questions: { number: number; score: number }[], setTotalScore: (score: number) => void) => {
+  const validQuestions = questions.map(q => ({
+    ...q,
+    score: Math.round((q.score || 0) * 10) / 10
+  }));
+  setTotalScore(calculateEditTotalSetScore(validQuestions));
+};
 
 // 分值设置Tab组件
 interface ScoreSettingsTabProps {
@@ -124,7 +158,7 @@ const ScoreSettingsTab: React.FC<ScoreSettingsTabProps> = ({
       setLoading(true);
       await onSetQuestionScores(examId, questionScores);
       const totalScore = questionScores.reduce((sum, q) => sum + q.score, 0);
-      message.success(`分值设置成功！共${questionScores.length}道题，总分${totalScore}分`);
+      message.success(`分值设置成功！共${questionScores.length}道题，总分${totalScore.toFixed(1)}分`);
     } catch (error) {
       message.error('分值设置失败');
     } finally {
@@ -183,6 +217,7 @@ const ScoreSettingsTab: React.FC<ScoreSettingsTabProps> = ({
                     defaultValue={5}
                     placeholder="例如：5"
                     addonAfter="分"
+                    precision={1}
                   />
                   <Button 
                     type="dashed"
@@ -221,6 +256,7 @@ const ScoreSettingsTab: React.FC<ScoreSettingsTabProps> = ({
                     onChange={(value) => updateQuestionScore(index, value || 0)}
                     addonAfter="分"
                     style={{ width: '100%' }}
+                    precision={1}
                   />
                 </Col>
                 <Col span={8}>
@@ -244,7 +280,7 @@ const ScoreSettingsTab: React.FC<ScoreSettingsTabProps> = ({
             
             <div style={{ textAlign: 'right', marginTop: 16, padding: '12px', background: '#f6ffed', borderRadius: '6px' }}>
               <Text strong>
-                总题数：{questionScores.length} 题，总分：{questionScores.reduce((sum, q) => sum + q.score, 0)} 分
+                总题数：{questionScores.length} 题，总分：{questionScores.reduce((sum, q) => sum + q.score, 0).toFixed(1)} 分
               </Text>
             </div>
           </Card>
@@ -279,6 +315,8 @@ interface ExamManagementProps {
   onSetQuestionScores: (examId: string, questions: { number: number; score: number }[]) => Promise<any>;
   onGetQuestionScores: (examId: string) => Promise<any>;
   onUpdateSingleQuestionScore: (examId: string, questionNumber: number, score: number) => Promise<any>;
+  onReserveExamId: () => Promise<string>;
+  onDeleteReservedExamId: (examId: string) => Promise<void>;
 }
 
 // 状态映射
@@ -302,7 +340,9 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
   onDeleteFile,
   onSetQuestionScores,
   onGetQuestionScores,
-  onUpdateSingleQuestionScore
+  onUpdateSingleQuestionScore,
+  onReserveExamId,
+  onDeleteReservedExamId
 }) => {
   const [form] = Form.useForm();
   const [examModalVisible, setExamModalVisible] = useState(false);
@@ -336,6 +376,10 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
   const [editScoreSettingsForm] = Form.useForm<ExamScoreSettingsForm>();
   const [editPublishSettingsForm] = Form.useForm<ExamPublishSettingsForm>();
   const [editGeneratedQuestions, setEditGeneratedQuestions] = useState<{number: number; score: number}[]>([]);
+
+  // 预获取ID相关状态
+  const [reservedExamId, setReservedExamId] = useState<string | null>(null);
+  const [reservingId, setReservingId] = useState(false);
 
   // 步骤变更处理函数
   const handleStepChange = (step: number) => {
@@ -404,7 +448,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
   };
 
   // 打开创建考试模态框
-  const openExamCreation = () => {
+  const openExamCreation = async () => {
     setCurrentStep(ExamCreationStepEnum.BasicInfo);
     basicInfoForm.resetFields();
     scoreSettingsForm.resetFields();
@@ -412,11 +456,37 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     setGeneratedQuestions([]);
     // 重置上传文件状态
     setUploadedFiles({});
+    
+    // 预获取考试ID
+    try {
+      setReservingId(true);
+      const id = await onReserveExamId();
+      setReservedExamId(id);
+      message.success('已预分配考试ID');
+    } catch (error) {
+      console.error('预获取考试ID失败:', error);
+      message.error('预获取考试ID失败');
+      return;
+    } finally {
+      setReservingId(false);
+    }
+    
     setExamCreationVisible(true);
   };
 
   // 关闭创建考试模态框
-  const closeExamCreation = () => {
+  const closeExamCreation = async () => {
+    // 如果有预获取的ID且未完成创建，则删除预获取的ID
+    if (reservedExamId) {
+      try {
+        await onDeleteReservedExamId(reservedExamId);
+        setReservedExamId(null);
+        message.info('已取消预分配的考试ID');
+      } catch (error) {
+        console.error('删除预获取ID失败:', error);
+        // 不显示错误信息，避免打扰用户
+      }
+    }
     setExamCreationVisible(false);
   };
 
@@ -487,6 +557,10 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       }
       
       message.success('考试创建成功');
+      
+      // 清除预获取的ID状态（创建成功后不需要删除）
+      setReservedExamId(null);
+      
       closeExamCreation();
     } catch (error) {
       console.error('创建考试失败:', error);
@@ -578,21 +652,23 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       
       // 计算总分
       const totalScore = questions.reduce((sum: number, q: {number: number; score: number}) => sum + (q.score || 0), 0);
-      // 更新基本信息中的总分
-      basicInfoForm.setFieldValue('totalScore', totalScore);
+      // 更新基本信息中的总分，保留一位小数
+      basicInfoForm.setFieldValue('totalScore', Math.round(totalScore * 10) / 10);
     }
   };
 
   // 计算当前设置分数的总和
   const calculateTotalSetScore = () => {
     const questions = scoreSettingsForm.getFieldValue('questions') || [];
-    return questions.reduce((sum: number, q: {number: number; score: number}) => sum + (q.score || 0), 0);
+    const total = questions.reduce((sum: number, q: {number: number; score: number}) => sum + (q.score || 0), 0);
+    return Math.round(total * 10) / 10; // 保留一位小数
   };
   
   // 计算编辑模式下当前设置分数的总和
   const calculateEditTotalSetScore = () => {
     const questions = editScoreSettingsForm.getFieldValue('questions') || [];
-    return questions.reduce((sum: number, q: {number: number; score: number}) => sum + (q.score || 0), 0);
+    const total = questions.reduce((sum: number, q: {number: number; score: number}) => sum + (q.score || 0), 0);
+    return Math.round(total * 10) / 10; // 保留一位小数
   };
   
   // 编辑模式下分数输入变化处理
@@ -604,8 +680,8 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       
       // 计算总分
       const totalScore = questions.reduce((sum: number, q: {number: number; score: number}) => sum + (q.score || 0), 0);
-      // 更新基本信息中的总分
-      editBasicInfoForm.setFieldValue('totalScore', totalScore);
+      // 更新基本信息中的总分，保留一位小数
+      editBasicInfoForm.setFieldValue('totalScore', Math.round(totalScore * 10) / 10);
     }
   };
   
@@ -682,9 +758,10 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     {
       title: '操作',
       key: 'action',
-      width: 200,
+      width: 180,
+      fixed: 'right' as const,
       render: (_: any, record: Exam) => (
-        <Space size="small" wrap>
+        <Space size={4}>
           <Button
             type="primary"
             size="small"
@@ -698,11 +775,12 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
             icon={<EditOutlined />}
             onClick={() => handleEditExam(record, true)}
           >
-            编辑与设置
+            编辑
           </Button>
           {record.status === 'draft' ? (
             <Popconfirm
-              title="确定要发布这个考试吗？"
+              title="发布考试"
+              description="确定要发布这个考试吗？"
               onConfirm={() => onPublishExam(record.id)}
               okText="确定"
               cancelText="取消"
@@ -711,13 +789,12 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                 size="small"
                 icon={<PlayCircleOutlined />}
                 style={{ color: '#52c41a' }}
-              >
-                发布
-              </Button>
+              />
             </Popconfirm>
           ) : record.status === 'published' ? (
             <Popconfirm
-              title="确定要撤回这个考试吗？"
+              title="撤回考试"
+              description="确定要撤回这个考试吗？"
               onConfirm={() => onUnpublishExam(record.id)}
               okText="确定"
               cancelText="取消"
@@ -726,15 +803,13 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                 size="small"
                 icon={<StopOutlined />}
                 style={{ color: '#fa8c16' }}
-              >
-                撤回
-              </Button>
+              />
             </Popconfirm>
           ) : null}
           {(record.status === 'draft' || record.status === 'published') && (
             <Popconfirm
-              title="确定要删除这个考试吗？"
-              description="删除后将无法恢复"
+              title="删除考试"
+              description="删除后将无法恢复，确定要删除吗？"
               onConfirm={() => onDeleteExam(record.id)}
               okText="确定"
               cancelText="取消"
@@ -743,9 +818,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                 size="small"
                 danger
                 icon={<DeleteOutlined />}
-              >
-                删除
-              </Button>
+              />
             </Popconfirm>
           )}
         </Space>
@@ -933,7 +1006,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       }));
       
       await onSetQuestionScores(selectedExam.id, questions);
-      message.success(`已为考试《${selectedExam.title}》设置${totalQuestions}道题目，每题${defaultScore}分`);
+      message.success(`已为考试《${selectedExam.title}》设置${totalQuestions}道题目，每题${defaultScore.toFixed(1)}分`);
       setScoreSettingsVisible(false);
     } catch (error) {
       message.error('分值设置失败');
@@ -1033,7 +1106,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
             pagination={{ pageSize: 10 }}
             size="small"
             className="responsive-table"
-            scroll={{ x: 720 }}
+            scroll={{ x: 800 }}
           />
         </div>
       </Card>
@@ -1115,6 +1188,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                       max={1000}
                       style={{ width: '100%' }}
                       placeholder="请输入考试总分值"
+                      precision={1}
                     />
                   </Form.Item>
                 </Col>
@@ -1353,6 +1427,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                                 onChange={(value) => handleScoreChange(value, name)}
                                 addonAfter="分"
                                 style={{ width: '100%' }}
+                                precision={1}
                               />
                             </Form.Item>
                           </Col>
@@ -1399,8 +1474,8 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                     <div style={{ textAlign: 'right', marginTop: 16, padding: '12px', background: '#f6ffed', borderRadius: '6px' }}>
                       <Text strong>
                         总题数：{scoreSettingsForm.getFieldValue('questions')?.length || 0} 题，
-                        总分：{calculateTotalSetScore()} 分，
-                        基本信息设置总分：{basicInfoForm.getFieldValue('totalScore') || 0} 分
+                        总分：{calculateTotalSetScore().toFixed(1)} 分，
+                        基本信息设置总分：{(basicInfoForm.getFieldValue('totalScore') || 0).toFixed(1)} 分
                       </Text>
                     </div>
                   </>
@@ -1444,7 +1519,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                   <Descriptions.Item label="考试标题">{basicInfoForm.getFieldValue('title')}</Descriptions.Item>
                   <Descriptions.Item label="详细信息">{basicInfoForm.getFieldValue('description')}</Descriptions.Item>
                   <Descriptions.Item label="题目数量">{basicInfoForm.getFieldValue('totalQuestions')} 题</Descriptions.Item>
-                  <Descriptions.Item label="总分值">{basicInfoForm.getFieldValue('totalScore')} 分</Descriptions.Item>
+                  <Descriptions.Item label="总分值">{(basicInfoForm.getFieldValue('totalScore') || 0).toFixed(1)} 分</Descriptions.Item>
                   <Descriptions.Item label="考试时长">{basicInfoForm.getFieldValue('duration')} 分钟</Descriptions.Item>
                   <Descriptions.Item label="考试时间">
                     {basicInfoForm.getFieldValue('examTime') ? 
@@ -2215,6 +2290,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                                 onChange={(value) => handleEditScoreChange(value, name)}
                                 addonAfter="分"
                                 style={{ width: '100%' }}
+                                precision={1}
                               />
                             </Form.Item>
                           </Col>
@@ -2261,8 +2337,8 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                     <div style={{ textAlign: 'right', marginTop: 16, padding: '12px', background: '#f6ffed', borderRadius: '6px' }}>
                       <Text strong>
                         总题数：{editScoreSettingsForm.getFieldValue('questions')?.length || 0} 题，
-                        总分：{calculateEditTotalSetScore()} 分，
-                        基本信息设置总分：{editBasicInfoForm.getFieldValue('totalScore') || 0} 分
+                        总分：{calculateEditTotalSetScore().toFixed(1)} 分，
+                        基本信息设置总分：{(editBasicInfoForm.getFieldValue('totalScore') || 0).toFixed(1)} 分
                       </Text>
                     </div>
                   </>
@@ -2308,7 +2384,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                   <Descriptions.Item label="考试标题">{editBasicInfoForm.getFieldValue('title')}</Descriptions.Item>
                   <Descriptions.Item label="详细信息">{editBasicInfoForm.getFieldValue('description')}</Descriptions.Item>
                   <Descriptions.Item label="题目数量">{editBasicInfoForm.getFieldValue('totalQuestions')} 题</Descriptions.Item>
-                  <Descriptions.Item label="总分值">{editBasicInfoForm.getFieldValue('totalScore')} 分</Descriptions.Item>
+                  <Descriptions.Item label="总分值">{(editBasicInfoForm.getFieldValue('totalScore') || 0).toFixed(1)} 分</Descriptions.Item>
                   <Descriptions.Item label="考试时长">{editBasicInfoForm.getFieldValue('duration')} 分钟</Descriptions.Item>
                   <Descriptions.Item label="考试时间">
                     {editBasicInfoForm.getFieldValue('examTime') ? 
@@ -2396,7 +2472,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                   <Tag color="blue" icon="⏱️">{selectedExam?.duration || 0} 分钟</Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="题目数量">
-                  <Tag color="cyan" icon="📝">{selectedExam?.totalQuestions || 0} 题</Tag>
+                  <Tag color="cyan" icon="📝">{selectedExam?.totalQuestions ||  0} 题</Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="参与人数">
                   <Tag color="green" icon="👥">{selectedExam?.participants?.length || 0} 人</Tag>
@@ -2657,6 +2733,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                       placeholder="例如：5"
                       style={{ width: '100%' }}
                       addonAfter="分"
+                      precision={1}
                     />
                   </Form.Item>
                 </Col>

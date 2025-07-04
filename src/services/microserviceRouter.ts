@@ -396,13 +396,13 @@ export class MicroserviceRouter {
     }
     
     if (path.startsWith('/api/admin/')) {
-      // 管理员相关请求优先级：用户管理 > 考试管理 > 阅卷管理 > 区域管理 > 系统配置
+      // 管理员相关请求优先级：系统配置 > 用户管理 > 考试管理 > 阅卷管理 > 区域管理
+      if (path.includes('system') || path.includes('settings')) return MICROSERVICE_CONFIG.systemConfig;
       if (path.includes('users') || path.includes('coach-students') || path.includes('student-registrations')) return MICROSERVICE_CONFIG.userManagement;
       if (path.includes('exam') && !path.includes('grading') && !path.includes('questions/scores')) return MICROSERVICE_CONFIG.examManagement;
       if (path.includes('grading') || path.includes('graders') || path.includes('questions/scores')) return MICROSERVICE_CONFIG.grading;
       if (path.includes('regions') || path.includes('change-requests')) return MICROSERVICE_CONFIG.regionManagement;
       if (path.includes('dashboard')) return MICROSERVICE_CONFIG.scoreStatistics;
-      if (path.includes('system') || path.includes('settings')) return MICROSERVICE_CONFIG.systemConfig;
       return MICROSERVICE_CONFIG.userManagement; // 默认用户管理
     }
     

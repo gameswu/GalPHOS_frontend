@@ -349,6 +349,28 @@ class AdminAPI extends BaseAPI {
     return FileUploadService.default.uploadExamFiles(files, examId);
   }
 
+  // 预申请考试ID（用于文件上传）
+  static async reserveExamId(): Promise<ApiResponse<{ examId: string }>> {
+    return this.makeRequest<{ examId: string }>(
+      `/api/admin/exams/reserve`,
+      {
+        method: 'POST',
+        body: JSON.stringify({}),
+      },
+      '预申请考试ID'
+    );
+  }
+
+  // 删除预申请的考试ID
+  static async deleteReservedExamId(examId: string): Promise<ApiResponse<any>> {
+    this.validateRequired(examId, '考试ID');
+
+    return this.makeRequest<any>(
+      `/api/admin/exams/reserve/${examId}`,
+      { method: 'DELETE' },
+      '删除预申请的考试ID'
+    );
+  }
   // ===================== 题目分值管理模块 =====================
   
   // 设置考试题目分值

@@ -88,6 +88,9 @@ interface AdminContentProps {
   onSetQuestionScores: (examId: string, questions: { number: number; score: number }[]) => Promise<any>;
   onGetQuestionScores: (examId: string) => Promise<any>;
   onUpdateSingleQuestionScore: (examId: string, questionNumber: number, score: number) => Promise<any>;
+  // 考试ID管理方法
+  onReserveExamId: () => Promise<string>;
+  onDeleteReservedExamId: (examId: string) => Promise<void>;
   onAssignGradingTask: (examId: string, questionNumber: number, graderIds: string[]) => Promise<void>;
   onGetGradingProgress: (examId: string) => any;
   onUpdateGradingProgress: (taskId: string) => Promise<void>;
@@ -748,6 +751,9 @@ const AdminContent: React.FC<AdminContentProps> = ({
   onSetQuestionScores,
   onGetQuestionScores,
   onUpdateSingleQuestionScore,
+  // 考试ID管理方法
+  onReserveExamId,
+  onDeleteReservedExamId,
   onAssignGradingTask,
   onGetGradingProgress,
   onUpdateGradingProgress,
@@ -822,6 +828,8 @@ const AdminContent: React.FC<AdminContentProps> = ({
           onSetQuestionScores={onSetQuestionScores}
           onGetQuestionScores={onGetQuestionScores}
           onUpdateSingleQuestionScore={onUpdateSingleQuestionScore}
+          onReserveExamId={onReserveExamId}
+          onDeleteReservedExamId={onDeleteReservedExamId}
         />
       );
     

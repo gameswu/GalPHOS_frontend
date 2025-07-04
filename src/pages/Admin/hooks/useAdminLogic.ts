@@ -1096,6 +1096,48 @@ export const useAdminLogic = () => {
     }
   }, []);
 
+
+  // 预留考试ID
+  const reserveExamId = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await AdminAPI.reserveExamId();
+      if (response.success && response.data) {
+        notification.showSuccess('考试ID预留成功');
+        return response.data.examId;
+      } else {
+        notification.showError(response.message || '预留考试ID失败');
+        throw new Error(response.message || '预留考试ID失败');
+      }
+    } catch (error) {
+      console.error('预留考试ID失败:', error);
+      notification.showError('网络错误，预留考试ID失败');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 删除预留的考试ID
+  const deleteReservedExamId = useCallback(async (examId: string) => {
+    try {
+      setLoading(true);
+      const response = await AdminAPI.deleteReservedExamId(examId);
+      if (response.success) {
+        notification.showSuccess('预留考试ID已删除');
+      } else {
+        notification.showError(response.message || '删除预留考试ID失败');
+        throw new Error(response.message || '删除预留考试ID失败');
+      }
+    } catch (error) {
+      console.error('删除预留考试ID失败:', error);
+      notification.showError('网络错误，删除预留考试ID失败');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // 更新个人资料
   const updateProfile = useCallback(async (data: { username: string; avatar?: string }) => {
     try {
@@ -1176,6 +1218,9 @@ export const useAdminLogic = () => {
     setQuestionScores,
     getQuestionScores,
     updateSingleQuestionScore,
+    // 考试ID管理方法
+    reserveExamId,
+    deleteReservedExamId,
     // 阅卷管理方法
     assignGradingTask,
     getGradingProgress,
