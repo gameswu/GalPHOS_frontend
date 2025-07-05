@@ -190,13 +190,17 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
   };
 
   // 管理员操作
-  const handleEditAdmin = (admin: AdminUser) => {
-    setEditingAdmin(admin);
-    adminForm.setFieldsValue({
-      username: admin.username,
-      status: admin.status
-    });
-    setAdminModalVisible(true);
+  const handleEditAdmin = async (admin: AdminUser) => {
+    try {
+      // 直接切换用户状态，不再显示模态框
+      const newStatus = admin.status === 'active' ? 'disabled' : 'active';
+      await onUpdateAdmin(admin.id, {
+        status: newStatus
+      });
+      message.success(`管理员已${newStatus === 'active' ? '启用' : '禁用'}`);
+    } catch (error) {
+      message.error('状态更新失败');
+    }
   };
 
   const handleAddAdmin = () => {
@@ -349,13 +353,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                 rowKey="id"
                 pagination={false}
               >
-                <Table.Column
-                  title="头像"
-                  dataIndex="avatar"
-                  render={(avatar: string) => (
-                    <Avatar src={avatar} icon={<UserOutlined />} />
-                  )}
-                />
                 <Table.Column title="用户名" dataIndex="username" />
                 <Table.Column
                   title="角色"
@@ -376,22 +373,17 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                   )}
                 />
                 <Table.Column
-                  title="最后登录"
-                  dataIndex="lastLoginAt"
-                  render={(time: string) => time ? new Date(time).toLocaleString() : '从未登录'}
-                />
-                <Table.Column
                   title="操作"
                   render={(_, record: AdminUser) => (
                     <Space>
                       <Button
-                        type="link"
+                        type="primary"
+                        danger={record.status === 'active'}
                         size="small"
-                        icon={<EditOutlined />}
                         onClick={() => handleEditAdmin(record)}
                         disabled={record.id === currentAdmin?.id}
                       >
-                        编辑
+                        {record.status === 'active' ? '禁用' : '启用'}
                       </Button>
                       <Button
                         type="link"
