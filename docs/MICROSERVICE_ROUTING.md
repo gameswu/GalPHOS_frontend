@@ -15,12 +15,12 @@
 | 3003 | Exam Management Service | `examManagement` | 考试完整生命周期管理服务 | 8个 |
 | 3004 | Submission Service | `submission` | 答题卡提交和管理服务 | 6个 |
 | 3005 | Grading Service | `grading` | 阅卷任务分配和过程管理服务 | 17个 |
-| 3006 | Score Statistics Service | `scoreStatistics` | 成绩数据分析和排名计算服务 | 12个 |
+| 3006 | Score Statistics Service | `scoreStatistics` | 成绩数据分析和排名计算服务 | 15个 |
 | 3007 | Region Management Service | `regionManagement` | 省份学校等地理信息管理服务 | 17个 |
-| 3008 | File Storage Service | `fileStorage` | 文件上传存储和访问管理服务 | 8个 |
+| 3008 | File Storage Service | `fileStorage` | 文件上传存储和访问管理服务 | 5个 |
 | 3009 | System Configuration Service | `systemConfig` | 系统全局配置管理服务 | 4个 |
 
-**总计**: 99个API接口
+**总计**: 96个API接口
 
 ## API 路径分配策略
 
@@ -209,7 +209,7 @@
 
 ### 6. 成绩统计服务 (localhost:3006)
 
-**负责成绩数据分析和排名计算，共12个API端点**
+**负责成绩数据分析和排名计算，共15个API端点**
 
 ```
 # 学生成绩查看和仪表板（统一规范 v1.2.0）
@@ -225,6 +225,11 @@
 /api/coach/students/{studentId}/exams/{examId}/score # 教练查看学生成绩
 /api/coach/dashboard/stats             # 教练仪表板统计数据
 
+# 教练成绩统计和导出（从文件服务迁移）
+/api/coach/exams/{examId}/ranking      # 教练考试排名数据
+/api/coach/exams/{examId}/scores/statistics # 教练成绩统计
+/api/coach/exams/{examId}/scores/export # 教练成绩导出
+
 # 阅卷员统计和仪表板（简化版 v1.3.0）
 /api/grader/statistics                 # 阅卷员统计数据（不含平均分）
 /api/grader/dashboard/stats            # 阅卷员仪表板统计数据（简化版）
@@ -238,6 +243,7 @@
 - 成绩计算与统计分析
 - 排名生成与更新
 - 多维度数据分析
+- **统一成绩导出功能**：所有成绩相关的统计、排名、导出都集中在此服务
 - **统一仪表盘数据聚合**：所有角色使用 `/dashboard/stats` 路径
 
 ### 7. 区域管理服务 (localhost:3007)
@@ -279,7 +285,7 @@
 
 ### 8. 文件存储服务 (localhost:3008)
 
-**负责文件上传存储和访问管理，共8个API端点**
+**负责文件上传存储和访问管理，共5个API端点**
 
 ```
 # 学生文件管理
@@ -287,11 +293,6 @@
 
 # 图片文件管理
 /api/grader/images                     # 阅卷图片查看
-
-# 考试文件管理
-/api/coach/exams/{examId}/ranking      # 教练考试排名导出
-/api/coach/exams/{examId}/scores/export # 教练成绩导出
-/api/coach/exams/{examId}/scores/statistics # 教练成绩统计
 
 # 通用文件上传（统一规范 v1.3.4）
 /api/upload/file*                      # 通用文件上传
@@ -301,13 +302,12 @@
 ```
 
 **功能说明**：
-- **头像上传通过用户管理服务**：各角色通过各自的profile API上传头像，后端实现微服务通信
-- 文件存储与访问控制
+- **纯文件存储功能**：专注于文件的上传、下载、存储管理
 - 文件权限控制
-- **统一文件删除接口**：通过DELETE方法删除文件
 - 文件生命周期管理
-- 头像、答题卡等各类文件
+- 头像、答题卡等各类文件存储
 - **学生文件访问**：独立学生账号的文件下载权限
+- **注意**：成绩导出、排名等业务逻辑已迁移至成绩统计服务(3006)
 
 ### 9. 系统配置服务 (localhost:3009)
 
@@ -354,9 +354,10 @@
 #### 教练请求路由优先级
 1. **代理提交管理** → 答题提交服务
 2. **考试基础管理** → 考试管理服务  
-3. **成绩统计分析** → 成绩统计服务
+3. **成绩统计分析（含导出、排名）** → 成绩统计服务
 4. **非独立学生管理** → 阅卷管理服务
 5. **个人资料管理** → 用户管理服务
+6. **纯文件存储** → 文件存储服务
 
 #### 独立学生请求路由优先级
 1. **自主提交答卷** → 答题提交服务
@@ -479,15 +480,29 @@ const allConfigs = microserviceRouter.getAllServiceConfigs();
 
 ## 版本信息
 
-- **文档版本**: 1.3.0
+- **文档版本**: 1.3.1
 - **架构版本**: 基于 docs/README.md 微服务设计
-- **API覆盖**: 完整映射所有前端API接口（99个接口）
-- **更新日期**: 2025年7月1日
-- **主要更新**: API精简优化 - 分值设置、阅卷者管理、文件上传等接口简化统一
+- **API覆盖**: 完整映射所有前端API接口（96个接口）
+- **更新日期**: 2025年7月6日
+- **主要更新**: 
+  - API精简优化 - 分值设置、阅卷者管理、文件上传等接口简化统一
+  - **修正服务职责划分**：将成绩相关API统一迁移至成绩统计服务，消除路径冲突
 
 ## 文档说明
 
 本文档替代了原有的 `API_COVERAGE_REPORT.md` 和 `API_DOCS_UPDATE_REPORT.md`，成为微服务架构下API接口映射的唯一权威文档。
+
+### v1.3.1 更新内容（2025年7月6日）：
+
+1. **服务职责划分优化**：
+   - 将教练成绩相关API从文件存储服务(3008)迁移至成绩统计服务(3006)
+   - 消除了API路径冲突和职责模糊问题
+   - 文件存储服务回归纯文件管理职责
+
+2. **API路径冲突解决**：
+   - 统一所有成绩、排名、统计相关API到成绩统计服务
+   - 文件存储服务专注于文件上传、下载、存储管理
+   - 路由优先级重新调整，确保清晰的服务边界
 
 ### v1.3.0 更新内容：
 

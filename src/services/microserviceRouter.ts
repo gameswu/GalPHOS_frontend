@@ -132,6 +132,10 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/coach/dashboard/stats*',      // 统一仪表板路径 v1.2.0
       '/api/coach/students/*/exams/*/score*',
       '/api/coach/students/scores*',
+      // 教练成绩统计和导出（从文件服务迁移 v1.3.1）
+      '/api/coach/exams/*/ranking*',      // 教练考试排名数据
+      '/api/coach/exams/*/scores/statistics*', // 教练成绩统计
+      '/api/coach/exams/*/scores/export*',     // 教练成绩导出
       // 阅卷员统计
       '/api/grader/statistics*',
       '/api/grader/dashboard/stats*',     // 新增阅卷员仪表板 v1.2.0
@@ -139,7 +143,7 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       // 管理员统计数据
       '/api/admin/dashboard/stats*'       // 统一仪表板路径 v1.2.0
     ],
-    description: '成绩数据分析和排名计算服务 - v1.2.0统一所有角色仪表板API',
+    description: '成绩数据分析和排名计算服务 - v1.2.0统一所有角色仪表板API, v1.3.1统一成绩导出功能',
     healthCheck: '/health'
   },
 
@@ -174,18 +178,14 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/student/files/*',
       // 阅卷图片管理
       '/api/grader/images*',
-      // 考试文件导出
-      '/api/coach/exams/*/ranking*',
-      '/api/coach/exams/*/scores/export*',
-      '/api/coach/exams/*/scores/statistics*',
       
-      // 通用文件API（不包含头像上传，头像由各角色profile API内部处理）
+      // 通用文件API（不包含头像上传和成绩导出，头像由各角色profile API内部处理）
       '/api/upload/file*',
       '/api/upload/document*',
       '/api/download*',
       '/api/files*'
     ],
-    description: '文件上传存储和访问管理服务 - v1.3.4版：头像上传通过各角色profile API内部处理',
+    description: '文件上传存储和访问管理服务 - v1.3.4版：头像上传通过各角色profile API内部处理, v1.3.1版：成绩导出迁移至成绩统计服务',
     healthCheck: '/health'
   },
 
@@ -214,6 +214,11 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
 /**
  * 微服务路由器
  * 根据API路径自动路由到对应的微服务
+ * 
+ * v1.3.1 更新：修正服务职责划分
+ * - 将成绩相关API（排名、统计、导出）统一迁移至成绩统计服务(3006)
+ * - 文件存储服务(3008)回归纯文件管理职责
+ * - 消除API路径冲突，确保清晰的服务边界
  */
 export class MicroserviceRouter {
   private static instance: MicroserviceRouter;
@@ -337,9 +342,10 @@ export class MicroserviceRouter {
       return MICROSERVICE_CONFIG.grading;
     }
     
-    // 6. 成绩统计相关
+    // 6. 成绩统计相关（包含导出、排名、统计）
     if (path.includes('/scores') || path.includes('/ranking') || path.includes('/dashboard') || 
-        path.includes('/statistics') || path.includes('/history')) {
+        path.includes('/statistics') || path.includes('/history') || path.includes('/grades') ||
+        path.includes('/scores/export') || path.includes('/scores/statistics')) {
       return MICROSERVICE_CONFIG.scoreStatistics;
     }
     
@@ -348,10 +354,13 @@ export class MicroserviceRouter {
       return MICROSERVICE_CONFIG.regionManagement;
     }
     
-    // 8. 文件存储相关（通用文件上传，排除特定提交上传和头像上传）
+    // 8. 文件存储相关（排除成绩导出，专注于纯文件操作）
     if (path.includes('/files') || path.includes('/download') || path.includes('/images') ||
         (path.includes('/upload/file') || path.includes('/upload/document'))) {
-      return MICROSERVICE_CONFIG.fileStorage;
+      // 排除成绩相关的文件操作，这些应该路由到成绩统计服务
+      if (!path.includes('/scores/export') && !path.includes('/ranking') && !path.includes('/scores/statistics')) {
+        return MICROSERVICE_CONFIG.fileStorage;
+      }
     }
     
     // 9. 系统配置相关（仅匹配精确的系统配置路径 - 增强版精确匹配）
@@ -377,21 +386,22 @@ export class MicroserviceRouter {
     }
     
     if (path.startsWith('/api/coach/')) {
-      // 教练相关请求优先级：代理提交管理 > 考试管理 > 成绩统计 > 非独立学生管理 > 地区变更 > 文件导出 > 用户管理
+      // 教练相关请求优先级：代理提交管理 > 考试管理 > 成绩统计（含导出、排名） > 非独立学生管理 > 地区变更 > 用户管理 > 纯文件存储
       if (path.includes('submission') || path.includes('upload-answer')) return MICROSERVICE_CONFIG.submission;
       if (path.includes('exam') && !path.includes('submission') && !path.includes('scores') && !path.includes('ranking')) return MICROSERVICE_CONFIG.examManagement;
-      if (path.includes('score') || path.includes('statistics') || path.includes('ranking') || path.includes('dashboard') || path.includes('grades')) return MICROSERVICE_CONFIG.scoreStatistics;
+      if (path.includes('score') || path.includes('statistics') || path.includes('ranking') || path.includes('dashboard') || 
+          path.includes('grades') || path.includes('scores/export') || path.includes('scores/statistics')) return MICROSERVICE_CONFIG.scoreStatistics;
       if (path.includes('students') && !path.includes('scores')) return MICROSERVICE_CONFIG.grading; // 非独立学生管理
       if (path.includes('region-change')) return MICROSERVICE_CONFIG.regionManagement;
-      if (path.includes('exams') && (path.includes('export') || path.includes('statistics'))) return MICROSERVICE_CONFIG.fileStorage;
+      if (path.includes('files') || path.includes('images')) return MICROSERVICE_CONFIG.fileStorage; // 纯文件操作
       return MICROSERVICE_CONFIG.userManagement; // 教练个人资料管理
     }
     
     if (path.startsWith('/api/grader/')) {
-      // 阅卷员相关请求优先级：阅卷任务 > 成绩统计 > 文件 > 用户管理
+      // 阅卷员相关请求优先级：阅卷任务 > 成绩统计 > 纯文件操作 > 用户管理
       if (path.includes('task') || path.includes('submission')) return MICROSERVICE_CONFIG.grading;
       if (path.includes('statistics') || path.includes('history') || path.includes('dashboard')) return MICROSERVICE_CONFIG.scoreStatistics;
-      if (path.includes('file') || path.includes('image')) return MICROSERVICE_CONFIG.fileStorage;
+      if (path.includes('images') || path.includes('files')) return MICROSERVICE_CONFIG.fileStorage; // 纯文件操作
       return MICROSERVICE_CONFIG.userManagement;
     }
     
