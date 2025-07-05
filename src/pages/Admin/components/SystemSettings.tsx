@@ -37,7 +37,9 @@ import {
   LockOutlined,
   ReloadOutlined,
   GithubOutlined,
-  HeartOutlined
+  HeartOutlined,
+  StopOutlined,
+  PlayCircleOutlined
 } from '@ant-design/icons';
 import type { 
   SystemSettings as SystemSettingsType,
@@ -376,15 +378,28 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({
                   title="操作"
                   render={(_, record: AdminUser) => (
                     <Space>
-                      <Button
-                        type="primary"
-                        danger={record.status === 'active'}
-                        size="small"
-                        onClick={() => handleEditAdmin(record)}
-                        disabled={record.id === currentAdmin?.id}
-                      >
-                        {record.status === 'active' ? '禁用' : '启用'}
-                      </Button>
+                      {record.status === 'active' ? (
+                        <Button
+                          size="small"
+                          icon={<StopOutlined />}
+                          onClick={() => handleEditAdmin(record)}
+                          disabled={record.id === currentAdmin?.id}
+                          loading={loading}
+                        >
+                          禁用
+                        </Button>
+                      ) : (
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<PlayCircleOutlined />}
+                          onClick={() => handleEditAdmin(record)}
+                          disabled={record.id === currentAdmin?.id}
+                          loading={loading}
+                        >
+                          启用
+                        </Button>
+                      )}
                       <Button
                         type="link"
                         size="small"
