@@ -266,27 +266,46 @@ interface ApiResponse<T> {
 - `fileType`: question | answerSheet | result
 
 ### 2.4 获取考试成绩统计
-**接口**: `GET /exams/{examId}/score-stats`
+**接口**: `GET /api/coach/exams/{examId}/scores/statistics`
 
-**描述**: 获取指定考试的成绩统计信息，用于历史考试页面的教练视图
+**描述**: 获取指定考试的成绩统计信息，用于历史考试页面的教练视图（精简版数据结构 v1.3.3）
+
+**路径参数**:
+- `examId` (string): 考试ID
 
 **响应**:
 ```typescript
 {
   success: true,
-  data: {
-    totalStudents: 10,
-    submittedStudents: 8,
-    averageScore: 75.2,
-    scores: [
-      {
-        studentId: "student001",
-        studentName: "李学生",
-        score: 85,
-        submittedAt: "2025-01-01T10:00:00Z"
-      }
-    ]
-  }
+  data: [
+    {
+      id: "score001",
+      examId: "exam001",
+      examTitle: "2024年春季数学竞赛",
+      studentId: "managed_stu_001",
+      studentName: "张三",
+      username: "zhangsan001",
+      totalScore: 85,
+      questionScores: [
+        {
+          questionNumber: 1,
+          score: 8,
+          maxScore: 10
+        },
+        {
+          questionNumber: 2,
+          score: 7,
+          maxScore: 10
+        }
+      ],
+      totalRank: 12,
+      regionRank: 5,
+      status: "graded",
+      submittedAt: "2024-03-20T11:45:00Z",
+      gradedAt: "2024-03-21T09:30:00Z"
+    }
+  ],
+  message: "获取考试成绩统计成功"
 }
 ```
 
@@ -398,26 +417,52 @@ interface ApiResponse<T> {
 > **权限说明**: 教练可以查看所有管理学生的成绩，学生本人无法直接查看，需要通过教练获取成绩信息。
 
 ### 4.1 获取学生成绩概览
-**接口**: `GET /api/coach/grades/overview`
+**接口**: `GET /api/coach/students/scores`
 
-**描述**: 获取教练管理学生的成绩统计概览
+**描述**: 获取教练管理学生的成绩统计概览，精简版数据结构
+
+**查询参数**:
+- `page?` (number): 页码，默认1
+- `limit?` (number): 每页数量，默认20
+- `studentId?` (string): 特定学生ID
+- `examId?` (string): 特定考试ID
+- `status?` (string): 成绩状态
+- `search?` (string): 搜索关键词
 
 **响应**:
 ```typescript
 {
   success: true,
-  data: {
-    totalExams: 5,                    // 参与的考试总数
-    totalStudents: 10,                // 管理的学生总数
-    avgScore: 78.5,                   // 平均分
-    passRate: 85.5,                   // 及格率（%）
-    topStudents: [                    // 优秀学生（教练管理的学生中）
-      {
-        studentId: "managed_stu_001",
-        studentUsername: "zhangsan001",
-        avgScore: 92.5,
-        examCount: 5,
-        lastExamDate: "2024-03-01"
+  data: [
+    {
+      id: "score001",
+      examId: "exam001",
+      examTitle: "2024年春季数学竞赛",
+      studentId: "managed_stu_001",
+      studentName: "张三",
+      username: "zhangsan001",
+      totalScore: 85,
+      questionScores: [
+        {
+          questionNumber: 1,
+          score: 8,
+          maxScore: 10
+        },
+        {
+          questionNumber: 2,
+          score: 7,
+          maxScore: 10
+        }
+      ],
+      totalRank: 12,
+      regionRank: 5,
+      status: "graded",
+      submittedAt: "2024-03-20T11:45:00Z",
+      gradedAt: "2024-03-21T09:30:00Z"
+    }
+  ],
+  message: "获取成绩概览成功"
+}
       }
     ],
     recentExams: [                    // 最近考试统计
@@ -546,10 +591,10 @@ interface ApiResponse<T> {
 }
 ```
 
-### 4.5 获取学生详细成绩
-**接口**: `GET /api/coach/grades/student/{studentId}/exam/{examId}`
+### 4.2 获取学生单次考试成绩详情
+**接口**: `GET /api/coach/students/{studentId}/exams/{examId}/score`
 
-**描述**: 获取特定学生在特定考试中的详细成绩
+**描述**: 获取特定学生在特定考试中的详细成绩，精简版数据结构
 
 **路径参数**:
 - `studentId` (string): 学生ID
@@ -560,37 +605,32 @@ interface ApiResponse<T> {
 {
   success: true,
   data: {
-    studentInfo: {
-      id: "managed_stu_001",
-      username: "zhangsan001"
-    },
-    examInfo: {
-      id: "exam_001",
-      title: "2024年物理竞赛初赛",
-      date: "2024-03-01"
-    },
-    scoreDetails: {
-      totalScore: 85,
-      maxScore: 100,
-      percentage: 85.0,
-      rank: 12,
-      totalParticipants: 150,
-      questionScores: [
-        {
-          questionNumber: 1,
-          score: 8,
-          maxScore: 10,
-          feedback: "计算正确，步骤清晰"
-        },
-        {
-          questionNumber: 2,
-          score: 6,
-          maxScore: 10,
-          feedback: "方法正确，但计算有误"
-        }
-      ]
-    }
-  }
+    id: "score001",
+    examId: "exam001",
+    examTitle: "2024年春季数学竞赛",
+    studentId: "managed_stu_001",
+    studentName: "张三",
+    username: "zhangsan001",
+    totalScore: 85,
+    questionScores: [
+      {
+        questionNumber: 1,
+        score: 8,
+        maxScore: 10
+      },
+      {
+        questionNumber: 2,
+        score: 7,
+        maxScore: 10
+      }
+    ],
+    totalRank: 12,
+    regionRank: 5,
+    status: "graded",
+    submittedAt: "2024-03-20T11:45:00Z",
+    gradedAt: "2024-03-21T09:30:00Z"
+  },
+  message: "获取学生成绩详情成功"
 }
 ```
 

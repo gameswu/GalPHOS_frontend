@@ -6,7 +6,7 @@ import GraderAPI from '../api/grader';
 import { ScoreValidator } from '../utils/scoreValidator';
 import { 
   Question as BaseQuestion,
-  QuestionScore,
+  GradingQuestionScore,
   ExamSubmission
 } from '../types/common';
 import './GradingInterface.css';
@@ -40,7 +40,7 @@ const GradingInterface: React.FC<GradingInterfaceProps> = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [questions, setQuestions] = useState<GradingQuestion[]>([]);
-  const [questionScores, setQuestionScores] = useState<QuestionScore[]>([]);
+  const [questionScores, setQuestionScores] = useState<GradingQuestionScore[]>([]);
   const [generalComments, setGeneralComments] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<number, string>>({});
   const [submissionData, setSubmissionData] = useState<any>(null);

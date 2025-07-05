@@ -1,36 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Statistic, Row, Col, Badge, Descriptions, Tag, Spin, message } from 'antd';
-import { TrophyOutlined, RiseOutlined, TeamOutlined } from '@ant-design/icons';
+import { TrophyOutlined, RiseOutlined } from '@ant-design/icons';
 import StudentAPI from '../api/student';
 import CoachAPI from '../api/coach';
-import { ScoreValidator } from '../utils/scoreValidator';
 import { 
   QuestionScore,
   ExamScore
 } from '../types/common';
-import './ScoreDetail.css';
-
-interface ScoreDetailData {
-  examId: string;
-  examTitle: string;
-  studentId: string;
-  studentName: string;
-  regionName?: string;
-  schoolName?: string;
-  totalScore: number;
-  maxTotalScore: number;
-  percentage: number;
-  questionScores: QuestionScore[];
-  totalRank?: number;
-  regionRank?: number;
-  schoolRank?: number;
-  totalParticipants?: number;
-  regionParticipants?: number;
-  schoolParticipants?: number;
-  submittedAt: string;
-  gradedAt?: string;
-  status: 'submitted' | 'grading' | 'graded';
-}
 
 interface ScoreDetailProps {
   examId: string;
@@ -38,17 +14,17 @@ interface ScoreDetailProps {
   userType: 'student' | 'coach';
 }
 
-const ScoreDetail: React.FC<ScoreDetailProps> = ({ examId, studentId, userType }) => {
-  const [loading, setLoading] = useState(false);
-  const [scoreData, setScoreData] = useState<ScoreDetailData | null>(null);
+const ScoreDetailSimplified: React.FC<ScoreDetailProps> = ({ examId, studentId, userType }) => {
+  const [loading, setLoading] = useState(true);
+  const [scoreData, setScoreData] = useState<ExamScore | null>(null);
 
   useEffect(() => {
-    loadScoreDetail();
-  }, [examId, studentId]);
+    loadScoreData();
+  }, [examId, studentId, userType]);
 
-  const loadScoreDetail = async () => {
-    setLoading(true);
+  const loadScoreData = async () => {
     try {
+      setLoading(true);
       let response;
       if (userType === 'student') {
         response = await StudentAPI.getScoreDetail(examId);
@@ -84,70 +60,42 @@ const ScoreDetail: React.FC<ScoreDetailProps> = ({ examId, studentId, userType }
     return <Badge status={config.status as any} text={config.text} />;
   };
 
-  const getRankDisplay = (rank?: number, total?: number) => {
-    if (!rank || !total) return '-';
-    const percentage = ((total - rank + 1) / total * 100).toFixed(1);
-    return (
-      <span>
-        第 <strong>{rank}</strong> 名 / {total}人
-        <br />
-        <small style={{ color: '#666' }}>超过 {percentage}% 的参与者</small>
-      </span>
-    );
-  };
-
-  const questionColumns = [
+  const columns = [
     {
       title: '题号',
       dataIndex: 'questionNumber',
       key: 'questionNumber',
       width: 80,
-      align: 'center' as const,
+      render: (num: number) => <strong>第{num}题</strong>
     },
     {
       title: '得分',
       key: 'score',
-      width: 100,
-      align: 'center' as const,
+      width: 120,
       render: (record: QuestionScore) => (
-        <span style={{ fontWeight: 'bold', fontSize: '16px' }}>
-          {record.score} / {record.maxScore}
-        </span>
-      ),
+        <div>
+          <span style={{ fontSize: '16px', fontWeight: 'bold' }}>
+            {record.score}
+          </span>
+          <span style={{ color: '#666', marginLeft: 4 }}>
+            / {record.maxScore}
+          </span>
+        </div>
+      )
     },
     {
       title: '得分率',
-      dataIndex: 'percentage',
       key: 'percentage',
       width: 100,
-      align: 'center' as const,
-      render: (percentage: number) => (
-        <Tag color={percentage >= 80 ? 'green' : percentage >= 60 ? 'orange' : 'red'}>
-          {percentage.toFixed(1)}%
-        </Tag>
-      ),
-    },
-    {
-      title: '评语',
-      dataIndex: 'comments',
-      key: 'comments',
-      render: (comments: string) => comments || '-',
-    },
-    {
-      title: '阅卷信息',
-      key: 'graderInfo',
-      width: 150,
-      render: (record: QuestionScore) => (
-        <div>
-          {record.graderName && <div>阅卷员: {record.graderName}</div>}
-          {record.gradedAt && (
-            <div style={{ fontSize: '12px', color: '#666' }}>
-              {new Date(record.gradedAt).toLocaleString()}
-            </div>
-          )}
-        </div>
-      ),
-    },
+      render: (record: QuestionScore) => {
+        const percentage = record.maxScore > 0 ? (record.score / record.maxScore) * 100 : 0;
+        return (
+          <Tag color={percentage >= 80 ? 'green' : percentage >= 60 ? 'orange' : 'red'}>
+            {percentage.toFixed(1)}%
+          </Tag>
+        );
+      }
+    }
   ];
 
   if (loading) {
@@ -173,142 +121,88 @@ const ScoreDetail: React.FC<ScoreDetailProps> = ({ examId, studentId, userType }
         <Descriptions column={2} size="small">
           <Descriptions.Item label="考试名称">{scoreData.examTitle}</Descriptions.Item>
           <Descriptions.Item label="学生姓名">{scoreData.studentName}</Descriptions.Item>
-          <Descriptions.Item label="所属赛区">{scoreData.regionName || '-'}</Descriptions.Item>
-          <Descriptions.Item label="所属学校">{scoreData.schoolName || '-'}</Descriptions.Item>
+          <Descriptions.Item label="用户名">{scoreData.username}</Descriptions.Item>
           <Descriptions.Item label="提交时间">
             {new Date(scoreData.submittedAt).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="阅卷状态">
             {getStatusBadge(scoreData.status)}
           </Descriptions.Item>
+          {scoreData.gradedAt && (
+            <Descriptions.Item label="阅卷时间">
+              {new Date(scoreData.gradedAt).toLocaleString()}
+            </Descriptions.Item>
+          )}
         </Descriptions>
       </Card>
 
       {/* 成绩统计 */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={8}>
           <Card>
             <Statistic
               title="总分"
               value={scoreData.totalScore}
-              suffix={`/ ${scoreData.maxTotalScore}`}
-              precision={1}
+              precision={0}
               valueStyle={{ color: '#1890ff', fontSize: '24px' }}
             />
-            <div style={{ marginTop: 8 }}>
-              <Tag color="blue" style={{ fontSize: '14px' }}>
-                {scoreData.percentage.toFixed(1)}%
-              </Tag>
-            </div>
           </Card>
         </Col>
         
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={8}>
           <Card>
             <Statistic
               title="总排名"
               value={scoreData.totalRank || 0}
               prefix={<TrophyOutlined />}
               valueStyle={{ color: '#faad14' }}
-              formatter={(value) => getRankDisplay(scoreData.totalRank, scoreData.totalParticipants)}
+              formatter={(value) => scoreData.totalRank ? `第 ${scoreData.totalRank} 名` : '暂无'}
             />
           </Card>
         </Col>
-        
-        <Col xs={24} sm={12} md={6}>
+
+        <Col xs={24} sm={8}>
           <Card>
             <Statistic
               title="赛区排名"
               value={scoreData.regionRank || 0}
               prefix={<RiseOutlined />}
               valueStyle={{ color: '#52c41a' }}
-              formatter={(value) => getRankDisplay(scoreData.regionRank, scoreData.regionParticipants)}
-            />
-          </Card>
-        </Col>
-        
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="校内排名"
-              value={scoreData.schoolRank || 0}
-              prefix={<TeamOutlined />}
-              valueStyle={{ color: '#722ed1' }}
-              formatter={(value) => getRankDisplay(scoreData.schoolRank, scoreData.schoolParticipants)}
+              formatter={(value) => scoreData.regionRank ? `第 ${scoreData.regionRank} 名` : '暂无'}
             />
           </Card>
         </Col>
       </Row>
 
-      {/* 各题得分详情 */}
-      <Card title="各题得分详情" style={{ marginBottom: 16 }}>
+      {/* 题目得分详情 */}
+      <Card title="题目得分详情">
         <Table
-          columns={questionColumns}
+          columns={columns}
           dataSource={scoreData.questionScores}
           rowKey="questionNumber"
           pagination={false}
-          size="middle"
-          scroll={{ x: 800 }}
+          size="small"
         />
-      </Card>
 
-      {/* 成绩分析 */}
-      <Card title="成绩分析">
-        <Row gutter={16}>
-          <Col xs={24} md={12}>
-            <div className="analysis-item">
-              <h4>得分分布</h4>
-              <div className="score-breakdown">
-                {scoreData.questionScores.map((q) => (
-                  <div key={q.questionNumber} className="question-bar">
-                    <span className="question-label">第{q.questionNumber}题</span>
-                    <div className="score-bar">
-                      <div
-                        className="score-fill"
-                        style={{
-                          width: `${q.percentage}%`,
-                          backgroundColor: q.percentage >= 80 ? '#52c41a' : q.percentage >= 60 ? '#faad14' : '#ff4d4f'
-                        }}
-                      />
-                    </div>
-                    <span className="score-text">
-                      {q.score}/{q.maxScore} ({q.percentage.toFixed(1)}%)
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Col>
-          
-          <Col xs={24} md={12}>
-            <div className="analysis-item">
-              <h4>排名情况</h4>
-              <div className="rank-info">
-                <div className="rank-item">
-                  <span className="rank-label">总体排名:</span>
-                  <span className="rank-value">
-                    {scoreData.totalRank ? `${scoreData.totalRank}/${scoreData.totalParticipants}` : '暂无'}
-                  </span>
-                </div>
-                <div className="rank-item">
-                  <span className="rank-label">赛区排名:</span>
-                  <span className="rank-value">
-                    {scoreData.regionRank ? `${scoreData.regionRank}/${scoreData.regionParticipants}` : '暂无'}
-                  </span>
-                </div>
-                <div className="rank-item">
-                  <span className="rank-label">校内排名:</span>
-                  <span className="rank-value">
-                    {scoreData.schoolRank ? `${scoreData.schoolRank}/${scoreData.schoolParticipants}` : '暂无'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </Col>
-        </Row>
+        {/* 总分显示 */}
+        <div style={{ 
+          marginTop: 16, 
+          padding: 16, 
+          background: '#f6f8fa', 
+          borderRadius: 6,
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
+            总分: {scoreData.totalScore}
+          </div>
+          <div style={{ marginTop: 8, color: '#666' }}>
+            {scoreData.totalRank && `总排名: 第 ${scoreData.totalRank} 名`}
+            {scoreData.regionRank && ` | 赛区排名: 第 ${scoreData.regionRank} 名`}
+          </div>
+        </div>
       </Card>
     </div>
   );
 };
 
-export default ScoreDetail;
+export default ScoreDetailSimplified;

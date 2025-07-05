@@ -371,7 +371,7 @@ class CoachAPI extends BaseAPI {
 
   // ===================== 成绩管理模块 =====================
 
-  // 获取学生成绩列表
+  // 获取学生成绩列表（精简版）
   static async getStudentScores(params?: {
     page?: number;
     limit?: number;
@@ -379,10 +379,10 @@ class CoachAPI extends BaseAPI {
     examId?: string;
     status?: string;
     search?: string;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<ExamScore[]>> {
     try {
       const queryParams = this.buildQueryParams(params);
-      return await this.makeRequest<any>(
+      return await this.makeRequest<ExamScore[]>(
         `/api/coach/students/scores${queryParams}`,
         {
           method: 'GET',
@@ -394,13 +394,13 @@ class CoachAPI extends BaseAPI {
     }
   }
 
-  // 获取单个学生的考试成绩详情
-  static async getStudentScoreDetail(studentId: string, examId: string): Promise<ApiResponse<any>> {
+  // 获取单个学生的考试成绩详情（精简版）
+  static async getStudentScoreDetail(studentId: string, examId: string): Promise<ApiResponse<ExamScore>> {
     try {
       this.validateRequired(studentId, '学生ID');
       this.validateRequired(examId, '考试ID');
       
-      return await this.makeRequest<any>(
+      return await this.makeRequest<ExamScore>(
         `/api/coach/students/${studentId}/exams/${examId}/score`,
         {
           method: 'GET',
@@ -412,12 +412,12 @@ class CoachAPI extends BaseAPI {
     }
   }
 
-  // 获取考试成绩统计
-  static async getExamScoreStatistics(examId: string): Promise<ApiResponse<any>> {
+  // 获取考试成绩统计（精简版）
+  static async getExamScoreStatistics(examId: string): Promise<ApiResponse<ExamScore[]>> {
     try {
       this.validateRequired(examId, '考试ID');
       
-      return await this.makeRequest<any>(
+      return await this.makeRequest<ExamScore[]>(
         `/api/coach/exams/${examId}/scores/statistics`,
         {
           method: 'GET',

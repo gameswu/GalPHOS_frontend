@@ -1,5 +1,25 @@
 # GalPHOS 更新日志
 
+## 版本 v1.3.3 (2024-07-06)
+
+### 🎯 成绩统计信息精简化
+- **精简成绩统计数据结构，仅保留核心字段**:
+  - 用户名 (username)
+  - 各题得分 (questionScores)
+  - 总分 (totalScore)
+  - 总排名 (totalRank)
+  - 赛区排名 (regionRank) - 整个赛区而非学校内排名
+  - 成绩状态 (status)
+- **移除冗余字段**:
+  - 移除 percentage、maxScore、schoolRank 等衍生字段
+  - 移除 regionId、regionName、schoolId、schoolName 等层级信息
+  - 移除 questionId、comments、graderId、graderName 等详细信息
+- **同步更新相关API接口返回结构**
+- **更新前端组件中的数据展示逻辑**
+- **更新API文档说明**
+
+---
+
 ## 版本 v1.2.0 (2025-01-21)
 
 ### 🎯 微服务架构全面升级

@@ -146,11 +146,14 @@ export const useStudentLogic = () => {
   }, []);
 
   // 提交考试答案
-  const submitExamAnswers = useCallback(async (examId: string, answers: ExamAnswer[]) => {
+  const submitExamAnswers = useCallback(async (examId: string, answers: ExamAnswer[], studentUsername?: string) => {
     try {
+      // 学生模式下忽略studentUsername参数
       const result = await StudentAPI.submitExamAnswers(examId, answers);
       if (result.success) {
         message.success(result.message || '答案提交成功');
+        // 重新加载考试数据以更新提交状态
+        loadExams();
       } else {
         message.error(result.message || '答案提交失败');
         throw new Error(result.message);
@@ -159,7 +162,7 @@ export const useStudentLogic = () => {
       message.error('答案提交失败');
       throw error;
     }
-  }, []);
+  }, [loadExams]);
 
   // 获取考试提交记录
   const getExamSubmission = useCallback(async (examId: string, studentUsername?: string): Promise<ExamSubmission | null> => {
@@ -176,10 +179,24 @@ export const useStudentLogic = () => {
   }, []);
 
   // 下载文件
-  const downloadFile = useCallback(async (fileId: string, fileName: string) => {
+  const downloadFile = useCallback(async (fileUrl: string, fileName: string) => {
     try {
-      await StudentAPI.downloadFile(fileId, fileName);
-      message.success(`${fileName} 下载成功`);
+      // 从文件URL中提取文件ID，或者直接使用URL进行下载
+      if (fileUrl.startsWith('http')) {
+        // 直接下载URL
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        message.success(`${fileName} 下载成功`);
+      } else {
+        // 使用API下载
+        await StudentAPI.downloadFile(fileUrl, fileName);
+        message.success(`${fileName} 下载成功`);
+      }
     } catch (error) {
       message.error('文件下载失败');
       console.error('文件下载失败:', error);

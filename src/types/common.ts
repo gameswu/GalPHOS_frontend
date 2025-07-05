@@ -110,14 +110,8 @@ export interface ExamSubmission {
 // ===================== 成绩相关类型 =====================
 export interface QuestionScore {
   questionNumber: number;
-  questionId?: string;
   score: number;
   maxScore: number;
-  percentage: number;
-  comments?: string;
-  graderId?: string;
-  graderName?: string;
-  gradedAt?: string;
 }
 
 export interface ExamScore {
@@ -126,23 +120,14 @@ export interface ExamScore {
   examTitle: string;
   studentId: string;
   studentName: string;
-  regionId?: string;
-  regionName?: string;
-  schoolId?: string;
-  schoolName?: string;
+  username: string; // 用户名
   totalScore: number;
-  maxTotalScore: number;
-  percentage: number;
-  questionScores: QuestionScore[];
-  totalRank?: number;
-  regionRank?: number;
-  schoolRank?: number;
-  totalParticipants?: number;
-  regionParticipants?: number;
-  schoolParticipants?: number;
+  questionScores: QuestionScore[]; // 各题得分
+  totalRank?: number; // 总排名
+  regionRank?: number; // 赛区排名（全赛区）
+  status: 'submitted' | 'grading' | 'graded'; // 成绩状态
   submittedAt: string;
   gradedAt?: string;
-  status: 'submitted' | 'grading' | 'graded';
 }
 
 // ===================== 排名相关类型 =====================
@@ -546,4 +531,53 @@ export interface StudentRegistrationRequest {
   reviewedBy?: string;
   reviewedAt?: string;
   reviewNote?: string;
+}
+
+// 阅卷相关类型（保留详细信息用于阅卷过程）
+export interface GradingQuestionScore {
+  questionNumber: number;
+  questionId?: string;
+  score: number;
+  maxScore: number;
+  comments?: string;
+  graderId?: string;
+  graderName?: string;
+  gradedAt?: string;
+}
+
+export interface GradingExamScore {
+  id: string;
+  examId: string;
+  examTitle: string;
+  studentId: string;
+  studentName: string;
+  username: string;
+  totalScore: number;
+  maxTotalScore: number;
+  percentage: number;
+  questionScores: GradingQuestionScore[];
+  totalRank?: number;
+  regionRank?: number;
+  status: 'submitted' | 'grading' | 'graded';
+  submittedAt: string;
+  gradedAt?: string;
+}
+
+// 成绩详情数据结构（阅卷和成绩查看界面使用）
+export interface ScoreDetailData {
+  id: string;
+  examId: string;
+  examTitle: string;
+  studentId: string;
+  studentName: string;
+  username: string;
+  totalScore: number;
+  maxTotalScore: number;
+  percentage: number;
+  questionScores: GradingQuestionScore[];
+  totalRank?: number;
+  regionRank?: number;
+  status: 'submitted' | 'grading' | 'graded';
+  submittedAt: string;
+  gradedAt?: string;
 }

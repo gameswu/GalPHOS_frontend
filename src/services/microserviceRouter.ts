@@ -65,14 +65,15 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/admin/exams/*',
       '/api/admin/exams/*/publish',
       '/api/admin/exams/*/unpublish',
-      // 学生考试查看（基本信息）
+      // 学生考试查看（基本信息，排除成绩相关）
       '/api/student/exams',
-      // 教练考试管理（基本信息）
+      '/api/student/exams/*',  // 考试详情查看，但会被更具体的成绩路径覆盖
+      // 教练考试管理（基本信息，排除成绩相关）
       '/api/coach/exams',
       // 阅卷员考试查看（基本信息）
       '/api/grader/exams'
     ],
-    description: '考试完整生命周期管理服务',
+    description: '考试完整生命周期管理服务 - 专注考试基础信息，成绩相关功能由成绩统计服务处理',
     healthCheck: '/health'
   },
 

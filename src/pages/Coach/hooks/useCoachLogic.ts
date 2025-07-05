@@ -239,8 +239,13 @@ export const useCoachLogic = () => {
   }, []);
 
   // 为学生提交考试答案（教练代为提交）
-  const submitExamAnswers = useCallback(async (examId: string, answers: ExamAnswer[], studentUsername: string) => {
+  const submitExamAnswers = useCallback(async (examId: string, answers: ExamAnswer[], studentUsername?: string) => {
     try {
+      // 教练模式下必须提供studentUsername
+      if (!studentUsername) {
+        throw new Error('教练模式下必须指定学生用户名');
+      }
+      
       const response = await CoachAPI.submitAnswersForStudent(examId, {
         studentUsername,
         answers: answers.map(answer => ({
@@ -252,6 +257,8 @@ export const useCoachLogic = () => {
       
       if (response.success) {
         message.success(`${studentUsername} 的答案提交成功`);
+        // 重新加载考试数据以更新提交状态
+        loadExams();
       } else {
         message.error(response.message || '答案提交失败');
         throw new Error(response.message);
@@ -260,7 +267,7 @@ export const useCoachLogic = () => {
       message.error('答案提交失败');
       throw error;
     }
-  }, []);
+  }, [loadExams]);
 
   // 获取考试提交记录
   const getExamSubmission = useCallback(async (examId: string, studentUsername?: string): Promise<ExamSubmission | null> => {

@@ -7,7 +7,8 @@ import {
   ExamFile,
   ExamAnswer,
   ExamSubmission,
-  DashboardData
+  DashboardData,
+  ExamScore
 } from '../types/common';
 
 interface RegionChangeRequest {
@@ -284,16 +285,16 @@ class StudentAPI extends BaseAPI {
 
   // ===================== 成绩管理模块 =====================
 
-  // 获取学生成绩列表
+  // 获取学生成绩列表（精简版）
   static async getScores(params?: {
     page?: number;
     limit?: number;
     examId?: string;
     status?: string;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<ExamScore[]>> {
     try {
       const queryParams = this.buildQueryParams(params);
-      return await this.makeRequest<any>(
+      return await this.makeRequest<ExamScore[]>(
         `/api/student/scores${queryParams}`,
         {
           method: 'GET',
@@ -305,12 +306,12 @@ class StudentAPI extends BaseAPI {
     }
   }
 
-  // 获取单次考试成绩详情（包含每题分值和得分）
-  static async getScoreDetail(examId: string): Promise<ApiResponse<any>> {
+  // 获取单次考试成绩详情（精简版：仅包含用户名、各题得分、总分、总排名、赛区排名、成绩状态）
+  static async getScoreDetail(examId: string): Promise<ApiResponse<ExamScore>> {
     try {
       this.validateRequired(examId, '考试ID');
       
-      return await this.makeRequest<any>(
+      return await this.makeRequest<ExamScore>(
         `/api/student/exams/${examId}/score`,
         {
           method: 'GET',

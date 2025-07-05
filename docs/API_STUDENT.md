@@ -241,9 +241,136 @@ interface ApiResponse<T> {
 
 ---
 
-## 2. 个人资料管理
+## 2. 成绩查询
 
-### 2.1 获取个人资料
+### 2.1 获取成绩列表
+**接口**: `GET /api/student/scores`
+
+**描述**: 获取学生成绩列表，精简版数据结构
+
+**查询参数**:
+- `page?` (number): 页码，默认1
+- `limit?` (number): 每页数量，默认20
+- `examId?` (string): 特定考试ID
+- `status?` (string): 成绩状态 'submitted' | 'grading' | 'graded'
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: [
+    {
+      id: "score001",
+      examId: "exam001",
+      examTitle: "2024年春季数学竞赛",
+      studentId: "student001",
+      studentName: "张三",
+      username: "zhangsan001",
+      totalScore: 85,
+      questionScores: [
+        {
+          questionNumber: 1,
+          score: 8,
+          maxScore: 10
+        },
+        {
+          questionNumber: 2,
+          score: 7,
+          maxScore: 10
+        }
+      ],
+      totalRank: 12,
+      regionRank: 5,
+      status: "graded",
+      submittedAt: "2024-03-20T11:45:00Z",
+      gradedAt: "2024-03-21T09:30:00Z"
+    }
+  ],
+  message: "获取成绩列表成功"
+}
+```
+
+### 2.2 获取单次考试成绩详情
+**接口**: `GET /api/student/exams/{examId}/score`
+
+**描述**: 获取指定考试的成绩详情，精简版数据结构
+
+**路径参数**:
+- `examId` (string): 考试ID
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    id: "score001",
+    examId: "exam001",
+    examTitle: "2024年春季数学竞赛",
+    studentId: "student001",
+    studentName: "张三",
+    username: "zhangsan001",
+    totalScore: 85,
+    questionScores: [
+      {
+        questionNumber: 1,
+        score: 8,
+        maxScore: 10
+      },
+      {
+        questionNumber: 2,
+        score: 7,
+        maxScore: 10
+      },
+      {
+        questionNumber: 3,
+        score: 9,
+        maxScore: 10
+      }
+    ],
+    totalRank: 12,
+    regionRank: 5,
+    status: "graded",
+    submittedAt: "2024-03-20T11:45:00Z",
+    gradedAt: "2024-03-21T09:30:00Z"
+  },
+  message: "获取成绩详情成功"
+}
+```
+
+### 2.3 获取成绩统计
+**接口**: `GET /api/student/scores/statistics`
+
+**描述**: 获取学生成绩统计信息
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    totalExams: 5,
+    gradedExams: 3,
+    averageScore: 78.5,
+    highestScore: 95,
+    lowestScore: 65,
+    recentScores: [
+      {
+        examTitle: "2024年春季数学竞赛",
+        totalScore: 85,
+        totalRank: 12,
+        regionRank: 5,
+        gradedAt: "2024-03-21T09:30:00Z"
+      }
+    ]
+  },
+  message: "获取成绩统计成功"
+}
+```
+
+---
+
+## 3. 个人资料管理
+
+### 3.1 获取个人资料
 **接口**: `GET /api/student/profile`
 
 **描述**: 获取学生个人资料信息
@@ -266,7 +393,7 @@ interface ApiResponse<T> {
 }
 ```
 
-### 2.2 更新个人资料
+### 3.2 更新个人资料
 **接口**: `PUT /api/student/profile`
 
 **描述**: 更新学生个人资料信息
@@ -300,7 +427,7 @@ interface ApiResponse<T> {
 }
 ```
 
-### 2.3 修改密码
+### 3.3 修改密码
 **接口**: `PUT /api/student/password`
 
 **描述**: 修改登录密码
@@ -321,7 +448,7 @@ interface ApiResponse<T> {
 }
 ```
 
-### 2.4 上传头像
+### 3.4 上传头像
 **接口**: `POST /api/upload/avatar`
 
 **描述**: 上传用户头像
@@ -345,7 +472,7 @@ interface ApiResponse<T> {
 }
 ```
 
-### 2.5 注销账号
+### 3.5 注销账号
 **接口**: `POST /api/student/account/delete`
 
 **描述**: 永久删除当前学生账号及所有相关数据
@@ -367,9 +494,9 @@ interface ApiResponse<T> {
 
 ---
 
-## 3. 赛区管理
+## 4. 赛区管理
 
-### 3.1 申请赛区变更
+### 4.1 申请赛区变更
 **接口**: `POST /api/student/region-change`
 
 **描述**: 提交赛区变更申请
@@ -403,7 +530,7 @@ interface ApiResponse<T> {
 }
 ```
 
-### 3.2 获取赛区变更申请状态
+### 4.2 获取赛区变更申请状态
 **接口**: `GET /api/student/region-change/status`
 
 **描述**: 查询当前用户的赛区变更申请状态
@@ -435,9 +562,9 @@ interface ApiResponse<T> {
 
 ---
 
-## 4. 文件下载
+## 5. 文件下载
 
-### 4.1 下载考试文件
+### 5.1 下载考试文件
 **接口**: `GET /api/student/files/download/{fileId}`
 
 **描述**: 下载考试相关文件（试题、答案、答题卡等）
@@ -455,9 +582,9 @@ GET /api/student/files/download/file001
 
 ---
 
-## 5. 统计数据
+## 6. 统计数据
 
-### 5.1 获取学生仪表板数据
+### 6.1 获取学生仪表板数据
 **接口**: `GET /api/student/dashboard/stats`
 
 **描述**: 获取学生仪表板统计数据
