@@ -9,7 +9,7 @@ import {
   EditOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
-import type { Student } from '../hooks/useCoachLogic';
+import type { Student, Province, School } from '../hooks/useCoachLogic';
 import { StudentExam as Exam, ExamSubmission, ExamAnswer } from '../../../types/common';
 import UserSettings from '../../../components/UserSettings';
 import CurrentExamPage from '../../../components/CurrentExamPage';
@@ -30,8 +30,12 @@ interface CoachContentProps {
   loading: boolean;
   students: Student[];
   exams: Exam[];
+  provinces: Province[];
+  selectedProvince: string;
+  availableSchools: School[];
+  onProvinceChange: (provinceId: string) => void;
   onAccountSettings: () => void;
-  onAddStudent: (studentData: Omit<Student, 'id' | 'createdAt' | 'status'>) => void;
+  onAddStudent: (studentData: { username: string }) => void;
   onUpdateStudent: (studentId: string, studentData: Partial<Student>) => void;
   onDeleteStudent: (studentId: string) => void;
   updateProfile: (data: { name?: string; phone?: string; avatar?: string }) => Promise<void>;
@@ -372,19 +376,28 @@ const EnhancedDashboardPage: React.FC<{
 // 学生管理页面
 const StudentManagementPage: React.FC<{
   students: Student[];
-  onAddStudent: (studentData: Omit<Student, 'id' | 'createdAt' | 'status'>) => void;
+  provinces: Province[];
+  selectedProvince: string;
+  availableSchools: School[];
+  onProvinceChange: (provinceId: string) => void;
+  onAddStudent: (studentData: { username: string }) => void;
   onUpdateStudent: (studentId: string, studentData: Partial<Student>) => void;
   onDeleteStudent: (studentId: string) => void;
-}> = ({ students, onAddStudent, onUpdateStudent, onDeleteStudent }) => {
+}> = ({ students, provinces, selectedProvince, availableSchools, onProvinceChange, onAddStudent, onUpdateStudent, onDeleteStudent }) => {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [form] = Form.useForm();
 
   // 处理添加学生
+  // 处理添加学生
   const handleAddStudent = async (values: any) => {
     try {
-      await onAddStudent(values);
+      const studentData = {
+        username: values.username
+      };
+      
+      await onAddStudent(studentData);
       form.resetFields();
       setIsAddModalVisible(false);
       message.success('学生添加成功');
@@ -397,11 +410,12 @@ const StudentManagementPage: React.FC<{
   const handleEditStudent = async (values: any) => {
     if (!editingStudent) return;
     try {
-      await onUpdateStudent(editingStudent.id, values);
+      // 只提交状态字段
+      await onUpdateStudent(editingStudent.id, { status: values.status });
       setIsEditModalVisible(false);
       setEditingStudent(null);
       form.resetFields();
-      message.success('学生信息更新成功');
+      message.success('学生状态更新成功');
     } catch (error) {
       message.error('更新失败');
     }
@@ -532,43 +546,27 @@ const StudentManagementPage: React.FC<{
         }}
         footer={null}
       >
+        <div style={{ marginBottom: 16, padding: 12, background: '#f6f8fa', borderRadius: 6 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            📋 提示：添加学生后需要等待管理员审核，审核通过后学生才会正式加入您的管理范围。
+          </Text>
+        </div>
         <Form
           form={form}
           layout="vertical"
           onFinish={handleAddStudent}
         >
           <Form.Item
-            name="name"
-            label="姓名"
-            rules={[{ required: true, message: '请输入学生姓名' }]}
-          >
-            <Input placeholder="请输入学生姓名" />
-          </Form.Item>
-          <Form.Item
             name="username"
-            label="用户名"
-            rules={[{ required: true, message: '请输入用户名' }]}
+            label="学生用户名"
+            rules={[{ required: true, message: '请输入学生用户名' }]}
           >
-            <Input placeholder="请输入用户名" />
-          </Form.Item>
-          <Form.Item
-            name="province"
-            label="省份"
-            rules={[{ required: true, message: '请输入省份' }]}
-          >
-            <Input placeholder="请输入省份" />
-          </Form.Item>
-          <Form.Item
-            name="school"
-            label="学校"
-            rules={[{ required: true, message: '请输入学校' }]}
-          >
-            <Input placeholder="请输入学校" />
+            <Input placeholder="请输入学生用户名" />
           </Form.Item>
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
-                添加
+                提交申请
               </Button>
               <Button onClick={() => {
                 setIsAddModalVisible(false);
@@ -600,23 +598,36 @@ const StudentManagementPage: React.FC<{
           <Form.Item
             name="name"
             label="姓名"
-            rules={[{ required: true, message: '请输入学生姓名' }]}
           >
-            <Input placeholder="请输入学生姓名" />
+            <Input placeholder="学生姓名" disabled />
+          </Form.Item>
+          <Form.Item
+            name="username"
+            label="用户名"
+          >
+            <Input placeholder="用户名" disabled />
           </Form.Item>
           <Form.Item
             name="province"
             label="省份"
-            rules={[{ required: true, message: '请输入省份' }]}
           >
-            <Input placeholder="请输入省份" />
+            <Input placeholder="省份" disabled />
           </Form.Item>
           <Form.Item
             name="school"
             label="学校"
-            rules={[{ required: true, message: '请输入学校' }]}
           >
-            <Input placeholder="请输入学校" />
+            <Input placeholder="学校" disabled />
+          </Form.Item>
+          <Form.Item
+            name="status"
+            label="状态"
+            rules={[{ required: true, message: '请选择状态' }]}
+          >
+            <Select placeholder="请选择状态">
+              <Select.Option value="active">活跃</Select.Option>
+              <Select.Option value="inactive">非活跃</Select.Option>
+            </Select>
           </Form.Item>
           <Form.Item>
             <Space>
@@ -644,6 +655,10 @@ const CoachContent: React.FC<CoachContentProps> = ({
   loading,
   students,
   exams,
+  provinces,
+  selectedProvince,
+  availableSchools,
+  onProvinceChange,
   onAccountSettings,
   onAddStudent,
   onUpdateStudent,
@@ -675,6 +690,10 @@ const CoachContent: React.FC<CoachContentProps> = ({
       return (
         <StudentManagementPage
           students={students}
+          provinces={provinces}
+          selectedProvince={selectedProvince}
+          availableSchools={availableSchools}
+          onProvinceChange={onProvinceChange}
           onAddStudent={onAddStudent}
           onUpdateStudent={onUpdateStudent}
           onDeleteStudent={onDeleteStudent}

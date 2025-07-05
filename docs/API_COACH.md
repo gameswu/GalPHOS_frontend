@@ -90,8 +90,7 @@ interface ApiResponse<T> {
     students: [
       {
         id: "managed_stu_001",
-        name: "张三",
-        username: "zhangsan001",        // 仅用于标识，不能登录
+        username: "zhangsan001",        // 用户名，也作为显示名称
         coachId: "coach_001",
         coachUsername: "coach001",
         province: "北京市",              // 继承教练的省份
@@ -106,7 +105,8 @@ interface ApiResponse<T> {
             rank: 12
           }
         ]
-        // 注意：无password、phone等字段
+        // 注意：无password、phone、name等字段
+        // username既是标识符也是显示名称
       }
     ],
     total: 50,
@@ -119,15 +119,17 @@ interface ApiResponse<T> {
 ### 1.2 添加教练管理的学生
 **接口**: `POST /api/coach/students`
 
-**描述**: 为当前教练添加新的管理学生（创建非独立账号）
+**描述**: 为当前教练添加新的管理学生（创建学生注册申请）
+
+**重要说明**: 此操作会创建一个学生注册申请，需要管理员审核通过后学生才会正式加入教练管理范围。
 
 **请求体**:
 ```typescript
 {
-  name: "张三",                       // 学生真实姓名（必需）
-  username: "zhangsan001"             // 用于标识的用户名（必需，不能登录）
-  // 注意：无需password、phone等字段
+  username: "zhangsan001"             // 用于标识的用户名（必需，审核通过后不能登录）
+  // 注意：无需name、password、phone等字段
   // province和school自动继承教练的信息
+  // 学生显示名称默认使用username
 }
 ```
 
@@ -136,11 +138,17 @@ interface ApiResponse<T> {
 {
   success: true,
   data: {
-    id: "managed_stu_001",
-    message: "学生添加成功，该学生无法独立登录，所有操作需通过教练账号进行"
+    id: "reg_001",
+    message: "学生注册申请已提交，等待管理员审核"
   }
 }
 ```
+
+**审核流程**:
+1. 教练提交学生添加申请
+2. 管理员在后台审核申请
+3. 审核通过后，学生正式加入教练管理范围
+4. 学生无法独立登录，所有操作需通过教练账号进行
 
 ### 1.3 更新教练管理学生信息
 **接口**: `PUT /api/coach/students/{studentId}`
@@ -150,9 +158,9 @@ interface ApiResponse<T> {
 **请求体**:
 ```typescript
 {
-  name?: "张三",
   status?: "inactive"
   // 注意：无法修改username、省份、学校等关键信息
+  // 不支持修改学生显示名称（username固定）
 }
 ```
 
@@ -237,7 +245,7 @@ interface ApiResponse<T> {
       submissions: [
         {
           studentId: "stu_001",
-          studentName: "张三",
+          studentUsername: "zhangsan001",
           submittedAt: "2024-03-01T11:30:00.000Z",
           status: "graded",
           score: 85,
@@ -359,7 +367,6 @@ interface ApiResponse<T> {
       examId: "exam_001",
       studentId: "managed_stu_001",
       studentUsername: "zhangsan001",
-      studentName: "张三",
       answers: [
         {
           questionId: "q1",
@@ -407,7 +414,6 @@ interface ApiResponse<T> {
     topStudents: [                    // 优秀学生（教练管理的学生中）
       {
         studentId: "managed_stu_001",
-        studentName: "张三",
         studentUsername: "zhangsan001",
         avgScore: 92.5,
         examCount: 5,
@@ -451,7 +457,7 @@ interface ApiResponse<T> {
       results: [
         {
           studentId: "stu_001",
-          studentName: "张三",
+          studentUsername: "zhangsan001",
           score: 85,
           maxScore: 100,
           rank: 12,
@@ -494,14 +500,14 @@ interface ApiResponse<T> {
       {
         rank: 1,
         studentId: "managed_stu_001",
-        studentName: "张三",
+        studentUsername: "zhangsan001",
         score: 95,
         percentage: 95.0
       },
       {
         rank: 12,
         studentId: "managed_stu_002", 
-        studentName: "李四",
+        studentUsername: "lisi002",
         score: 85,
         percentage: 85.0
       }
@@ -556,7 +562,6 @@ interface ApiResponse<T> {
   data: {
     studentInfo: {
       id: "managed_stu_001",
-      name: "张三",
       username: "zhangsan001"
     },
     examInfo: {
@@ -609,7 +614,7 @@ interface ApiResponse<T> {
     students: [
       {
         studentId: "managed_stu_001",
-        studentName: "张三",
+        studentUsername: "zhangsan001",
         score: 85,
         rank: 12,
         submittedAt: "2024-03-01T11:30:00.000Z"
@@ -814,12 +819,12 @@ interface ApiResponse<T> {
     recentActivities: [
       {
         type: "exam_completed",
-        message: "张三完成了物理竞赛初赛",
+        message: "zhangsan001完成了物理竞赛初赛",
         time: "2024-03-01T11:30:00.000Z"
       },
       {
         type: "student_added", 
-        message: "新增学生李四",
+        message: "新增学生lisi002",
         time: "2024-02-28T14:20:00.000Z"
       }
     ]

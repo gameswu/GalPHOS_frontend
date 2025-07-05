@@ -78,41 +78,6 @@ export const useAdminLogic = () => {
   // 计算待审核用户数量
   const pendingCount = pendingUsers.filter(user => user.status === 'pending').length;
 
-  // 初始化数据
-  useEffect(() => {
-    const checkAuth = async () => {
-      const isAuthenticated = await authService.isAuthenticated();
-      
-      if (!isAuthenticated) {
-        notification.showError('请先登录');
-        navigate('/admin-login');
-        return;
-      }
-      
-      const user = authService.getCurrentUser();
-      if (!user || !authService.isAdmin()) {
-        notification.showError('权限不足');
-        navigate('/login');
-        return;
-      }
-      
-      // 加载所有数据
-      loadPendingUsers();
-      loadApprovedUsers();
-      loadRegions();
-      loadExams();
-      loadGraders();
-      loadGradingTasks();
-      loadAdminUsers();
-      loadSystemSettings();
-      loadCurrentAdmin();
-      loadCoachStudentsStats();
-      loadDashboardStats();
-    };
-    
-    checkAuth();
-  }, [navigate]);
-
   // 加载待审核用户
   const loadPendingUsers = useCallback(async () => {
     try {
@@ -1172,6 +1137,54 @@ export const useAdminLogic = () => {
       setLoading(false);
     }
   }, [loadCurrentAdmin]);
+
+  // 初始化数据 - 修复：将useEffect移到所有函数定义之后，并添加正确的依赖
+  useEffect(() => {
+    const checkAuth = async () => {
+      const isAuthenticated = await authService.isAuthenticated();
+      
+      if (!isAuthenticated) {
+        notification.showError('请先登录');
+        navigate('/admin-login');
+        return;
+      }
+      
+      const user = authService.getCurrentUser();
+      if (!user || !authService.isAdmin()) {
+        notification.showError('权限不足');
+        navigate('/login');
+        return;
+      }
+      
+      // 加载所有数据
+      loadPendingUsers();
+      loadApprovedUsers();
+      loadRegions();
+      loadExams();
+      loadGraders();
+      loadGradingTasks();
+      loadAdminUsers();
+      loadSystemSettings();
+      loadCurrentAdmin();
+      loadCoachStudentsStats();
+      loadDashboardStats();
+    };
+    
+    checkAuth();
+  }, [
+    navigate,
+    loadPendingUsers,
+    loadApprovedUsers,
+    loadRegions,
+    loadExams,
+    loadGraders,
+    loadGradingTasks,
+    loadAdminUsers,
+    loadSystemSettings,
+    loadCurrentAdmin,
+    loadCoachStudentsStats,
+    loadDashboardStats
+  ]);
 
   return {
     // 状态

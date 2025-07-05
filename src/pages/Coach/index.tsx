@@ -32,8 +32,13 @@ const Coach: React.FC = () => {
     loading,
     students,
     exams,
+    provinces,
+    selectedProvince,
+    availableSchools,
     loadStudents,
     loadExams,
+    loadProvinces,
+    handleProvinceChange,
     handleAccountSettings,
     handleLogout: handleLogoutLogic,
     addStudent,
@@ -87,10 +92,11 @@ const Coach: React.FC = () => {
       setUserInfo(user as UserInfo);
       loadStudents();
       loadExams();
+      loadProvinces();
     };
     
     checkAuth();
-  }, [navigate, loadStudents, loadExams]);
+  }, [navigate, loadStudents, loadExams, loadProvinces]);
 
   // 菜单点击处理
   const handleMenuClick = ({ key }: { key: string }) => {
@@ -267,6 +273,10 @@ const Coach: React.FC = () => {
             loading={loading}
             students={students}
             exams={exams}
+            provinces={provinces}
+            selectedProvince={selectedProvince}
+            availableSchools={availableSchools}
+            onProvinceChange={handleProvinceChange}
             onAccountSettings={handleAccountSettings}
             onAddStudent={addStudent}
             onUpdateStudent={updateStudent}

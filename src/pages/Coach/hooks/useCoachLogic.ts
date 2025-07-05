@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import CoachAPI from '../../../api/coach';
+import RegionAPI from '../../../api/region';
 import { authService } from '../../../services/authService';
 import { 
   StudentExam as Exam,
@@ -20,10 +21,24 @@ export interface Student {
   createdAt: string;
 }
 
+export interface Province {
+  id: string;
+  name: string;
+  schools: School[];
+}
+
+export interface School {
+  id: string;
+  name: string;
+}
+
 export const useCoachLogic = () => {
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [selectedProvince, setSelectedProvince] = useState<string>('');
+  const [availableSchools, setAvailableSchools] = useState<School[]>([]);
 
   // 加载学生数据
   const loadStudents = useCallback(async () => {
@@ -63,23 +78,46 @@ export const useCoachLogic = () => {
     }
   }, []);
 
+  // 加载省份和学校数据
+  const loadProvinces = useCallback(async () => {
+    try {
+      const response = await RegionAPI.getProvincesAndSchools();
+      if (response.success && response.data) {
+        setProvinces(response.data);
+      } else {
+        console.error('获取省份数据失败:', response.message);
+      }
+    } catch (error) {
+      console.error('加载省份数据失败:', error);
+    }
+  }, []);
+
+  // 处理省份选择
+  const handleProvinceChange = useCallback((provinceId: string) => {
+    setSelectedProvince(provinceId);
+    const province = provinces.find(p => p.id === provinceId);
+    if (province) {
+      setAvailableSchools(province.schools);
+    }
+  }, [provinces]);
+
   // 提交学生注册申请
-  const addStudent = useCallback(async (studentData: Omit<Student, 'id' | 'createdAt' | 'status'>) => {
+  const addStudent = useCallback(async (studentData: { username: string }) => {
     try {
       const response = await CoachAPI.addStudent({
         username: studentData.username
       });
       
       if (response.success) {
-        message.success('学生添加成功');
+        message.success('学生注册申请已提交，请等待管理员审核');
         // 重新加载学生列表
         loadStudents();
       } else {
-        message.error(response.message || '添加学生失败');
+        message.error(response.message || '提交申请失败');
       }
     } catch (error) {
-      message.error('添加学生失败');
-      console.error('添加学生失败:', error);
+      message.error('提交申请失败');
+      console.error('提交学生申请失败:', error);
     }
   }, [loadStudents]);
 
@@ -345,8 +383,13 @@ export const useCoachLogic = () => {
     loading,
     students,
     exams,
+    provinces,
+    selectedProvince,
+    availableSchools,
     loadStudents,
     loadExams,
+    loadProvinces,
+    handleProvinceChange,
     addStudent,
     updateStudent,
     deleteStudent,

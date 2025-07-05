@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Card, 
   Typography, 
@@ -77,10 +77,28 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
     } else {
       loadStudentSubmissions();
     }
-  }, [userRole, exams, students]);
+  }, [userRole]); // 移除函数依赖，避免无限循环
+
+  // 本地提交统计回退方案
+  const getLocalSubmissionStats = useCallback((examId: string) => {
+    try {
+      const submissions = JSON.parse(localStorage.getItem('examSubmissions') || '{}');
+      const examSubmissions = submissions[examId] || [];
+      
+      return {
+        submittedCount: examSubmissions.length,
+        totalCount: students.length
+      };
+    } catch {
+      return {
+        submittedCount: 0,
+        totalCount: students.length
+      };
+    }
+  }, [students.length]);
 
   // 加载教练的提交状态统计
-  const loadSubmissionStats = async () => {
+  const loadSubmissionStats = useCallback(async () => {
     if (userRole !== 'coach') return;
 
     const stats: { [examId: string]: any } = {};
@@ -105,28 +123,10 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
     }
 
     setSubmissionStats(stats);
-  };
-
-  // 本地提交统计回退方案
-  const getLocalSubmissionStats = (examId: string) => {
-    try {
-      const submissions = JSON.parse(localStorage.getItem('examSubmissions') || '{}');
-      const examSubmissions = submissions[examId] || [];
-      
-      return {
-        submittedCount: examSubmissions.length,
-        totalCount: students.length
-      };
-    } catch {
-      return {
-        submittedCount: 0,
-        totalCount: students.length
-      };
-    }
-  };
+  }, [userRole, exams, students.length, getLocalSubmissionStats]);
 
   // 加载学生的提交状态
-  const loadStudentSubmissions = async () => {
+  const loadStudentSubmissions = useCallback(async () => {
     for (const exam of exams) {
       try {
         const submission = await getExamSubmission(exam.id);
@@ -138,17 +138,17 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
         console.error(`获取考试${exam.id}提交状态失败:`, error);
       }
     }
-  };
+  }, [exams, getExamSubmission]);
 
   // 检查考试提交状态
-  const checkSubmissionStatus = async (examId: string, studentUsername?: string) => {
+  const checkSubmissionStatus = useCallback(async (examId: string, studentUsername?: string) => {
     try {
       const submission = await getExamSubmission(examId, studentUsername);
       return !!submission;
     } catch (error) {
       return false;
     }
-  };
+  }, [getExamSubmission]);
 
   // 初始化提交状态
   React.useEffect(() => {
@@ -171,7 +171,7 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
     if (exams.length > 0) {
       loadSubmissionStates();
     }
-  }, [exams, userRole]);
+  }, [exams.length, userRole]); // 使用exams.length而非exams数组避免引用变化
 
   // 当前考试：已发布且未结束的考试
   const currentTime = new Date();
@@ -180,27 +180,27 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
   );
 
   // 检查考试是否已开始
-  const isExamStarted = (exam: Exam) => {
+  const isExamStarted = useCallback((exam: Exam) => {
     return new Date() >= new Date(exam.startTime);
-  };
+  }, []);
 
   // 检查考试是否可以提交答案
-  const canSubmitAnswers = (exam: Exam) => {
+  const canSubmitAnswers = useCallback((exam: Exam) => {
     const now = new Date();
     return now >= new Date(exam.startTime) && now <= new Date(exam.endTime);
-  };
+  }, []);
 
   // 处理文件上传
-  const handleFileUpload = (questionNumber: number, file: File) => {
+  const handleFileUpload = useCallback((questionNumber: number, file: File) => {
     setAnswerFiles(prev => ({
       ...prev,
       [questionNumber]: file
     }));
     return false; // 阻止自动上传
-  };
+  }, []);
 
   // 提交答案
-  const handleSubmitAnswers = async () => {
+  const handleSubmitAnswers = useCallback(async () => {
     if (!currentExam) return;
 
     // 教练模式下需要选择学生
@@ -274,15 +274,15 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [currentExam, userRole, selectedStudent, answerFiles, submitExamAnswers]);
 
   // 打开提交界面
-  const openSubmissionModal = (exam: Exam) => {
+  const openSubmissionModal = useCallback((exam: Exam) => {
     setCurrentExam(exam);
     setSubmissionModalVisible(true);
     setAnswerFiles({});
     setSelectedStudent('');
-  };
+  }, []);
 
   const columns = [
     {

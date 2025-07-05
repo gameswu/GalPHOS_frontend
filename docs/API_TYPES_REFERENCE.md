@@ -207,7 +207,7 @@ interface GradingTask {
   examId: string;
   submissionId: string;
   studentId: string;
-  studentName: string;
+  studentUsername: string;
   questionNumber: number;
   maxScore: number;
   currentScore?: number;
@@ -289,7 +289,6 @@ interface IndependentStudent {
 ```typescript
 interface CoachManagedStudent {
   id: string;
-  name: string;                   // 学生姓名（必需）
   username: string;               // 用于标识，但不能登录
   coachId: string;                // 所属教练ID
   coachUsername: string;          // 所属教练用户名
@@ -303,7 +302,7 @@ interface CoachManagedStudent {
     score?: number;
     rank?: number;
   }>;
-  // 注意：无密码、手机号、邮箱等登录相关字段
+  // 注意：无密码、手机号、邮箱、姓名等登录相关字段
 }
 ```
 
@@ -311,7 +310,7 @@ interface CoachManagedStudent {
 - **无登录能力**：没有密码、手机号等登录凭据
 - **教练代理操作**：所有操作（提交答题卡、查看成绩等）都通过教练进行
 - **团体归属**：属于特定教练的管理范围
-- **简化管理**：只需用户名和姓名即可创建，无需审核流程
+- **需要审核**：教练添加学生时会创建学生注册申请，需要管理员审核通过后生效
 - **区域继承**：自动继承教练的省份和学校信息
 
 ### 待审核用户
@@ -420,7 +419,7 @@ interface StudentRegistrationRequest {
   password: string;
   province: string;
   school: string;
-  coachUsername: string;
+  coachUsername: string;          // 指导教练用户名
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
   reviewedBy?: string;
@@ -428,6 +427,12 @@ interface StudentRegistrationRequest {
   reviewNote?: string;
 }
 ```
+
+> **说明**: 此类型用于所有学生注册申请，包括：
+> 1. 学生自主申请注册
+> 2. 教练代理学生添加申请
+> 
+> 无论哪种方式，都需要管理员审核通过后才能生效。
 
 ### 密码修改数据
 ```typescript
@@ -466,7 +471,9 @@ type ExamDetailResponse = ApiResponse<Exam>;
 
 ---
 
-**文档版本**: v2.2  
-**更新日期**: 2025年6月26日  
+**文档版本**: v2.3  
+**更新日期**: 2025年7月6日  
 **基于**: 统一类型系统 (`src/types/common.ts`)  
-**主要变更**: 删除所有邮件字段和题目类型字段，简化数据模型
+**主要变更**: 
+- 删除所有邮件字段和题目类型字段，简化数据模型
+- 修正教练管理学生的审核流程说明，明确需要管理员审核

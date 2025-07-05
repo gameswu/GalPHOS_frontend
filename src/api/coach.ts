@@ -36,7 +36,7 @@ class CoachAPI extends BaseAPI {
     }
   }
 
-  // 添加学生
+  // 添加学生（代理注册）
   static async addStudent(studentData: {
     username: string;
   }): Promise<ApiResponse<any>> {
