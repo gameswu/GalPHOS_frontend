@@ -17,11 +17,11 @@
    - 通过独立的学生面板进行操作
 
 2. **教练管理的学生**（本文档涉及的主要对象）：
-   - **无登录能力**：没有密码、手机号等登录凭据
+   - **无登录能力**：没有密码等登录凭据（但可以有联系信息）
    - **非独立账号**：仅作为教练管理的团体成员存在
    - **教练代理操作**：所有操作（答题提交、成绩查看等）都通过教练进行
-   - **简化管理**：只需姓名和用户名即可创建，无需审核流程
-   - **区域继承**：自动继承教练的省份和学校信息
+   - **直接管理**：教练可以直接添加、编辑、删除，无需审核流程（v1.3.0+）
+   - **完整信息**：支持姓名、手机号、邮箱等完整信息
 
 ### 适用场景
 - 线下集体考试，教练统一管理答题卡收集和提交
@@ -69,6 +69,8 @@ interface ApiResponse<T> {
 ## 1. 学生管理模块
 
 > **重要说明**: 教练管理的学生与独立学生账号有本质区别。教练管理的学生**不是实际的登录账号**，无法独立登录系统，只能通过教练代理进行各种操作。这是一种团体-个人的管理模式。
+> 
+> **简化流程**: 从v1.3.0开始，教练可以直接管理所属学生，无需管理员审核。
 
 ### 1.1 获取教练管理的学生列表
 **接口**: `GET /api/coach/students`
@@ -89,47 +91,38 @@ interface ApiResponse<T> {
   data: {
     students: [
       {
-        id: "managed_stu_001",
-        username: "zhangsan001",        // 用户名，也作为显示名称
-        coachId: "coach_001",
-        coachUsername: "coach001",
-        province: "北京市",              // 继承教练的省份
-        school: "北京第一中学",          // 继承教练的学校
+        id: "student001",
+        username: "zhangsan001",
+        name: "张三",
+        province: "北京市",
+        school: "清华大学",
         status: "active",
-        createdAt: "2024-01-01T00:00:00.000Z",
-        examParticipations: [
-          {
-            examId: "exam_001",
-            submittedAt: "2024-03-01T11:30:00.000Z",
-            score: 85,
-            rank: 12
-          }
-        ]
-        // 注意：无password、phone、name等字段
-        // username既是标识符也是显示名称
+        createdAt: "2024-03-15T08:00:00Z",
+        updatedAt: "2024-03-20T10:30:00Z"
       }
     ],
-    total: 50,
+    total: 1,
     page: 1,
     limit: 20
-  }
+  },
+  message: "获取学生列表成功"
 }
 ```
 
 ### 1.2 添加教练管理的学生
 **接口**: `POST /api/coach/students`
 
-**描述**: 为当前教练添加新的管理学生（创建学生注册申请）
+**描述**: 直接添加学生到教练管理范围（无需审核）
 
-**重要说明**: 此操作会创建一个学生注册申请，需要管理员审核通过后学生才会正式加入教练管理范围。
+> **重要变更**: 从v1.3.0开始，教练可以直接添加、编辑和删除所属学生，无需管理员审核。
 
 **请求体**:
 ```typescript
 {
-  username: "zhangsan001"             // 用于标识的用户名（必需，审核通过后不能登录）
-  // 注意：无需name、password、phone等字段
-  // province和school自动继承教练的信息
-  // 学生显示名称默认使用username
+  username: "lisi001",           // 必填：学生用户名
+  name?: "李四",                 // 可选：学生姓名
+  province?: "上海市",           // 可选：省份（不填则继承教练）
+  school?: "上海交通大学"        // 可选：学校（不填则继承教练）
 }
 ```
 
@@ -138,41 +131,184 @@ interface ApiResponse<T> {
 {
   success: true,
   data: {
-    id: "reg_001",
-    message: "学生注册申请已提交，等待管理员审核"
-  }
+    id: "student002",
+    username: "lisi001",
+    name: "李四",
+    province: "上海市",
+    school: "上海交通大学",
+    status: "active",
+    createdAt: "2024-03-21T09:00:00Z",
+    updatedAt: "2024-03-21T09:00:00Z"
+  },
+  message: "学生添加成功"
 }
 ```
-
-**审核流程**:
-1. 教练提交学生添加申请
-2. 管理员在后台审核申请
-3. 审核通过后，学生正式加入教练管理范围
-4. 学生无法独立登录，所有操作需通过教练账号进行
 
 ### 1.3 更新教练管理学生信息
 **接口**: `PUT /api/coach/students/{studentId}`
 
 **描述**: 更新教练管理学生的信息
 
+**路径参数**:
+- `studentId` (string): 学生ID
+
 **请求体**:
 ```typescript
 {
-  status?: "inactive"
-  // 注意：无法修改username、省份、学校等关键信息
-  // 不支持修改学生显示名称（username固定）
+  name?: "张三丰",
+  province?: "北京市",
+  school?: "清华大学",
+  status?: "active" | "inactive"
 }
 ```
 
-### 1.4 移除教练管理的学生
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    id: "student001",
+    username: "zhangsan001",
+    name: "张三丰",
+    province: "北京市",
+    school: "清华大学",
+    status: "active",
+    createdAt: "2024-03-15T08:00:00Z",
+    updatedAt: "2024-03-21T10:30:00Z"
+  },
+  message: "学生信息更新成功"
+}
+```
+
+### 1.4 删除教练管理的学生
 **接口**: `DELETE /api/coach/students/{studentId}`
 
-**描述**: 从当前教练的管理列表中移除学生（删除非独立账号）
+**描述**: 从教练管理范围中删除学生
 
-**说明**: 
-- 此操作会完全删除该学生记录
-- 该学生的所有考试记录和成绩也会被删除
-- 请谨慎操作
+**路径参数**:
+- `studentId` (string): 学生ID
+
+**响应**:
+```typescript
+{
+  success: true,
+  message: "学生删除成功"
+}
+```
+
+**注意**:
+- 此操作会删除学生账号及其所有相关数据
+- 操作不可恢复，请谨慎使用
+- 如果学生有正在进行的考试，建议先完成考试再删除
+
+### 1.5 批量操作学生
+**接口**: `POST /api/coach/students/batch`
+
+**描述**: 批量操作学生（批量更新状态、批量删除等）
+
+**请求体**:
+```typescript
+{
+  action: "update_status" | "delete",
+  studentIds: ["student001", "student002"],
+  data?: {
+    status?: "active" | "inactive"
+  }
+}
+```
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    successCount: 2,
+    failedCount: 0,
+    results: [
+      {
+        studentId: "student001",
+        success: true,
+        message: "操作成功"
+      },
+      {
+        studentId: "student002",
+        success: true,
+        message: "操作成功"
+      }
+    ]
+  },
+  message: "批量操作完成"
+}
+```
+
+### 1.6 获取学生统计数据
+**接口**: `GET /api/coach/students/stats`
+
+**描述**: 获取教练管理的学生统计数据
+
+**响应**:
+```typescript
+{
+  success: true,
+  data: {
+    totalStudents: 15,
+    activeStudents: 12,
+    inactiveStudents: 3,
+    newStudentsThisMonth: 3,
+    studentsByProvince: {
+      "北京市": 8,
+      "上海市": 4,
+      "广东省": 3
+    },
+    studentsByStatus: {
+      "active": 12,
+      "inactive": 3
+    }
+  },
+  message: "获取统计数据成功"
+}
+```
+
+### 1.7 学生管理业务规则
+
+#### 权限管理
+- 教练只能管理自己创建的学生
+- 教练不能查看或操作其他教练的学生
+- 管理员可以查看所有教练的学生管理情况
+
+#### 状态管理
+- 新创建的学生默认状态为 `active`
+- `inactive` 状态的学生不能参与考试
+- 状态变更会立即生效
+
+#### 数据完整性
+- 用户名在系统中必须唯一
+- 删除学生会同时删除其所有考试记录和成绩
+- 学生信息变更会记录操作日志
+
+#### 考试关联
+- 学生删除前会检查是否有进行中的考试
+- 有进行中考试的学生不能删除
+- 已完成的考试记录会在学生删除时一并删除
+
+### 1.8 学生管理常见错误码
+
+#### 认证相关错误
+- `AUTH_REQUIRED`: 需要认证
+- `INVALID_TOKEN`: Token无效
+- `INSUFFICIENT_PERMISSION`: 权限不足
+
+#### 学生管理相关错误
+- `STUDENT_NOT_FOUND`: 学生不存在
+- `STUDENT_ALREADY_EXISTS`: 学生已存在
+- `STUDENT_USERNAME_TAKEN`: 用户名已被占用
+- `INVALID_STUDENT_DATA`: 学生数据无效
+- `STUDENT_HAS_ONGOING_EXAM`: 学生有进行中的考试
+
+#### 数据验证错误
+- `INVALID_REQUEST`: 请求数据无效
+- `MISSING_REQUIRED_FIELD`: 缺少必填字段
+- `INVALID_PHONE_FORMAT`: 手机号格式错误
 
 ---
 
@@ -688,7 +824,6 @@ interface ApiResponse<T> {
     username: "coach001",
     name: "李老师",
     phone: "13800138000",
-    email: "li.teacher@example.com",
     province: "北京市",
     school: "北京第一中学",
     avatar?: "https://example.com/avatar.jpg",
@@ -710,7 +845,6 @@ interface ApiResponse<T> {
 {
   name?: "李老师",
   phone?: "13800138001",
-  email?: "li.teacher@example.com",
   avatar?: "https://example.com/new_avatar.jpg"
 }
 ```

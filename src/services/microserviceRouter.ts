@@ -34,8 +34,6 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
     paths: [
       // 管理员用户管理
       '/api/admin/users/*',
-      '/api/admin/coach-students*',
-      '/api/admin/student-registrations*',
       // 所有角色个人资料管理（统一规范 v1.2.0，v1.3.4头像上传也通过此API）
       '/api/admin/profile*',      // 包含管理员头像上传
       '/api/admin/password*',      // 新增统一密码修改接口
@@ -49,10 +47,10 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/student/account/delete',
       '/api/coach/account/delete',
       '/api/grader/account/delete',
-      // 教练学生管理（修正路由 v1.3.3）
+      // 教练学生管理（修正路由 v1.3.3，简化为直接管理）
       '/api/coach/students*'
     ],
-    description: '用户生命周期管理服务 - v1.2.0统一个人资料和密码管理API, v1.3.0账号注销功能, v1.3.3教练学生管理',
+    description: '用户生命周期管理服务 - v1.2.0统一个人资料和密码管理API, v1.3.0账号注销功能, v1.3.3教练学生直接管理',
     healthCheck: '/health'
   },
 

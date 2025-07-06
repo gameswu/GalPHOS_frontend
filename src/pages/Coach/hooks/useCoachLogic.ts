@@ -101,23 +101,26 @@ export const useCoachLogic = () => {
     }
   }, [provinces]);
 
-  // 提交学生注册申请
-  const addStudent = useCallback(async (studentData: { username: string }) => {
+  // 添加学生（直接添加，无需审核）
+  const addStudent = useCallback(async (studentData: { 
+    username: string; 
+    name?: string; 
+    province?: string; 
+    school?: string; 
+  }) => {
     try {
-      const response = await CoachAPI.addStudent({
-        username: studentData.username
-      });
+      const response = await CoachAPI.addStudent(studentData);
       
       if (response.success) {
-        message.success('学生注册申请已提交，请等待管理员审核');
+        message.success('学生添加成功');
         // 重新加载学生列表
         loadStudents();
       } else {
-        message.error(response.message || '提交申请失败');
+        message.error(response.message || '添加学生失败');
       }
     } catch (error) {
-      message.error('提交申请失败');
-      console.error('提交学生申请失败:', error);
+      message.error('添加学生失败');
+      console.error('添加学生失败:', error);
     }
   }, [loadStudents]);
 
@@ -145,7 +148,7 @@ export const useCoachLogic = () => {
   // 删除学生
   const deleteStudent = useCallback(async (studentId: string) => {
     try {
-      const response = await CoachAPI.removeStudent(studentId);
+      const response = await CoachAPI.deleteStudent(studentId);
       
       if (response.success) {
         setStudents(prev => prev.filter(student => student.id !== studentId));

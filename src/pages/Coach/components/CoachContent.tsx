@@ -38,7 +38,7 @@ interface CoachContentProps {
   availableSchools: School[];
   onProvinceChange: (provinceId: string) => void;
   onAccountSettings: () => void;
-  onAddStudent: (studentData: { username: string }) => void;
+  onAddStudent: (studentData: { username: string; name?: string; province?: string; school?: string }) => void;
   onUpdateStudent: (studentId: string, studentData: Partial<Student>) => void;
   onDeleteStudent: (studentId: string) => void;
   updateProfile: (data: { name?: string; phone?: string; avatar?: string }) => Promise<void>;
@@ -383,43 +383,31 @@ const StudentManagementPage: React.FC<{
   selectedProvince: string;
   availableSchools: School[];
   onProvinceChange: (provinceId: string) => void;
-  onAddStudent: (studentData: { username: string }) => void;
+  onAddStudent: (studentData: { username: string; name?: string; province?: string; school?: string }) => void;
   onUpdateStudent: (studentId: string, studentData: Partial<Student>) => void;
   onDeleteStudent: (studentId: string) => void;
 }> = ({ students, provinces, selectedProvince, availableSchools, onProvinceChange, onAddStudent, onUpdateStudent, onDeleteStudent }) => {
-  const [activeTab, setActiveTab] = useState('pending');
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [form] = Form.useForm();
 
-  // 分离待审核和已审核学生
-  // 注意：这里使用任意类型来兼容可能的状态值，因为API可能返回不同的状态
-  const pendingStudents = students.filter(student => 
-    (student as any).status === 'pending' || 
-    !(student as any).status || 
-    (student as any).registrationStatus === 'pending'
-  );
-  const approvedStudents = students.filter(student => 
-    student.status === 'active' || 
-    student.status === 'inactive' ||
-    (student as any).status === 'approved' ||
-    (student as any).registrationStatus === 'approved'
-  );
-
   // 处理添加学生
   const handleAddStudent = async (values: any) => {
     try {
       const studentData = {
-        username: values.username
+        username: values.username,
+        name: values.name,
+        province: values.province,
+        school: values.school
       };
       
       await onAddStudent(studentData);
       form.resetFields();
       setIsAddModalVisible(false);
-      message.success('学生申请已提交，等待管理员审核');
+      message.success('学生添加成功');
     } catch (error) {
-      message.error('提交申请失败');
+      message.error('添加学生失败');
     }
   };
 
@@ -427,12 +415,11 @@ const StudentManagementPage: React.FC<{
   const handleEditStudent = async (values: any) => {
     if (!editingStudent) return;
     try {
-      // 只提交状态字段
-      await onUpdateStudent(editingStudent.id, { status: values.status });
+      await onUpdateStudent(editingStudent.id, values);
       setIsEditModalVisible(false);
       setEditingStudent(null);
       form.resetFields();
-      message.success('学生状态更新成功');
+      message.success('学生信息更新成功');
     } catch (error) {
       message.error('更新失败');
     }
@@ -461,34 +448,8 @@ const StudentManagementPage: React.FC<{
     setIsEditModalVisible(true);
   };
 
-  // 待审核学生表格列定义
-  const pendingColumns = [
-    {
-      title: '用户名',
-      dataIndex: 'username',
-      key: 'username',
-    },
-    {
-      title: '申请时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => date ? new Date(date).toLocaleString() : '-',
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => (
-        <Tag color="orange">
-          <ClockCircleOutlined style={{ marginRight: 4 }} />
-          待审核
-        </Tag>
-      ),
-    },
-  ];
-
-  // 已审核通过学生表格列定义
-  const approvedColumns = [
+  // 学生表格列定义
+  const columns = [
     {
       title: '姓名',
       dataIndex: 'name',
@@ -501,18 +462,23 @@ const StudentManagementPage: React.FC<{
       key: 'username',
     },
     {
+      title: '赛区',
+      dataIndex: 'province',
+      key: 'province',
+      render: (province: string, record: Student) => `${province || ''} ${record.school || ''}`.trim() || '-',
+    },
+    {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color="green">
-          <CheckCircleOutlined style={{ marginRight: 4 }} />
-          已审核通过
+        <Tag color={status === 'active' ? 'green' : 'default'}>
+          {status === 'active' ? '活跃' : '非活跃'}
         </Tag>
       ),
     },
     {
-      title: '注册时间',
+      title: '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (date: string) => date ? new Date(date).toLocaleDateString() : '-',
@@ -547,80 +513,35 @@ const StudentManagementPage: React.FC<{
       <Card
         title="学生管理"
         extra={
-          activeTab === 'pending' && (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setIsAddModalVisible(true)}
-            >
-              添加学生
-            </Button>
-          )
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setIsAddModalVisible(true)}
+          >
+            添加学生
+          </Button>
         }
       >
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <TabPane
-            tab={
-              <span>
-                <ClockCircleOutlined />
-                待审核 ({pendingStudents.length})
-              </span>
-            }
-            key="pending"
-          >
-            <div style={{ marginBottom: 16 }}>
-              <Text type="secondary">
-                这里显示您申请添加但尚未通过管理员审核的学生。审核通过后学生将出现在"已审核通过"标签页中。
-              </Text>
-            </div>
-            <Table
-              columns={pendingColumns}
-              dataSource={pendingStudents}
-              rowKey="id"
-              pagination={{
-                total: pendingStudents.length,
-                pageSize: 10,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
-              }}
-              locale={{
-                emptyText: '暂无待审核的学生申请'
-              }}
-            />
-          </TabPane>
-          
-          <TabPane
-            tab={
-              <span>
-                <CheckCircleOutlined />
-                已审核通过 ({approvedStudents.length})
-              </span>
-            }
-            key="approved"
-          >
-            <div style={{ marginBottom: 16 }}>
-              <Text type="secondary">
-                这里显示已通过管理员审核的学生，您可以对这些学生进行管理操作。
-              </Text>
-            </div>
-            <Table
-              columns={approvedColumns}
-              dataSource={approvedStudents}
-              rowKey="id"
-              pagination={{
-                total: approvedStudents.length,
-                pageSize: 10,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
-              }}
-              locale={{
-                emptyText: '暂无已审核通过的学生'
-              }}
-            />
-          </TabPane>
-        </Tabs>
+        <div style={{ marginBottom: 16 }}>
+          <Text type="secondary">
+            您可以直接添加、编辑和删除您的学生。
+          </Text>
+        </div>
+        <Table
+          columns={columns}
+          dataSource={students}
+          rowKey="id"
+          pagination={{
+            total: students.length,
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+          }}
+          locale={{
+            emptyText: '暂无学生数据'
+          }}
+        />
       </Card>
 
       {/* 添加学生对话框 */}
@@ -633,11 +554,6 @@ const StudentManagementPage: React.FC<{
         }}
         footer={null}
       >
-        <div style={{ marginBottom: 16, padding: 12, background: '#f6f8fa', borderRadius: 6 }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            📋 提示：添加学生后需要等待管理员审核，审核通过后学生才会正式加入您的管理范围。
-          </Text>
-        </div>
         <Form
           form={form}
           layout="vertical"
@@ -650,10 +566,40 @@ const StudentManagementPage: React.FC<{
           >
             <Input placeholder="请输入学生用户名" />
           </Form.Item>
+          <Form.Item
+            name="name"
+            label="姓名"
+          >
+            <Input placeholder="请输入学生姓名" />
+          </Form.Item>
+          <Form.Item
+            name="province"
+            label="省份"
+          >
+            <Select placeholder="请选择省份">
+              {provinces.map(province => (
+                <Select.Option key={province.id} value={province.name}>
+                  {province.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="school"
+            label="学校"
+          >
+            <Select placeholder="请选择学校">
+              {availableSchools.map(school => (
+                <Select.Option key={school.id} value={school.name}>
+                  {school.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
-                提交申请
+                添加学生
               </Button>
               <Button onClick={() => {
                 setIsAddModalVisible(false);
@@ -686,13 +632,37 @@ const StudentManagementPage: React.FC<{
             name="name"
             label="姓名"
           >
-            <Input placeholder="学生姓名" disabled />
+            <Input placeholder="学生姓名" />
           </Form.Item>
           <Form.Item
             name="username"
             label="用户名"
           >
             <Input placeholder="用户名" disabled />
+          </Form.Item>
+          <Form.Item
+            name="province"
+            label="省份"
+          >
+            <Select placeholder="请选择省份">
+              {provinces.map(province => (
+                <Select.Option key={province.id} value={province.name}>
+                  {province.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="school"
+            label="学校"
+          >
+            <Select placeholder="请选择学校">
+              {availableSchools.map(school => (
+                <Select.Option key={school.id} value={school.name}>
+                  {school.name}
+                </Select.Option>
+              ))}
+            </Select>
           </Form.Item>
           <Form.Item
             name="status"

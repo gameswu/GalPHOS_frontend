@@ -66,15 +66,6 @@ export const useAdminLogic = () => {
   const [isOffline, setIsOffline] = useState(false);
   const [currentAdmin, setCurrentAdmin] = useState<AdminUser | null>(null);
   
-  // 教练管理学生统计状态
-  const [coachStudentsStats, setCoachStudentsStats] = useState<{
-    totalCoachStudents: number;
-    coachStudentsByCoach: { [coachId: string]: number };
-  }>({
-    totalCoachStudents: 0,
-    coachStudentsByCoach: {}
-  });
-
   // 计算待审核用户数量
   const pendingCount = pendingUsers.filter(user => user.status === 'pending').length;
 
@@ -907,54 +898,6 @@ export const useAdminLogic = () => {
     }
   }, [setLoading]);
 
-  // 加载教练管理学生统计
-  const loadCoachStudentsStats = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await AdminAPI.getCoachStudentsStats();
-      if (response.success && response.data) {
-        setCoachStudentsStats(response.data);
-      } else {
-        notification.showError(response.message || '获取教练学生统计失败');
-        // 如果API失败，回退到localStorage方式
-        const fallbackStats = getCoachStudentsStatsFromLocalStorage();
-        setCoachStudentsStats(fallbackStats);
-      }
-    } catch (error) {
-      console.error('加载教练学生统计失败:', error);
-      // 如果API失败，回退到localStorage方式
-      const fallbackStats = getCoachStudentsStatsFromLocalStorage();
-      setCoachStudentsStats(fallbackStats);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 从localStorage获取教练学生统计（回退方案）
-  const getCoachStudentsStatsFromLocalStorage = useCallback(() => {
-    try {
-      const allCoachStudents = JSON.parse(localStorage.getItem('coachStudents') || '{}');
-      const totalCoachStudents = Object.values(allCoachStudents).reduce((total: number, students: any) => 
-        total + (Array.isArray(students) ? students.length : 0), 0
-      );
-      
-      const coachStudentsByCoach: { [coachId: string]: number } = {};
-      Object.entries(allCoachStudents).forEach(([coachId, students]: [string, any]) => {
-        coachStudentsByCoach[coachId] = Array.isArray(students) ? students.length : 0;
-      });
-      
-      return {
-        totalCoachStudents,
-        coachStudentsByCoach
-      };
-    } catch {
-      return {
-        totalCoachStudents: 0,
-        coachStudentsByCoach: {}
-      };
-    }
-  }, []);
-
   // 修改个人密码（统一接口）
   const changePassword = useCallback(async (data: { oldPassword: string; newPassword: string }) => {
     try {
@@ -1166,7 +1109,6 @@ export const useAdminLogic = () => {
       loadAdminUsers();
       loadSystemSettings();
       loadCurrentAdmin();
-      loadCoachStudentsStats();
       loadDashboardStats();
     };
     
@@ -1182,7 +1124,6 @@ export const useAdminLogic = () => {
     loadAdminUsers,
     loadSystemSettings,
     loadCurrentAdmin,
-    loadCoachStudentsStats,
     loadDashboardStats
   ]);
 
@@ -1202,7 +1143,6 @@ export const useAdminLogic = () => {
     collapsed,
     isOffline,
     pendingCount,
-    coachStudentsStats,
     // 方法
     handleApprove,
     handleReject,
@@ -1252,7 +1192,6 @@ export const useAdminLogic = () => {
     loadSystemSettings,
     uploadAvatar,
     // 仪表盘和数据加载方法
-    loadDashboardStats,
-    loadCoachStudentsStats
+    loadDashboardStats
   };
 };

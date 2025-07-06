@@ -518,21 +518,6 @@ export interface AdminCreateData {
   role?: 'admin'; // 只能创建普通管理员
 }
 
-// 学生注册请求
-export interface StudentRegistrationRequest {
-  id: string;
-  username: string;
-  password: string;
-  province: string;
-  school: string;
-  coachUsername: string; // 指导教师用户名
-  status: 'pending' | 'approved' | 'rejected';
-  createdAt: string;
-  reviewedBy?: string;
-  reviewedAt?: string;
-  reviewNote?: string;
-}
-
 // 阅卷相关类型（保留详细信息用于阅卷过程）
 export interface GradingQuestionScore {
   questionNumber: number;

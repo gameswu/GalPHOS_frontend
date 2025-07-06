@@ -383,7 +383,6 @@ interface ApiResponse<T> {
     username: "student001",
     name: "张三",
     phone: "13812345678", 
-    email: "zhangsan@example.com",
     role: "student",
     province: "北京市",
     school: "清华大学",
@@ -403,7 +402,6 @@ interface ApiResponse<T> {
 {
   name?: "张三",
   phone?: "13812345678",
-  email?: "zhangsan@example.com", 
   username?: "new_username",
   avatar?: "https://example.com/avatars/new_avatar.jpg"
 }
@@ -417,7 +415,6 @@ interface ApiResponse<T> {
     username: "new_username",
     name: "张三",
     phone: "13812345678",
-    email: "zhangsan@example.com",
     role: "student",
     province: "北京市",
     school: "清华大学",

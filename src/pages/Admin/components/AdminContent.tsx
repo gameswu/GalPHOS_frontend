@@ -40,7 +40,6 @@ import type {
 } from '../../../types/common';
 import RegionManagement from './RegionManagement';
 import RegionChangeRequestManagement from './RegionChangeRequestManagement';
-import StudentRegistrationManagement from './StudentRegistrationManagement';
 import ExamManagement from './ExamManagement';
 import GradingManagement from './GradingManagement';
 import SystemSettings from './SystemSettings';
@@ -63,10 +62,6 @@ interface AdminContentProps {
   pendingCount: number;
   loading: boolean;
   isOffline: boolean;
-  coachStudentsStats?: {
-    totalCoachStudents: number;
-    coachStudentsByCoach: { [coachId: string]: number };
-  };
   onApprove: (userId: string) => void;
   onReject: (userId: string) => void;
   onDisableUser: (userId: string) => void;
@@ -112,11 +107,7 @@ const DashboardPage: React.FC<{
   exams: Exam[];
   gradingTasks: AdminGradingTask[];
   graders: GraderInfo[];
-  coachStudentsStats?: {
-    totalCoachStudents: number;
-    coachStudentsByCoach: { [coachId: string]: number };
-  };
-}> = ({ pendingCount, isOffline, regions, approvedUsers, exams, gradingTasks, graders, coachStudentsStats }) => {
+}> = ({ pendingCount, isOffline, regions, approvedUsers, exams, gradingTasks, graders }) => {
   const totalSchools = regions.reduce((sum, region) => sum + region.schools.length, 0);
   const activeUsers = approvedUsers.filter(user => user.status === 'approved').length;
   
@@ -145,26 +136,6 @@ const DashboardPage: React.FC<{
     students: approvedUsers.filter(u => u.role === 'student').length,
     graders: approvedUsers.filter(u => u.role === 'grader').length
   };
-
-  // 教练管理的学生统计 - 优先使用API数据，回退到localStorage
-  const getCoachManagedStudentsCount = () => {
-    // 优先使用API数据
-    if (coachStudentsStats && coachStudentsStats.totalCoachStudents >= 0) {
-      return coachStudentsStats.totalCoachStudents;
-    }
-    
-    // API数据不可用时，回退到localStorage
-    try {
-      const allCoachStudents = JSON.parse(localStorage.getItem('coachStudents') || '{}');
-      return Object.values(allCoachStudents).reduce((total: number, students: any) => 
-        total + (Array.isArray(students) ? students.length : 0), 0
-      );
-    } catch {
-      return 0;
-    }
-  };
-  
-  const coachManagedStudentsCount = getCoachManagedStudentsCount();
 
   return (
     <div>
@@ -226,19 +197,9 @@ const DashboardPage: React.FC<{
         <Col span={6}>
           <Card>
             <Statistic
-              title="独立学生"
+              title="学生数量"
               value={userRoleStats.students}
               valueStyle={{ color: '#52c41a' }}
-              suffix="人"
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="教练管理学生"
-              value={coachManagedStudentsCount}
-              valueStyle={{ color: '#13c2c2' }}
               suffix="人"
             />
           </Card>
@@ -729,7 +690,6 @@ const AdminContent: React.FC<AdminContentProps> = ({
   pendingCount,
   loading,
   isOffline,
-  coachStudentsStats,
   onApprove,
   onReject,
   onDisableUser,
@@ -776,7 +736,6 @@ const AdminContent: React.FC<AdminContentProps> = ({
           exams={exams}
           gradingTasks={gradingTasks}
           graders={graders}
-          coachStudentsStats={coachStudentsStats}
         />
       );
     
@@ -809,9 +768,6 @@ const AdminContent: React.FC<AdminContentProps> = ({
     
     case 'region-change-requests':
       return <RegionChangeRequestManagement />;
-    
-    case 'student-registration-requests':
-      return <StudentRegistrationManagement />;
     
     case 'exam-management':
       return (
@@ -879,7 +835,6 @@ const AdminContent: React.FC<AdminContentProps> = ({
           exams={exams}
           gradingTasks={gradingTasks}
           graders={graders}
-          coachStudentsStats={coachStudentsStats}
         />
       );
   }

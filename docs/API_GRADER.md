@@ -233,7 +233,6 @@ interface ApiResponse<T> {
     username: string,
     name?: string,
     phone?: string,
-    email?: string,
     avatar?: string,
     role: 'grader',
     province?: string,
@@ -264,7 +263,6 @@ interface ApiResponse<T> {
 {
   name?: string,
   phone?: string,
-  email?: string,
   username?: string,
   avatar?: string,
   school?: string,

@@ -36,9 +36,12 @@ class CoachAPI extends BaseAPI {
     }
   }
 
-  // 添加学生（代理注册）
+  // 添加学生（直接添加，无需审核）
   static async addStudent(studentData: {
     username: string;
+    name?: string;
+    province?: string;
+    school?: string;
   }): Promise<ApiResponse<any>> {
     try {
       this.validateRequired(studentData.username, '学生用户名');
@@ -58,6 +61,9 @@ class CoachAPI extends BaseAPI {
 
   // 更新学生信息
   static async updateStudent(studentId: string, updateData: {
+    name?: string;
+    province?: string;
+    school?: string;
     status?: string;
   }): Promise<ApiResponse<any>> {
     try {
@@ -76,8 +82,8 @@ class CoachAPI extends BaseAPI {
     }
   }
 
-  // 移除学生
-  static async removeStudent(studentId: string): Promise<ApiResponse<any>> {
+  // 删除学生
+  static async deleteStudent(studentId: string): Promise<ApiResponse<any>> {
     try {
       this.validateRequired(studentId, '学生ID');
 
@@ -86,10 +92,10 @@ class CoachAPI extends BaseAPI {
         {
           method: 'DELETE',
         },
-        '移除学生'
+        '删除学生'
       );
     } catch (error) {
-      return this.handleApiError(error, '移除学生');
+      return this.handleApiError(error, '删除学生');
     }
   }
 
@@ -278,18 +284,12 @@ class CoachAPI extends BaseAPI {
   static async updateProfile(profileData: {
     name?: string;
     phone?: string;
-    email?: string;
     avatar?: string;
   }): Promise<ApiResponse<any>> {
     try {
       // 验证手机号格式
       if (profileData.phone && !/^1[3-9]\d{9}$/.test(profileData.phone)) {
         throw new Error('手机号格式不正确');
-      }
-
-      // 验证邮箱格式
-      if (profileData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
-        throw new Error('邮箱格式不正确');
       }
 
       return await this.makeRequest<any>(
