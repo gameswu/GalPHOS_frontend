@@ -48,9 +48,11 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       // 账号注销功能（新增 v1.3.0）
       '/api/student/account/delete',
       '/api/coach/account/delete',
-      '/api/grader/account/delete'
+      '/api/grader/account/delete',
+      // 教练学生管理（修正路由 v1.3.3）
+      '/api/coach/students*'
     ],
-    description: '用户生命周期管理服务 - v1.2.0统一个人资料和密码管理API, v1.3.0账号注销功能',
+    description: '用户生命周期管理服务 - v1.2.0统一个人资料和密码管理API, v1.3.0账号注销功能, v1.3.3教练学生管理',
     healthCheck: '/health'
   },
 
@@ -109,11 +111,9 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/admin/exams/*/question-scores*',  // 简化路径：题目分值设置
       // 阅卷员任务管理
       '/api/grader/tasks*',
-      '/api/grader/exams/*/questions/scores*',
-      // 教练管理非独立学生关系（区别于个人资料）
-      '/api/coach/students*'
+      '/api/grader/exams/*/questions/scores*'
     ],
-    description: '阅卷任务分配和过程管理服务 - 包含教练非独立学生管理',
+    description: '阅卷任务分配和过程管理服务 - 专注阅卷相关功能',
     healthCheck: '/health'
   },
 
@@ -387,12 +387,12 @@ export class MicroserviceRouter {
     }
     
     if (path.startsWith('/api/coach/')) {
-      // 教练相关请求优先级：代理提交管理 > 考试管理 > 成绩统计（含导出、排名） > 非独立学生管理 > 地区变更 > 用户管理 > 纯文件存储
+      // 教练相关请求优先级：代理提交管理 > 考试管理 > 成绩统计（含导出、排名） > 学生管理 > 地区变更 > 用户管理 > 纯文件存储
       if (path.includes('submission') || path.includes('upload-answer')) return MICROSERVICE_CONFIG.submission;
       if (path.includes('exam') && !path.includes('submission') && !path.includes('scores') && !path.includes('ranking')) return MICROSERVICE_CONFIG.examManagement;
       if (path.includes('score') || path.includes('statistics') || path.includes('ranking') || path.includes('dashboard') || 
           path.includes('grades') || path.includes('scores/export') || path.includes('scores/statistics')) return MICROSERVICE_CONFIG.scoreStatistics;
-      if (path.includes('students') && !path.includes('scores')) return MICROSERVICE_CONFIG.grading; // 非独立学生管理
+      if (path.includes('students')) return MICROSERVICE_CONFIG.userManagement; // 教练学生管理归属用户管理服务
       if (path.includes('region-change')) return MICROSERVICE_CONFIG.regionManagement;
       if (path.includes('files') || path.includes('images')) return MICROSERVICE_CONFIG.fileStorage; // 纯文件操作
       return MICROSERVICE_CONFIG.userManagement; // 教练个人资料管理
