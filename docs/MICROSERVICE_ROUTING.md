@@ -119,7 +119,7 @@
 
 ### 3. 考试管理服务 (localhost:3003)
 
-**负责考试完整生命周期管理，共8个API端点**
+**负责考试完整生命周期管理，共10个API端点**
 
 ```
 # 管理员考试管理
@@ -127,6 +127,8 @@
 /api/admin/exams/{examId}          # 考试详情操作
 /api/admin/exams/{examId}/publish  # 考试发布
 /api/admin/exams/{examId}/unpublish # 考试取消发布
+/api/admin/exams/{examId}/files    # 考试文件上传管理（修正路由 v1.3.5）
+/api/admin/exams/{examId}/files/{fileId} # 考试文件删除管理（修正路由 v1.3.5）
 
 # 学生考试查看
 /api/student/exams                 # 学生可参加考试列表

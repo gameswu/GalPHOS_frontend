@@ -65,6 +65,7 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/admin/exams/*',
       '/api/admin/exams/*/publish',
       '/api/admin/exams/*/unpublish',
+      '/api/admin/exams/*/files*',  // 管理员考试文件管理
       // 学生考试查看（基本信息，排除成绩相关）
       '/api/student/exams',
       '/api/student/exams/*',  // 考试详情查看，但会被更具体的成绩路径覆盖

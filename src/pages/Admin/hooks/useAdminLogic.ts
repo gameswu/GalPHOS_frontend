@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../contexts/NotificationContext';
 import AdminAPI from '../../../api/admin';
 import { authService } from '../../../services/authService';
+import { microserviceRouter } from '../../../services/microserviceRouter';
 import type { 
   Province, 
   School,
@@ -550,7 +551,8 @@ export const useAdminLogic = () => {
       };
       formData.append('type', fileTypeMap[type]);
 
-      const response = await fetch(`/api/admin/exams/${examId}/files`, {
+      const apiUrl = microserviceRouter.buildApiUrl(`/api/admin/exams/${examId}/files`);
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
@@ -589,7 +591,8 @@ export const useAdminLogic = () => {
       }
 
       // 使用新的考试文件删除API
-      const response = await fetch(`/api/admin/exams/${examId}/files/${fileId}`, {
+      const apiUrl = microserviceRouter.buildApiUrl(`/api/admin/exams/${examId}/files/${fileId}`);
+      const response = await fetch(apiUrl, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
@@ -957,7 +960,7 @@ export const useAdminLogic = () => {
         questions
       };
 
-      const apiResponse = await fetch(`/api/admin/exams/${examId}/question-scores`, {
+      const apiResponse = await fetch(microserviceRouter.buildApiUrl(`/api/admin/exams/${examId}/question-scores`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
