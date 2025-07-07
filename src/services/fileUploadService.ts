@@ -264,8 +264,8 @@ export class FileUploadService extends BaseAPI {
           // 教练代理上传
           return `/api/coach/exams/${relatedId}/upload-answer`;
         } else {
-          // 学生上传
-          return '/api/student/upload/answer-image';
+          // 学生上传（统一路由格式）
+          return `/api/student/exams/${relatedId}/upload-answer`;
         }
       case 'exam-file':
         return `/api/admin/exams/${relatedId}/upload`;
