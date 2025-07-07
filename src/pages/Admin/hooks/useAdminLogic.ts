@@ -534,21 +534,32 @@ export const useAdminLogic = () => {
   // 文件上传
   const uploadFile = useCallback(async (file: File, type: 'question' | 'answer' | 'answerSheet', examId?: string): Promise<ExamFile> => {
     try {
-      // 使用文件上传服务的通用文件上传方法
-      const FileUploadService = await import('../../../services/fileUploadService');
-      const result = await FileUploadService.default.uploadFile(file, {
-        category: 'exam-file',
-        relatedId: examId || '', // 使用传入的examId或空字符串
-        allowedTypes: [
-          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-          'application/pdf', 'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'text/plain'
-        ],
-        maxSize: 50 * 1024 * 1024 // 50MB
+      if (!examId) {
+        throw new Error('考试ID不能为空');
+      }
+
+      // 使用新的考试文件上传API
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // 转换文件类型参数
+      const fileTypeMap = {
+        'question': 'question',
+        'answer': 'answer', 
+        'answerSheet': 'answer_sheet'
+      };
+      formData.append('type', fileTypeMap[type]);
+
+      const response = await fetch(`/api/admin/exams/${examId}/files`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          // 注意：不要设置Content-Type，让浏览器自动设置
+        },
+        body: formData
       });
+
+      const result = await response.json();
       
       if (!result.success || !result.data) {
         throw new Error(result.message || '文件上传失败');
@@ -558,9 +569,9 @@ export const useAdminLogic = () => {
       const examFile: ExamFile = {
         id: uploadedFile.fileId,
         name: uploadedFile.fileName,
-        url: uploadedFile.fileUrl,
+        url: uploadedFile.downloadUrl,
         size: uploadedFile.fileSize,
-        uploadTime: uploadedFile.uploadTime
+        uploadTime: uploadedFile.uploadedAt
       };
       
       return examFile;
@@ -571,10 +582,22 @@ export const useAdminLogic = () => {
   }, []);
 
   // 删除文件
-  const deleteFile = useCallback(async (fileId: string): Promise<void> => {
+  const deleteFile = useCallback(async (fileId: string, examId?: string): Promise<void> => {
     try {
-      const FileUploadService = await import('../../../services/fileUploadService');
-      const result = await FileUploadService.default.deleteFile(fileId);
+      if (!examId) {
+        throw new Error('考试ID不能为空');
+      }
+
+      // 使用新的考试文件删除API
+      const response = await fetch(`/api/admin/exams/${examId}/files/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
       
       if (!result.success) {
         throw new Error(result.message || '文件删除失败');
