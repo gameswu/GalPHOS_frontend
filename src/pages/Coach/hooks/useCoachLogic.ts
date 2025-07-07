@@ -12,11 +12,7 @@ import {
 
 export interface Student {
   id: string;
-  name: string;
   username: string;
-  phone: string;
-  province: string;
-  school: string;
   status: 'active' | 'inactive';
   createdAt: string;
 }
@@ -104,9 +100,6 @@ export const useCoachLogic = () => {
   // 添加学生（直接添加，无需审核）
   const addStudent = useCallback(async (studentData: { 
     username: string; 
-    name?: string; 
-    province?: string; 
-    school?: string; 
   }) => {
     try {
       const response = await CoachAPI.addStudent(studentData);

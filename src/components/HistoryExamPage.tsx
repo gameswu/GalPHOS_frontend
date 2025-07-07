@@ -38,7 +38,6 @@ const { Title } = Typography;
 interface Student {
   id: string;
   username: string;
-  name: string;
 }
 
 interface ScoreDetail {

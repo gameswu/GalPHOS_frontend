@@ -39,9 +39,6 @@ class CoachAPI extends BaseAPI {
   // 添加学生（直接添加，无需审核）
   static async addStudent(studentData: {
     username: string;
-    name?: string;
-    province?: string;
-    school?: string;
   }): Promise<ApiResponse<any>> {
     try {
       this.validateRequired(studentData.username, '学生用户名');

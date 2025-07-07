@@ -12,10 +12,11 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons';
 import type { Student, Province, School } from '../hooks/useCoachLogic';
-import { StudentExam as Exam, ExamSubmission, ExamAnswer } from '../../../types/common';
+import { StudentExam as Exam, ExamSubmission, ExamAnswer, ExamScore } from '../../../types/common';
 import UserSettings from '../../../components/UserSettings';
 import CurrentExamPage from '../../../components/CurrentExamPage';
 import HistoryExamPage from '../../../components/HistoryExamPage';
+import CoachAPI from '../../../api/coach';
 import '../../../styles/responsive.css';
 
 const { Title, Text } = Typography;
@@ -38,7 +39,7 @@ interface CoachContentProps {
   availableSchools: School[];
   onProvinceChange: (provinceId: string) => void;
   onAccountSettings: () => void;
-  onAddStudent: (studentData: { username: string; name?: string; province?: string; school?: string }) => void;
+  onAddStudent: (studentData: { username: string }) => void;
   onUpdateStudent: (studentId: string, studentData: Partial<Student>) => void;
   onDeleteStudent: (studentId: string) => void;
   updateProfile: (data: { name?: string; phone?: string; avatar?: string }) => Promise<void>;
@@ -162,9 +163,9 @@ const DashboardPage: React.FC<{
           <div>
             {students.slice(0, 5).map(student => (
               <div key={student.id} style={{ marginBottom: 12, padding: 12, background: '#f6f8fa', borderRadius: 6 }}>
-                <div style={{ fontWeight: 'bold' }}>{student.name} ({student.username})</div>
+                <div style={{ fontWeight: 'bold' }}>{student.username}</div>
                 <div style={{ color: '#666', fontSize: 12 }}>
-                  {student.province} {student.school}
+                  状态: {student.status === 'active' ? '活跃' : '非活跃'}
                 </div>
               </div>
             ))}
@@ -383,7 +384,7 @@ const StudentManagementPage: React.FC<{
   selectedProvince: string;
   availableSchools: School[];
   onProvinceChange: (provinceId: string) => void;
-  onAddStudent: (studentData: { username: string; name?: string; province?: string; school?: string }) => void;
+  onAddStudent: (studentData: { username: string }) => void;
   onUpdateStudent: (studentId: string, studentData: Partial<Student>) => void;
   onDeleteStudent: (studentId: string) => void;
 }> = ({ students, provinces, selectedProvince, availableSchools, onProvinceChange, onAddStudent, onUpdateStudent, onDeleteStudent }) => {
@@ -396,10 +397,7 @@ const StudentManagementPage: React.FC<{
   const handleAddStudent = async (values: any) => {
     try {
       const studentData = {
-        username: values.username,
-        name: values.name,
-        province: values.province,
-        school: values.school
+        username: values.username
       };
       
       await onAddStudent(studentData);
@@ -451,21 +449,9 @@ const StudentManagementPage: React.FC<{
   // 学生表格列定义
   const columns = [
     {
-      title: '姓名',
-      dataIndex: 'name',
-      key: 'name',
-      render: (name: string, record: Student) => name || record.username,
-    },
-    {
       title: '用户名',
       dataIndex: 'username',
       key: 'username',
-    },
-    {
-      title: '赛区',
-      dataIndex: 'province',
-      key: 'province',
-      render: (province: string, record: Student) => `${province || ''} ${record.school || ''}`.trim() || '-',
     },
     {
       title: '状态',
@@ -524,7 +510,7 @@ const StudentManagementPage: React.FC<{
       >
         <div style={{ marginBottom: 16 }}>
           <Text type="secondary">
-            您可以直接添加、编辑和删除您的学生。
+            您可以直接添加、编辑和删除您的学生。注意：这些学生账号不能独立登录，需要由您代理参加考试活动。
           </Text>
         </div>
         <Table
@@ -566,36 +552,6 @@ const StudentManagementPage: React.FC<{
           >
             <Input placeholder="请输入学生用户名" />
           </Form.Item>
-          <Form.Item
-            name="name"
-            label="姓名"
-          >
-            <Input placeholder="请输入学生姓名" />
-          </Form.Item>
-          <Form.Item
-            name="province"
-            label="省份"
-          >
-            <Select placeholder="请选择省份">
-              {provinces.map(province => (
-                <Select.Option key={province.id} value={province.name}>
-                  {province.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="school"
-            label="学校"
-          >
-            <Select placeholder="请选择学校">
-              {availableSchools.map(school => (
-                <Select.Option key={school.id} value={school.name}>
-                  {school.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
@@ -629,40 +585,10 @@ const StudentManagementPage: React.FC<{
           onFinish={handleEditStudent}
         >
           <Form.Item
-            name="name"
-            label="姓名"
-          >
-            <Input placeholder="学生姓名" />
-          </Form.Item>
-          <Form.Item
             name="username"
             label="用户名"
           >
             <Input placeholder="用户名" disabled />
-          </Form.Item>
-          <Form.Item
-            name="province"
-            label="省份"
-          >
-            <Select placeholder="请选择省份">
-              {provinces.map(province => (
-                <Select.Option key={province.id} value={province.name}>
-                  {province.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="school"
-            label="学校"
-          >
-            <Select placeholder="请选择学校">
-              {availableSchools.map(school => (
-                <Select.Option key={school.id} value={school.name}>
-                  {school.name}
-                </Select.Option>
-              ))}
-            </Select>
           </Form.Item>
           <Form.Item
             name="status"
@@ -775,6 +701,47 @@ const CoachContent: React.FC<CoachContentProps> = ({
           }}
           userRole="coach"
           students={students}
+          getScoreDetails={async (examId: string, studentUsername?: string) => {
+            try {
+              const response = await CoachAPI.getExamScoreStatistics(examId);
+              if (response.success && response.data) {
+                // 将CoachAPI返回的ExamScore[]转换为ScoreDetail[]格式
+                return response.data.map((score: ExamScore) => ({
+                  id: score.id,
+                  studentId: score.studentId,
+                  studentName: score.studentName,
+                  username: score.username,
+                  totalScore: score.totalScore,
+                  submittedAt: score.submittedAt,
+                  gradedAt: score.gradedAt,
+                  status: score.status,
+                  questionScores: score.questionScores,
+                  totalRank: score.totalRank,
+                  regionRank: score.regionRank
+                }));
+              } else {
+                message.error(response.message || '获取成绩详情失败');
+                return [];
+              }
+            } catch (error) {
+              console.error('获取成绩详情失败:', error);
+              message.error('获取成绩详情失败');
+              return [];
+            }
+          }}
+          exportScores={async (examId: string, format: 'excel' | 'pdf' = 'excel') => {
+            try {
+              const response = await CoachAPI.exportScoreReport(examId, format);
+              if (response.success) {
+                message.success(`成绩导出成功（${format.toUpperCase()}格式）`);
+              } else {
+                message.error(response.message || '导出成绩失败');
+              }
+            } catch (error) {
+              console.error('导出成绩失败:', error);
+              message.error('导出成绩失败');
+            }
+          }}
         />
       );
     

@@ -43,7 +43,6 @@ const { Title } = Typography;
 
 interface Student {
   id: string;
-  name: string;
   username: string;
 }
 
@@ -530,7 +529,7 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
                     >
                       {students.map(student => (
                         <Select.Option key={student.username} value={student.username}>
-                          {student.name} ({student.username})
+                          {student.username}
                         </Select.Option>
                       ))}
                     </Select>

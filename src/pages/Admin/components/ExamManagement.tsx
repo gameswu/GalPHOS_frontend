@@ -1388,7 +1388,6 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
             
             <div style={{ textAlign: 'right', marginTop: 16 }}>
               <Space>
-                <Button onClick={closeExamCreation}>取消</Button>
                 <Button type="primary" onClick={() => handleStepChange(ExamCreationStepEnum.ScoreSettings)}>
                   下一步
                 </Button>
