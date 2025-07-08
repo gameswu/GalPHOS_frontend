@@ -539,35 +539,14 @@ export const useAdminLogic = () => {
         throw new Error('考试ID不能为空');
       }
 
-      // 使用新的考试文件上传API
-      const formData = new FormData();
-      formData.append('file', file);
+      // 使用AdminAPI的uploadExamFile方法，该方法会自动处理认证和微服务路由
+      const response = await AdminAPI.uploadExamFile(examId, file, type);
       
-      // 转换文件类型参数
-      const fileTypeMap = {
-        'question': 'question',
-        'answer': 'answer', 
-        'answerSheet': 'answer_sheet'
-      };
-      formData.append('type', fileTypeMap[type]);
-
-      const apiUrl = microserviceRouter.buildApiUrl(`/api/admin/exams/${examId}/files`);
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-          // 注意：不要设置Content-Type，让浏览器自动设置
-        },
-        body: formData
-      });
-
-      const result = await response.json();
-      
-      if (!result.success || !result.data) {
-        throw new Error(result.message || '文件上传失败');
+      if (!response.success || !response.data) {
+        throw new Error(response.message || '文件上传失败');
       }
       
-      const uploadedFile = result.data;
+      const uploadedFile = response.data;
       const examFile: ExamFile = {
         id: uploadedFile.fileId,
         name: uploadedFile.fileName,
@@ -586,24 +565,15 @@ export const useAdminLogic = () => {
   // 删除文件
   const deleteFile = useCallback(async (fileId: string, examId?: string): Promise<void> => {
     try {
-      if (!examId) {
-        throw new Error('考试ID不能为空');
+      if (!fileId) {
+        throw new Error('文件ID不能为空');
       }
 
-      // 使用新的考试文件删除API
-      const apiUrl = microserviceRouter.buildApiUrl(`/api/admin/exams/${examId}/files/${fileId}`);
-      const response = await fetch(apiUrl, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const result = await response.json();
+      // 使用AdminAPI的deleteExamFile方法，该方法会自动处理认证和微服务路由
+      const response = await AdminAPI.deleteExamFile(fileId);
       
-      if (!result.success) {
-        throw new Error(result.message || '文件删除失败');
+      if (!response.success) {
+        throw new Error(response.message || '文件删除失败');
       }
     } catch (error) {
       console.error('文件删除失败:', error);
@@ -956,28 +926,16 @@ export const useAdminLogic = () => {
     try {
       setLoading(true);
       
-      const requestData = {
-        questions
-      };
-
-      const apiResponse = await fetch(microserviceRouter.buildApiUrl(`/api/admin/exams/${examId}/question-scores`), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        },
-        body: JSON.stringify(requestData)
-      });
-
-      const result = await apiResponse.json();
+      // 使用AdminAPI的setQuestionScores方法，该方法会自动处理认证和微服务路由
+      const response = await AdminAPI.setQuestionScores(examId, questions);
       
-      if (result.success) {
+      if (response.success) {
         const totalScore = questions.reduce((sum, q) => sum + q.score, 0);
         notification.showSuccess(`成功设置${questions.length}道题目分值，总分${totalScore}分`);
-        return result.data;
+        return response.data;
       } else {
-        notification.showError(result.message || '分值设置失败');
-        throw new Error(result.message || '分值设置失败');
+        notification.showError(response.message || '分值设置失败');
+        throw new Error(response.message || '分值设置失败');
       }
     } catch (error) {
       console.error('设置题目分值失败:', error);
