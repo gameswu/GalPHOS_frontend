@@ -71,11 +71,20 @@ class StudentAPI extends BaseAPI {
         throw new Error('答案不能为空');
       }
 
+      // 转换为后端期望的简化格式
+      const submissionData = {
+        answers: answers.map(answer => ({
+          questionNumber: answer.questionNumber,
+          imageUrl: answer.imageUrl || '',
+          uploadTime: answer.uploadTime || new Date().toISOString()
+        }))
+      };
+
       return await this.makeRequest<ExamSubmission>(
         `/api/student/exams/${examId}/submit`,
         {
           method: 'POST',
-          body: JSON.stringify({ answers }),
+          body: JSON.stringify(submissionData),
         },
         '提交考试答案'
       );

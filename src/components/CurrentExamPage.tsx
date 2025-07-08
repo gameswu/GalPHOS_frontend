@@ -318,7 +318,7 @@ const CurrentExamPage: React.FC<CurrentExamPageProps> = ({
           answer: '',
           maxScore: 100,
           imageUrl: uploadResult.data!.fileUrl, // 使用真实的文件URL
-          uploadTime: uploadResult.data!.uploadTime
+          uploadTime: uploadResult.data!.uploadTime || new Date().toISOString() // 确保时间格式正确
         });
       }
       
