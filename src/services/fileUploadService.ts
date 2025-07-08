@@ -7,6 +7,8 @@ export interface FileUploadOptions {
   category: 'avatar' | 'answer-image' | 'exam-file' | 'document' | 'other';
   // 关联的业务ID（考试ID、用户ID等）
   relatedId?: string;
+  // 文件类型（针对考试文件）
+  fileType?: 'question' | 'answer' | 'answer_sheet';
   // 题号（针对答题图片）
   questionNumber?: number;
   // 学生用户名（教练代理上传时使用）
@@ -175,6 +177,7 @@ export class FileUploadService extends BaseAPI {
     return this.uploadFile(file, {
       category: 'exam-file',
       relatedId: examId,
+      fileType: type === 'answerSheet' ? 'answer_sheet' : type, // 转换为后端期望的格式
       allowedTypes: [...this.defaultConfig.allowedImageTypes, ...this.defaultConfig.allowedDocumentTypes],
       maxSize: 50 * 1024 * 1024, // 考试文件限制50MB
       onProgress
@@ -288,6 +291,10 @@ export class FileUploadService extends BaseAPI {
       formData.append('relatedId', options.relatedId);
     }
 
+    if (options.fileType) {
+      formData.append('type', options.fileType); // 后端期望的字段名是 'type'
+    }
+
     if (options.questionNumber) {
       formData.append('questionNumber', options.questionNumber.toString());
     }
@@ -296,8 +303,9 @@ export class FileUploadService extends BaseAPI {
       formData.append('studentUsername', options.studentUsername);
     }
 
-    // 添加时间戳，避免浏览器缓存问题（后端可忽略此字段）
-    // 注意：后端FileStorageService当前未处理此字段，前端用于确保上传请求唯一性
+    // 添加时间戳，避免浏览器缓存问题
+    // 注意：后端FileStorageService当前未明确处理此字段，但前端保留用于确保上传请求唯一性和避免缓存
+    // 建议：如后端无需此字段，可在后续版本中考虑移除
     formData.append('timestamp', Date.now().toString());
 
     return formData;
