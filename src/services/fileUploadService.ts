@@ -11,6 +11,8 @@ export interface FileUploadOptions {
   questionNumber?: number;
   // 学生用户名（教练代理上传时使用）
   studentUsername?: string;
+  // 具体文件类型（用于考试文件的细分）
+  fileType?: 'question' | 'paper' | 'answer' | 'answerSheet' | 'answer-sheet' | string;
   // 最大文件大小（字节），默认10MB
   maxSize?: number;
   // 允许的文件类型
@@ -175,6 +177,7 @@ export class FileUploadService extends BaseAPI {
     return this.uploadFile(file, {
       category: 'exam-file',
       relatedId: examId,
+      fileType: type,
       allowedTypes: [...this.defaultConfig.allowedImageTypes, ...this.defaultConfig.allowedDocumentTypes],
       maxSize: 50 * 1024 * 1024, // 考试文件限制50MB
       onProgress
@@ -250,7 +253,7 @@ export class FileUploadService extends BaseAPI {
    * 构建上传路径
    */
   private static buildUploadPath(options: FileUploadOptions): string {
-    const { category, relatedId, questionNumber, studentUsername } = options;
+    const { category, relatedId, questionNumber, studentUsername, fileType } = options;
 
     switch (category) {
       case 'avatar':
@@ -264,10 +267,27 @@ export class FileUploadService extends BaseAPI {
           // 教练代理上传
           return `/api/coach/exams/${relatedId}/upload-answer`;
         } else {
-          // 学生上传（统一路由格式）
-          return `/api/student/exams/${relatedId}/upload-answer`;
+          // 学生上传
+          return '/api/student/upload/answer-image';
         }
       case 'exam-file':
+        // 支持具体的文件类型路径
+        if (fileType) {
+          switch (fileType) {
+            case 'question':
+            case 'paper':
+              return `/api/admin/exams/${relatedId}/upload/paper`;
+            case 'answer':
+              return `/api/admin/exams/${relatedId}/upload/answer`;
+            case 'answerSheet':
+            case 'answer-sheet':
+              return `/api/admin/exams/${relatedId}/upload/answer-sheet`;
+            default:
+              // 对于未知的文件类型，继续使用通用路径
+              return `/api/admin/exams/${relatedId}/upload`;
+          }
+        }
+        // 如果没有指定fileType，使用通用路径（向后兼容）
         return `/api/admin/exams/${relatedId}/upload`;
       case 'document':
         return '/api/upload/document';

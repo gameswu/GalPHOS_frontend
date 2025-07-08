@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../contexts/NotificationContext';
 import AdminAPI from '../../../api/admin';
 import { authService } from '../../../services/authService';
-import { microserviceRouter } from '../../../services/microserviceRouter';
 import type { 
   Province, 
   School,
@@ -539,29 +538,21 @@ export const useAdminLogic = () => {
         throw new Error('考试ID不能为空');
       }
 
-      // 使用新的考试文件上传API
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // 转换文件类型参数
-      const fileTypeMap = {
-        'question': 'question',
-        'answer': 'answer', 
-        'answerSheet': 'answer_sheet'
-      };
-      formData.append('type', fileTypeMap[type]);
-
-      const apiUrl = microserviceRouter.buildApiUrl(`/api/admin/exams/${examId}/files`);
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-          // 注意：不要设置Content-Type，让浏览器自动设置
-        },
-        body: formData
-      });
-
-      const result = await response.json();
+      // 使用新的特定文件上传方法
+      let result;
+      switch (type) {
+        case 'question':
+          result = await AdminAPI.uploadPaperFile(examId, file);
+          break;
+        case 'answer':
+          result = await AdminAPI.uploadAnswerFile(examId, file);
+          break;
+        case 'answerSheet':
+          result = await AdminAPI.uploadAnswerSheetFile(examId, file);
+          break;
+        default:
+          throw new Error(`不支持的文件类型: ${type}`);
+      }
       
       if (!result.success || !result.data) {
         throw new Error(result.message || '文件上传失败');
@@ -571,9 +562,9 @@ export const useAdminLogic = () => {
       const examFile: ExamFile = {
         id: uploadedFile.fileId,
         name: uploadedFile.fileName,
-        url: uploadedFile.downloadUrl,
+        url: uploadedFile.fileUrl,
         size: uploadedFile.fileSize,
-        uploadTime: uploadedFile.uploadedAt
+        uploadTime: uploadedFile.uploadTime
       };
       
       return examFile;
@@ -584,23 +575,10 @@ export const useAdminLogic = () => {
   }, []);
 
   // 删除文件
-  const deleteFile = useCallback(async (fileId: string, examId?: string): Promise<void> => {
+  const deleteFile = useCallback(async (fileId: string): Promise<void> => {
     try {
-      if (!examId) {
-        throw new Error('考试ID不能为空');
-      }
-
-      // 使用新的考试文件删除API
-      const apiUrl = microserviceRouter.buildApiUrl(`/api/admin/exams/${examId}/files/${fileId}`);
-      const response = await fetch(apiUrl, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const result = await response.json();
+      const FileUploadService = await import('../../../services/fileUploadService');
+      const result = await FileUploadService.default.deleteFile(fileId);
       
       if (!result.success) {
         throw new Error(result.message || '文件删除失败');
@@ -960,7 +938,7 @@ export const useAdminLogic = () => {
         questions
       };
 
-      const apiResponse = await fetch(microserviceRouter.buildApiUrl(`/api/admin/exams/${examId}/question-scores`), {
+      const apiResponse = await fetch(`/api/admin/exams/${examId}/question-scores`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

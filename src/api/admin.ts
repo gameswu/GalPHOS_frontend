@@ -300,11 +300,87 @@ class AdminAPI extends BaseAPI {
     );
   }
 
-  // 上传考试文件（统一使用文件上传服务）
+  // 上传试题文件
+  static async uploadPaperFile(examId: string, file: File): Promise<ApiResponse<any>> {
+    this.validateRequired(examId, '考试ID');
+    this.validateRequired(file, '试题文件');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', 'exam-file');
+    formData.append('relatedId', examId);
+    formData.append('timestamp', Date.now().toString());
+
+    return this.makeRequest<any>(
+      `/api/admin/exams/${examId}/upload/paper`,
+      {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type, let browser set it with boundary
+        headers: new Headers()
+      },
+      '上传试题文件'
+    );
+  }
+
+  // 上传答案文件
+  static async uploadAnswerFile(examId: string, file: File): Promise<ApiResponse<any>> {
+    this.validateRequired(examId, '考试ID');
+    this.validateRequired(file, '答案文件');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', 'exam-file');
+    formData.append('relatedId', examId);
+    formData.append('timestamp', Date.now().toString());
+
+    return this.makeRequest<any>(
+      `/api/admin/exams/${examId}/upload/answer`,
+      {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type, let browser set it with boundary
+        headers: new Headers()
+      },
+      '上传答案文件'
+    );
+  }
+
+  // 上传答题卡文件
+  static async uploadAnswerSheetFile(examId: string, file: File): Promise<ApiResponse<any>> {
+    this.validateRequired(examId, '考试ID');
+    this.validateRequired(file, '答题卡文件');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', 'exam-file');
+    formData.append('relatedId', examId);
+    formData.append('timestamp', Date.now().toString());
+
+    return this.makeRequest<any>(
+      `/api/admin/exams/${examId}/upload/answer-sheet`,
+      {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type, let browser set it with boundary
+        headers: new Headers()
+      },
+      '上传答题卡文件'
+    );
+  }
+
+  // 上传考试文件（统一方法，保留向后兼容）
   static async uploadExamFile(examId: string, file: File, type: 'question' | 'answer' | 'answerSheet'): Promise<ApiResponse<any>> {
-    // 使用统一的文件上传服务
-    const FileUploadService = await import('../services/fileUploadService');
-    return FileUploadService.default.uploadExamFile(file, examId, type);
+    switch (type) {
+      case 'question':
+        return this.uploadPaperFile(examId, file);
+      case 'answer':
+        return this.uploadAnswerFile(examId, file);
+      case 'answerSheet':
+        return this.uploadAnswerSheetFile(examId, file);
+      default:
+        throw new Error(`不支持的文件类型: ${type}`);
+    }
   }
 
   // 删除考试文件（统一使用文件删除服务）

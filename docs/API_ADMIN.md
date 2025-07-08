@@ -591,36 +591,13 @@ interface ApiResponse<T> {
 
 **步骤3: 上传考试文件并发布考试**
 
-**上传文件接口路径：** `POST /api/admin/exams/{examId}/files`
+**上传文件接口路径：** `POST /api/upload/exam-files`
 
 **发布考试接口路径：** `POST /api/admin/exams/{examId}/publish`
 
 **描述**: 上传考试相关文件并发布考试（第三步）
 
 **上传文件请求类型**: `multipart/form-data`
-
-**上传文件请求参数**:
-```typescript
-{
-  file: File,                      // 文件对象
-  type: 'question' | 'answer' | 'answer_sheet'  // 文件类型（必需）
-}
-```
-
-**上传文件响应格式**:
-```typescript
-{
-  success: boolean,
-  data: {
-    fileId: string,                // 文件ID
-    fileName: string,              // 文件名
-    fileType: 'question' | 'answer' | 'answer_sheet',
-    fileSize: number,              // 文件大小（字节）
-    uploadedAt: string             // 上传时间
-  },
-  message: "文件上传成功"
-}
-```
 
 **发布考试请求参数：**
 ```typescript
@@ -631,7 +608,7 @@ interface ApiResponse<T> {
 }
 ```
 
-**发布考试响应格式：**
+**响应格式：**
 ```typescript
 {
   success: boolean,
@@ -643,56 +620,6 @@ interface ApiResponse<T> {
   },
   message: "考试发布成功"
 }
-```
-
-**使用示例：**
-```typescript
-// 1. 上传题目文件
-const questionFormData = new FormData();
-questionFormData.append('file', questionFile);
-questionFormData.append('type', 'question');
-
-const questionResponse = await fetch(`/api/admin/exams/${examId}/files`, {
-  method: 'POST',
-  headers: { 'Authorization': `Bearer ${token}` },
-  body: questionFormData
-});
-
-// 2. 上传答案文件
-const answerFormData = new FormData();
-answerFormData.append('file', answerFile);
-answerFormData.append('type', 'answer');
-
-const answerResponse = await fetch(`/api/admin/exams/${examId}/files`, {
-  method: 'POST',
-  headers: { 'Authorization': `Bearer ${token}` },
-  body: answerFormData
-});
-
-// 3. 上传答题卡文件
-const sheetFormData = new FormData();
-sheetFormData.append('file', sheetFile);
-sheetFormData.append('type', 'answer_sheet');
-
-const sheetResponse = await fetch(`/api/admin/exams/${examId}/files`, {
-  method: 'POST',
-  headers: { 'Authorization': `Bearer ${token}` },
-  body: sheetFormData
-});
-
-// 4. 发布考试
-const publishResponse = await fetch(`/api/admin/exams/${examId}/publish`, {
-  method: 'POST',
-  headers: { 
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    questionFileId: questionResponse.data.fileId,
-    answerFileId: answerResponse.data.fileId,
-    answerSheetFileId: sheetResponse.data.fileId
-  })
-});
 ```
 
 ### 3.3 更新考试（优化版）
@@ -733,6 +660,12 @@ const publishResponse = await fetch(`/api/admin/exams/${examId}/publish`, {
   message: "考试更新成功"
 }
 ```
+  startTime?: string,
+  endTime?: string,
+  totalQuestions?: number,
+  duration?: number
+}
+```
 
 ### 3.4 发布考试
 
@@ -746,12 +679,11 @@ const publishResponse = await fetch(`/api/admin/exams/${examId}/publish`, {
 
 **接口路径：** `DELETE /api/admin/exams/{examId}`
 
-**注意：** 考试文件上传使用专用接口，支持文件类型区分：
-- 文件上传：`POST /api/admin/exams/{examId}/files`（需要指定type参数）
-- 文件删除：`DELETE /api/admin/exams/{examId}/files/{fileId}`
-- 支持的文件类型：question（题目）、answer（答案）、answer_sheet（答题卡）
+**注意：** 考试文件上传已统一使用文件上传服务，请参考以下接口：
+- 文件上传：`POST /api/upload/exam-files`
+- 文件删除：`DELETE /api/files/{fileId}`
 
-详细说明请参考上述接口文档。
+详细说明请参考[文件上传服务文档](./API_FILE_UPLOAD.md)
 
 ### 3.7 设置题目分值
 
@@ -853,171 +785,6 @@ const publishResponse = await fetch(`/api/admin/exams/${examId}/publish`, {
     totalScore: number       // 更新后的总分
   },
   message: "题目分值更新成功"
-}
-```
-
-### 3.10 考试文件管理
-
-#### 3.10.1 上传考试文件
-
-**接口路径：** `POST /api/admin/exams/{examId}/files`
-
-**描述**: 为指定考试上传文件，支持题目、答案、答题卡三种类型
-
-**请求类型**: `multipart/form-data`
-
-**路径参数**:
-- `examId` (string): 考试ID
-
-**请求参数**:
-```typescript
-{
-  file: File,                                    // 文件对象（必需）
-  type: 'question' | 'answer' | 'answer_sheet'   // 文件类型（必需）
-}
-```
-
-**文件类型说明**:
-- `question`: 题目文件（试题PDF等）
-- `answer`: 答案文件（标准答案PDF等）
-- `answer_sheet`: 答题卡文件（答题卡模板PDF等）
-
-**支持的文件格式**: PDF, DOC, DOCX, JPG, PNG（大小限制：10MB）
-
-**响应格式**:
-```typescript
-{
-  success: boolean,
-  data: {
-    fileId: string,                // 文件ID
-    fileName: string,              // 原始文件名
-    fileType: 'question' | 'answer' | 'answer_sheet',
-    fileSize: number,              // 文件大小（字节）
-    uploadedAt: string,            // 上传时间
-    downloadUrl: string            // 文件下载URL
-  },
-  message: "文件上传成功"
-}
-```
-
-**使用示例**:
-```javascript
-// JavaScript前端上传示例
-const uploadExamFile = async (examId, file, type) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('type', type);
-  
-  const response = await fetch(`/api/admin/exams/${examId}/files`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${adminToken}`
-      // 注意：不要设置Content-Type，让浏览器自动设置
-    },
-    body: formData
-  });
-  
-  return response.json();
-};
-
-// 使用
-const result = await uploadExamFile('exam_001', questionFile, 'question');
-```
-
-#### 3.10.2 获取考试文件列表
-
-**接口路径：** `GET /api/admin/exams/{examId}/files`
-
-**描述**: 获取指定考试的所有已上传文件
-
-**路径参数**:
-- `examId` (string): 考试ID
-
-**查询参数**:
-- `type?` (string): 文件类型过滤 question | answer | answer_sheet
-
-**响应格式**:
-```typescript
-{
-  success: boolean,
-  data: Array<{
-    fileId: string,
-    fileName: string,
-    fileType: 'question' | 'answer' | 'answer_sheet',
-    fileSize: number,
-    uploadedAt: string,
-    downloadUrl: string
-  }>
-}
-```
-
-#### 3.10.3 下载考试文件
-
-**接口路径：** `GET /api/admin/exams/{examId}/files/{fileId}/download`
-
-**描述**: 下载指定的考试文件
-
-**路径参数**:
-- `examId` (string): 考试ID
-- `fileId` (string): 文件ID
-
-**响应**: 直接返回文件流（用于下载）
-
-#### 3.10.4 删除考试文件
-
-**接口路径：** `DELETE /api/admin/exams/{examId}/files/{fileId}`
-
-**描述**: 删除指定的考试文件
-
-**路径参数**:
-- `examId` (string): 考试ID
-- `fileId` (string): 文件ID
-
-**响应格式**:
-```typescript
-{
-  success: boolean,
-  message: "文件删除成功"
-}
-```
-
-**注意事项**:
-- 删除文件前请确保文件未被考试使用
-- 已发布的考试不建议删除关联文件
-- 删除操作不可恢复
-
-#### 3.10.5 替换考试文件
-
-**接口路径：** `PUT /api/admin/exams/{examId}/files/{fileId}`
-
-**描述**: 替换已上传的考试文件（保持文件ID不变）
-
-**请求类型**: `multipart/form-data`
-
-**路径参数**:
-- `examId` (string): 考试ID
-- `fileId` (string): 要替换的文件ID
-
-**请求参数**:
-```typescript
-{
-  file: File                     // 新的文件对象
-}
-```
-
-**响应格式**:
-```typescript
-{
-  success: boolean,
-  data: {
-    fileId: string,              // 文件ID（保持不变）
-    fileName: string,            // 新文件名
-    fileType: string,            // 文件类型（保持不变）
-    fileSize: number,            // 新文件大小
-    uploadedAt: string,          // 更新时间
-    downloadUrl: string          // 新文件下载URL
-  },
-  message: "文件替换成功"
 }
 ```
 

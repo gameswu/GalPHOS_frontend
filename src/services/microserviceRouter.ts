@@ -65,7 +65,6 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/admin/exams/*',
       '/api/admin/exams/*/publish',
       '/api/admin/exams/*/unpublish',
-      '/api/admin/exams/*/files*',  // 管理员考试文件管理
       // 学生考试查看（基本信息，排除成绩相关）
       '/api/student/exams',
       '/api/student/exams/*',  // 考试详情查看，但会被更具体的成绩路径覆盖
@@ -84,10 +83,9 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
     baseUrl: process.env.REACT_APP_SUBMISSION_SERVICE_URL || 'http://localhost:3004',
     port: 3004,
     paths: [
-      // 独立学生账号的自主提交（统一路由格式）
+      // 独立学生账号的自主提交
       '/api/student/exams/*/submit*',
       '/api/student/exams/*/submission*',
-      '/api/student/exams/*/upload-answer*',  // 学生上传答题图片统一路由
       // 教练代理非独立学生提交（教练权限）
       '/api/coach/exams/*/submissions*',
       '/api/coach/exams/*/upload-answer*',
@@ -95,7 +93,7 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/grader/submissions*',
       '/api/grader/exams/*/progress*'
     ],
-    description: '答题卡提交和管理服务 - 区分独立学生自主提交和教练代理提交，统一路由格式',
+    description: '答题卡提交和管理服务 - 区分独立学生自主提交和教练代理提交',
     healthCheck: '/health'
   },
 
@@ -186,7 +184,7 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       '/api/download*',
       '/api/files*'
     ],
-    description: '文件上传存储和访问管理服务 - v1.3.4版：头像上传通过各角色profile API内部处理, v1.3.1版：成绩导出迁移至成绩统计服务，学生答题图片上传迁移至提交服务',
+    description: '文件上传存储和访问管理服务 - v1.3.4版：头像上传通过各角色profile API内部处理, v1.3.1版：成绩导出迁移至成绩统计服务',
     healthCheck: '/health'
   },
 
@@ -378,7 +376,7 @@ export class MicroserviceRouter {
     // 根据角色前缀进行二级推断
     if (path.startsWith('/api/student/')) {
       // 独立学生账号相关请求优先级：自主提交 > 考试查看 > 成绩查看 > 地区变更 > 文件下载 > 个人资料管理
-      if (path.includes('submit') || path.includes('submission') || path.includes('upload-answer')) return MICROSERVICE_CONFIG.submission;
+      if (path.includes('submit') || path.includes('submission')) return MICROSERVICE_CONFIG.submission;
       if (path.includes('exam') && !path.includes('score') && !path.includes('ranking')) return MICROSERVICE_CONFIG.examManagement;
       if (path.includes('score') || path.includes('ranking') || path.includes('dashboard')) return MICROSERVICE_CONFIG.scoreStatistics;
       if (path.includes('region-change')) return MICROSERVICE_CONFIG.regionManagement;

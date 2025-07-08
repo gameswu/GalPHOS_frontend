@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   Table,
@@ -221,7 +221,7 @@ const ScoreSettingsTab: React.FC<ScoreSettingsTabProps> = ({
                   />
                   <Button 
                     type="dashed"
-                    onClick={async () => {
+                    onClick={() => {
                       const questions = Array.from({ length: totalQuestions }, (_, index) => ({
                         number: index + 1,
                         score: 5
@@ -311,7 +311,7 @@ interface ExamManagementProps {
   onPublishExam: (id: string) => Promise<void>;
   onUnpublishExam: (id: string) => Promise<void>;
   onUploadFile: (file: File, type: 'question' | 'answer' | 'answerSheet', examId?: string) => Promise<ExamFile>;
-  onDeleteFile: (fileId: string, examId?: string) => Promise<void>;
+  onDeleteFile: (fileId: string) => Promise<void>;
   onSetQuestionScores: (examId: string, questions: { number: number; score: number }[]) => Promise<any>;
   onGetQuestionScores: (examId: string) => Promise<any>;
   onUpdateSingleQuestionScore: (examId: string, questionNumber: number, score: number) => Promise<any>;
@@ -964,40 +964,14 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     }
   };
   
-  // 统一的删除文件辅助函数
-  const deleteUploadedFile = async (fileId: string, fieldName: 'questionFile' | 'answerFile' | 'answerSheetFile') => {
-    try {
-      // 在创建考试时使用预申请的ID，在编辑考试时使用现有的考试ID
-      const deleteExamId = reservedExamId || (editingExam?.id);
-      
-      // 调用API删除文件
-      await onDeleteFile(fileId, deleteExamId);
-      
-      // 清除本地状态
-      setUploadedFiles(prev => ({ ...prev, [fieldName]: undefined }));
-      
-      const fileTypeMap = {
-        questionFile: '试题',
-        answerFile: '答案',
-        answerSheetFile: '答题卡'
-      };
-      console.log(`${fileTypeMap[fieldName]}文件删除成功`);
-    } catch (error) {
-      console.error('删除文件失败:', error);
-    }
-  };
-
   // 删除上传的文件
   const handleDeleteFile = async (fieldName: 'questionFile' | 'answerFile' | 'answerSheetFile') => {
     const file = form.getFieldValue(fieldName);
     if (!file || !file.id) return;
     
     try {
-      // 在创建考试时使用预申请的ID，在编辑考试时使用现有的考试ID
-      const deleteExamId = reservedExamId || (editingExam?.id);
-      
       // 调用API删除文件
-      await onDeleteFile(file.id, deleteExamId);
+      await onDeleteFile(file.id);
       
       // 清除表单和本地状态
       form.setFieldsValue({ [fieldName]: undefined });
@@ -1015,17 +989,6 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       console.error('文件删除失败:', error);
     }
   };
-
-  // 统一的删除文件处理函数
-  const handleDeleteFileClick = useCallback(async (fileId: string, fileType: 'questionFile' | 'answerFile' | 'answerSheetFile') => {
-    try {
-      const deleteExamId = reservedExamId || (editingExam?.id);
-      await onDeleteFile(fileId, deleteExamId);
-      setUploadedFiles(prev => ({ ...prev, [fileType]: undefined }));
-    } catch (error) {
-      console.error('删除文件失败:', error);
-    }
-  }, [reservedExamId, editingExam, onDeleteFile]);
 
   // 处理分值设置
   const handleScoreSettings = (exam: Exam) => {
@@ -1296,14 +1259,9 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                               type="text" 
                               danger 
                               icon={<DeleteOutlined />} 
-                              onClick={async () => {
+                              onClick={() => {
                                 if (uploadedFiles.questionFile?.id) {
-                                  try {
-                                    const deleteExamId = reservedExamId || (editingExam?.id);
-                                    await onDeleteFile(uploadedFiles.questionFile.id, deleteExamId);
-                                  } catch (error) {
-                                    console.error('删除文件失败:', error);
-                                  }
+                                  onDeleteFile(uploadedFiles.questionFile.id);
                                   setUploadedFiles(prev => ({ ...prev, questionFile: undefined }));
                                 }
                               }}
@@ -1347,14 +1305,9 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                               type="text" 
                               danger 
                               icon={<DeleteOutlined />} 
-                              onClick={async () => {
+                              onClick={() => {
                                 if (uploadedFiles.answerFile?.id) {
-                                  try {
-                                    const deleteExamId = reservedExamId || (editingExam?.id);
-                                    await onDeleteFile(uploadedFiles.answerFile.id, deleteExamId);
-                                  } catch (error) {
-                                    console.error('删除文件失败:', error);
-                                  }
+                                  onDeleteFile(uploadedFiles.answerFile.id);
                                   setUploadedFiles(prev => ({ ...prev, answerFile: undefined }));
                                 }
                               }}
@@ -1398,14 +1351,9 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                               type="text" 
                               danger 
                               icon={<DeleteOutlined />} 
-                              onClick={async () => {
+                              onClick={() => {
                                 if (uploadedFiles.answerSheetFile?.id) {
-                                  try {
-                                    const deleteExamId = reservedExamId || (editingExam?.id);
-                                    await onDeleteFile(uploadedFiles.answerSheetFile.id, deleteExamId);
-                                  } catch (error) {
-                                    console.error('删除文件失败:', error);
-                                  }
+                                  onDeleteFile(uploadedFiles.answerSheetFile.id);
                                   setUploadedFiles(prev => ({ ...prev, answerSheetFile: undefined }));
                                 }
                               }}
@@ -1706,14 +1654,9 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                               type="text" 
                               danger 
                               icon={<DeleteOutlined />} 
-                              onClick={async () => {
+                              onClick={() => {
                                 if (uploadedFiles.questionFile?.id) {
-                                  try {
-                                    const deleteExamId = reservedExamId || (editingExam?.id);
-                                    await onDeleteFile(uploadedFiles.questionFile.id, deleteExamId);
-                                  } catch (error) {
-                                    console.error('删除文件失败:', error);
-                                  }
+                                  onDeleteFile(uploadedFiles.questionFile.id);
                                   setUploadedFiles(prev => ({ ...prev, questionFile: undefined }));
                                 }
                               }}
@@ -1757,14 +1700,9 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                               type="text" 
                               danger 
                               icon={<DeleteOutlined />} 
-                              onClick={async () => {
+                              onClick={() => {
                                 if (uploadedFiles.answerFile?.id) {
-                                  try {
-                                    const deleteExamId = reservedExamId || (editingExam?.id);
-                                    await onDeleteFile(uploadedFiles.answerFile.id, deleteExamId);
-                                  } catch (error) {
-                                    console.error('删除文件失败:', error);
-                                  }
+                                  onDeleteFile(uploadedFiles.answerFile.id);
                                   setUploadedFiles(prev => ({ ...prev, answerFile: undefined }));
                                 }
                               }}
@@ -1808,14 +1746,9 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                               type="text" 
                               danger 
                               icon={<DeleteOutlined />} 
-                              onClick={async () => {
+                              onClick={() => {
                                 if (uploadedFiles.answerSheetFile?.id) {
-                                  try {
-                                    const deleteExamId = reservedExamId || (editingExam?.id);
-                                    await onDeleteFile(uploadedFiles.answerSheetFile.id, deleteExamId);
-                                  } catch (error) {
-                                    console.error('删除文件失败:', error);
-                                  }
+                                  onDeleteFile(uploadedFiles.answerSheetFile.id);
                                   setUploadedFiles(prev => ({ ...prev, answerSheetFile: undefined }));
                                 }
                               }}
@@ -1850,6 +1783,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
             
             <div style={{ textAlign: 'right', marginTop: 16 }}>
               <Space>
+                <Button onClick={closeExamCreation}>取消</Button>
                 <Button type="primary" onClick={() => handleStepChange(ExamCreationStepEnum.ScoreSettings)}>
                   下一步
                 </Button>
@@ -2019,7 +1953,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
               >
                 <TextArea 
                   rows={4} 
-                                   placeholder="请输入考试的详细信息，包括考试内容、注意事项等"
+                  placeholder="请输入考试的详细信息，包括考试内容、注意事项等"
                 />
               </Form.Item>
 
@@ -2116,14 +2050,9 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                               type="text" 
                               danger 
                               icon={<DeleteOutlined />} 
-                              onClick={async () => {
+                              onClick={() => {
                                 if (uploadedFiles.questionFile?.id) {
-                                  try {
-                                    const deleteExamId = reservedExamId || (editingExam?.id);
-                                    await onDeleteFile(uploadedFiles.questionFile.id, deleteExamId);
-                                  } catch (error) {
-                                    console.error('删除文件失败:', error);
-                                  }
+                                  onDeleteFile(uploadedFiles.questionFile.id);
                                   setUploadedFiles(prev => ({ ...prev, questionFile: undefined }));
                                 }
                               }}
@@ -2167,14 +2096,9 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                               type="text" 
                               danger 
                               icon={<DeleteOutlined />} 
-                              onClick={async () => {
+                              onClick={() => {
                                 if (uploadedFiles.answerFile?.id) {
-                                  try {
-                                    const deleteExamId = reservedExamId || (editingExam?.id);
-                                    await onDeleteFile(uploadedFiles.answerFile.id, deleteExamId);
-                                  } catch (error) {
-                                    console.error('删除文件失败:', error);
-                                  }
+                                  onDeleteFile(uploadedFiles.answerFile.id);
                                   setUploadedFiles(prev => ({ ...prev, answerFile: undefined }));
                                 }
                               }}
@@ -2218,14 +2142,9 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                               type="text" 
                               danger 
                               icon={<DeleteOutlined />} 
-                              onClick={async () => {
+                              onClick={() => {
                                 if (uploadedFiles.answerSheetFile?.id) {
-                                  try {
-                                    const deleteExamId = reservedExamId || (editingExam?.id);
-                                    await onDeleteFile(uploadedFiles.answerSheetFile.id, deleteExamId);
-                                  } catch (error) {
-                                    console.error('删除文件失败:', error);
-                                  }
+                                  onDeleteFile(uploadedFiles.answerSheetFile.id);
                                   setUploadedFiles(prev => ({ ...prev, answerSheetFile: undefined }));
                                 }
                               }}
@@ -2260,6 +2179,403 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
             
             <div style={{ textAlign: 'right', marginTop: 16 }}>
               <Space>
+                <Button onClick={closeExamCreation}>取消</Button>
+                <Button type="primary" onClick={() => handleStepChange(ExamCreationStepEnum.ScoreSettings)}>
+                  下一步
+                </Button>
+              </Space>
+            </div>
+          </div>
+          
+          <div style={{ display: currentStep === ExamCreationStepEnum.ScoreSettings ? 'block' : 'none' }}>
+            <Form
+              form={scoreSettingsForm}
+              layout="vertical"
+              initialValues={{ questions: generatedQuestions }}
+            >
+              <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f', marginBottom: 20 }}>
+                <Text type="secondary">
+                  💡 提示：可以调整每道题的分值，总分应与基本信息中设置的总分保持一致
+                </Text>
+              </Card>
+              
+              <Form.List name="questions">
+                {(fields) => (
+                  <>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '0 10px' }}>
+                      {fields.map(({ key, name }) => (
+                        <Row key={key} gutter={16} style={{ marginBottom: 8, alignItems: 'center' }}>
+                          <Col span={8}>
+                            <Text>第 {name + 1} 题</Text>
+                          </Col>
+                          <Col span={16}>
+                            <Form.Item
+                              name={[name, 'score']}
+                              noStyle
+                            >
+                              <InputNumber
+                                min={0.5}
+                                max={100}
+                                step={0.5}
+                                onChange={(value) => handleScoreChange(value, name)}
+                                addonAfter="分"
+                                style={{ width: '100%' }}
+                                precision={1}
+                              />
+                            </Form.Item>
+                          </Col>
+                        </Row>
+                      ))}
+                    </div>
+                    
+                    <div style={{ textAlign: 'right', marginTop: 16, padding: '12px', background: '#f6ffed', borderRadius: '6px' }}>
+                      <Text strong>
+                        总题数：{scoreSettingsForm.getFieldValue('questions')?.length || 0} 题，
+                        总分：{calculateTotalSetScore().toFixed(1)} 分，
+                        基本信息设置总分：{(basicInfoForm.getFieldValue('totalScore') || 0).toFixed(1)} 分
+                      </Text>
+                    </div>
+                  </>
+                )}
+              </Form.List>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={() => setCurrentStep(ExamCreationStepEnum.BasicInfo)}>上一步</Button>
+                <Button type="primary" onClick={() => handleStepChange(ExamCreationStepEnum.PublishSettings)}>
+                  下一步
+                </Button>
+              </Space>
+            </div>
+          </div>
+          
+          <div style={{ display: currentStep === ExamCreationStepEnum.PublishSettings ? 'block' : 'none' }}>
+            <Form
+              form={publishSettingsForm}
+              layout="vertical"
+              initialValues={{ shouldPublish: false }}
+            >
+              <Card size="small" style={{ marginBottom: 16, background: '#e6f7ff', border: '1px solid #91d5ff' }}>
+                <Text>
+                  <InfoCircleOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+                  考试创建完成后，您可以选择立即发布或保存为草稿。发布后，学生将能够看到此考试。
+                </Text>
+              </Card>
+              
+              <Form.Item name="shouldPublish" valuePropName="checked">
+                <Switch checkedChildren="发布" unCheckedChildren="草稿" />
+                <Text style={{ marginLeft: 8 }}>
+                  创建后立即发布考试
+                </Text>
+              </Form.Item>
+              
+              <div style={{ padding: 16, background: '#f5f5f5', borderRadius: 4 }}>
+                <Title level={5}>考试信息确认</Title>
+                <Descriptions column={1} bordered size="small">
+                  <Descriptions.Item label="考试标题">{basicInfoForm.getFieldValue('title')}</Descriptions.Item>
+                  <Descriptions.Item label="详细信息">{basicInfoForm.getFieldValue('description')}</Descriptions.Item>
+                  <Descriptions.Item label="题目数量">{basicInfoForm.getFieldValue('totalQuestions')} 题</Descriptions.Item>
+                  <Descriptions.Item label="总分值">{(basicInfoForm.getFieldValue('totalScore') || 0).toFixed(1)} 分</Descriptions.Item>
+                  <Descriptions.Item label="考试时长">{basicInfoForm.getFieldValue('duration')} 分钟</Descriptions.Item>
+                  <Descriptions.Item label="考试时间">
+                    {basicInfoForm.getFieldValue('examTime') ? 
+                      `${dayjs(basicInfoForm.getFieldValue('examTime')[0]).format('YYYY-MM-DD HH:mm')} 至 ${dayjs(basicInfoForm.getFieldValue('examTime')[1]).format('YYYY-MM-DD HH:mm')}` :
+                      '未设置'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="考试文件">
+                    {uploadedFiles.questionFile ? <Tag color="success">已上传试题</Tag> : <Tag color="warning">未上传试题</Tag>}
+                    {uploadedFiles.answerFile ? <Tag color="success">已上传答案</Tag> : <Tag color="warning">未上传答案</Tag>}
+                    {uploadedFiles.answerSheetFile ? <Tag color="success">已上传答题卡</Tag> : <Tag color="warning">未上传答题卡</Tag>}
+                  </Descriptions.Item>
+                </Descriptions>
+              </div>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={() => setCurrentStep(ExamCreationStepEnum.ScoreSettings)}>上一步</Button>
+                <Button type="primary" onClick={handleExamCreationSubmit} loading={loading}>
+                  创建考试
+                </Button>
+              </Space>
+            </div>
+          </div>
+        </div>
+      </Modal>
+      
+      {/* 编辑考试模态框 - 三步流程 */}
+      <Modal
+        title="编辑考试"
+        open={examModalVisible}
+        onCancel={() => setExamModalVisible(false)}
+        footer={null}
+        width={800}
+      >
+        <div>
+          <Steps
+            current={editCurrentStep}
+            onChange={handleEditStepChange}
+            style={{ marginBottom: 24 }}
+          >
+            <Step title="基本信息" description="编辑考试基本信息" />
+            <Step title="分值设置" description="设置题目分数" />
+            <Step title="发布设置" description="设置发布状态" />
+          </Steps>
+          
+          <div style={{ display: editCurrentStep === ExamCreationStepEnum.BasicInfo ? 'block' : 'none' }}>
+            <Form
+              form={editBasicInfoForm}
+              layout="vertical"
+            >
+              <Form.Item
+                label="考试标题"
+                name="title"
+                rules={[
+                  { required: true, message: '请输入考试标题' },
+                  { min: 2, max: 100, message: '考试标题长度应在2-100个字符之间' }
+                ]}
+              >
+                <Input placeholder="请输入考试标题" />
+              </Form.Item>
+
+              <Form.Item
+                label="详细信息"
+                name="description"
+                rules={[
+                  { required: true, message: '请输入考试详细信息' },
+                  { min: 10, max: 1000, message: '详细信息长度应在10-1000个字符之间' }
+                ]}
+              >
+                <TextArea 
+                  rows={4} 
+                  placeholder="请输入考试的详细信息，包括考试内容、注意事项等"
+                />
+              </Form.Item>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="题目数量"
+                    name="totalQuestions"
+                    rules={[{ required: true, message: '请输入题目数量' }]}
+                  >
+                    <InputNumber
+                      min={1}
+                      max={200}
+                      style={{ width: '100%' }}
+                      placeholder="请输入题目数量"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="总分值"
+                    name="totalScore"
+                    rules={[{ required: true, message: '请输入考试总分值' }]}
+                  >
+                    <InputNumber
+                      min={10}
+                      max={1000}
+                      style={{ width: '100%' }}
+                      placeholder="请输入考试总分值"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="考试时长（分钟）"
+                    name="duration"
+                    rules={[{ required: true, message: '请输入考试时长' }]}
+                  >
+                    <InputNumber
+                      min={30}
+                      max={600}
+                      style={{ width: '100%' }}
+                      placeholder="请输入考试时长（分钟）"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={24}>
+                  <Form.Item
+                    label="考试时间"
+                    name="examTime"
+                    rules={[
+                      { required: true, message: '请选择考试时间' },
+                      {
+                        validator: (_, value) => {
+                          if (!value || !value[0] || !value[1]) {
+                            return Promise.reject(new Error('请选择完整的考试时间段'));
+                          }
+                          const timeValidation = validateTimeRange(value[0], value[1]);
+                          if (!timeValidation.isValid) {
+                            return Promise.reject(new Error(timeValidation.message));
+                          }
+                          return Promise.resolve();
+                        }
+                      }
+                    ]}
+                  >
+                    <RangePicker
+                      showTime
+                      format="YYYY-MM-DD HH:mm"
+                      placeholder={['开始时间', '结束时间']}
+                      style={{ width: '100%' }}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* 文件上传区域 */}
+              <Divider orientation="left">考试文件</Divider>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item label="试题文件">
+                    <div>
+                      {uploadedFiles.questionFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                                                           {uploadedFiles.questionFile.filename}
+                            </Text>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.questionFile?.id) {
+                                  onDeleteFile(uploadedFiles.questionFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, questionFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'question').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, questionFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
+                        >
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.question}
+                            block
+                          >
+                            上传试题文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="答案文件">
+                    <div>
+                      {uploadedFiles.answerFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                              {uploadedFiles.answerFile.filename}
+                            </Text>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.answerFile?.id) {
+                                  onDeleteFile(uploadedFiles.answerFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, answerFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'answer').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, answerFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
+                        >
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.answer}
+                            block
+                          >
+                            上传答案文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="答题卡文件">
+                    <div>
+                      {uploadedFiles.answerSheetFile ? (
+                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text ellipsis style={{ maxWidth: '70%' }}>
+                              <FilePdfOutlined style={{ marginRight: 8 }} />
+                              {uploadedFiles.answerSheetFile.filename}
+                            </Text>
+                            <Button 
+                              type="text" 
+                              danger 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => {
+                                if (uploadedFiles.answerSheetFile?.id) {
+                                  onDeleteFile(uploadedFiles.answerSheetFile.id);
+                                  setUploadedFiles(prev => ({ ...prev, answerSheetFile: undefined }));
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <Upload
+                          accept=".pdf,.doc,.docx"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleFileUpload(file, 'answerSheet').then(uploadedFile => {
+                              setUploadedFiles(prev => ({ ...prev, answerSheetFile: uploadedFile }));
+                            });
+                            return false;
+                          }}
+                        >
+                          <Button 
+                            icon={<CloudUploadOutlined />} 
+                            loading={uploading.answerSheet}
+                            block
+                          >
+                            上传答题卡文件
+                          </Button>
+                        </Upload>
+                      )}
+                    </div>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+            
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Space>
+                <Button onClick={closeExamCreation}>取消</Button>
                 <Button type="primary" onClick={() => handleEditStepChange(ExamCreationStepEnum.ScoreSettings)}>
                   下一步
                 </Button>
@@ -2410,7 +2726,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
               key="edit" 
               type="primary" 
               icon={<EditOutlined />}
-              onClick={async () => {
+              onClick={() => {
                 setExamDetailVisible(false);
                 selectedExam && handleEditExam(selectedExam);
               }}
