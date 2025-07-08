@@ -379,6 +379,24 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
 
   // 预获取ID相关状态
   const [reservedExamId, setReservedExamId] = useState<string | null>(null);
+
+  // 辅助函数：计算题目分数总和
+  const calculateTotalScore = (questions: {number: number; score: number}[]): number => {
+    return questions.reduce((sum, question) => sum + (question.score || 0), 0);
+  };
+
+  // 辅助函数：从考试数据计算实际总分
+  const getExamTotalScore = (exam: Exam): number => {
+    // 优先使用maxScore，如果没有则返回0（让用户手动输入）
+    return exam.maxScore || 0;
+  };
+
+  // 辅助函数：验证分数一致性
+  const validateScoreConsistency = (totalScore: number, questions: {number: number; score: number}[]): boolean => {
+    const questionsTotal = calculateTotalScore(questions);
+    return Math.abs(totalScore - questionsTotal) < 0.1; // 允许0.1的浮点数误差
+  };
+
   const [reservingId, setReservingId] = useState(false);
 
   // 步骤变更处理函数
@@ -497,6 +515,14 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       const scoreSettings = await scoreSettingsForm.validateFields();
       const publishSettings = await publishSettingsForm.validateFields();
       
+      // 验证分数一致性
+      const isScoreConsistent = validateScoreConsistency(basicInfo.totalScore, scoreSettings.questions);
+      if (!isScoreConsistent) {
+        const questionsTotal = calculateTotalScore(scoreSettings.questions);
+        message.error(`分数不一致：总分值 ${basicInfo.totalScore} 分，但各题分数总和为 ${questionsTotal} 分。请确保两者相等。`);
+        return;
+      }
+      
       // 验证考试时间
       const timeValidation = validateTimeRange(basicInfo.examTime[0], basicInfo.examTime[1]);
       if (!timeValidation.isValid) {
@@ -577,6 +603,14 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
       
       if (!editingExam) {
         message.error('未找到要编辑的考试');
+        return;
+      }
+      
+      // 验证分数一致性
+      const isScoreConsistent = validateScoreConsistency(basicInfo.totalScore, scoreSettings.questions);
+      if (!isScoreConsistent) {
+        const questionsTotal = calculateTotalScore(scoreSettings.questions);
+        message.error(`分数不一致：总分值 ${basicInfo.totalScore} 分，但各题分数总和为 ${questionsTotal} 分。请确保两者相等。`);
         return;
       }
       
@@ -840,12 +874,13 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     setEditCurrentStep(showScoreSettings ? ExamCreationStepEnum.ScoreSettings : ExamCreationStepEnum.BasicInfo);
     
     // 设置基本信息表单
+    const examTotalScore = getExamTotalScore(exam);
     editBasicInfoForm.setFieldsValue({
       title: exam.title,
       description: exam.description,
       examTime: [dayjs(exam.startTime), dayjs(exam.endTime)],
       totalQuestions: exam.totalQuestions,
-      totalScore: exam.maxScore || 100, // 使用 maxScore 或默认值
+      totalScore: examTotalScore, // 使用辅助函数获取总分
       duration: exam.duration
     });
     
@@ -863,11 +898,12 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     
     // 加载或初始化分值设置
     if (exam.totalQuestions && exam.totalQuestions > 0) {
-      // 这里可以调用API获取实际的分值设置，现在先用默认值
-      const totalQuestions = exam.totalQuestions || 1; // 确保不为undefined
+      // 这里可以调用API获取实际的分值设置，现在先用平均分配
+      const totalQuestions = exam.totalQuestions;
+      const totalScore = examTotalScore || (exam.totalQuestions * 5); // 如果没有总分，默认每题5分
       const questions = Array.from({ length: totalQuestions }, (_, idx) => ({
         number: idx + 1,
-        score: Math.round((exam.maxScore || 100) / totalQuestions * 10) / 10
+        score: Math.round(totalScore / totalQuestions * 10) / 10
       }));
       setEditGeneratedQuestions(questions);
       editScoreSettingsForm.setFieldsValue({ questions });
@@ -1212,6 +1248,19 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                       max={200}
                       style={{ width: '100%' }}
                       placeholder="请输入题目数量"
+                      onChange={(value) => {
+                        if (value && value > 0) {
+                          // 获取当前总分
+                          const currentTotalScore = basicInfoForm.getFieldValue('totalScore') || (value * 5);
+                          // 重新分配分数
+                          const questions = Array.from({ length: value }, (_, idx) => ({
+                            number: idx + 1,
+                            score: Math.round(currentTotalScore / value * 10) / 10
+                          }));
+                          setGeneratedQuestions(questions);
+                          scoreSettingsForm.setFieldsValue({ questions });
+                        }
+                      }}
                     />
                   </Form.Item>
                 </Col>
@@ -1220,7 +1269,6 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                     label="总分值"
                     name="totalScore"
                     rules={[{ required: true, message: '请输入考试总分值' }]}
-                    initialValue={100}
                   >
                     <InputNumber
                       min={10}
@@ -1228,6 +1276,19 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                       style={{ width: '100%' }}
                       placeholder="请输入考试总分值"
                       precision={1}
+                      onChange={(value) => {
+                        if (value && value > 0) {
+                          // 获取当前题目数量
+                          const currentTotalQuestions = basicInfoForm.getFieldValue('totalQuestions') || 20;
+                          // 重新分配分数
+                          const questions = Array.from({ length: currentTotalQuestions }, (_, idx) => ({
+                            number: idx + 1,
+                            score: Math.round(value / currentTotalQuestions * 10) / 10
+                          }));
+                          setGeneratedQuestions(questions);
+                          scoreSettingsForm.setFieldsValue({ questions });
+                        }
+                      }}
                     />
                   </Form.Item>
                 </Col>
@@ -1625,6 +1686,19 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                       max={200}
                       style={{ width: '100%' }}
                       placeholder="请输入题目数量"
+                      onChange={(value) => {
+                        if (value && value > 0) {
+                          // 获取当前总分
+                          const currentTotalScore = editBasicInfoForm.getFieldValue('totalScore') || (value * 5);
+                          // 重新分配分数
+                          const questions = Array.from({ length: value }, (_, idx) => ({
+                            number: idx + 1,
+                            score: Math.round(currentTotalScore / value * 10) / 10
+                          }));
+                          setEditGeneratedQuestions(questions);
+                          editScoreSettingsForm.setFieldsValue({ questions });
+                        }
+                      }}
                     />
                   </Form.Item>
                 </Col>
@@ -1639,6 +1713,20 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
                       max={1000}
                       style={{ width: '100%' }}
                       placeholder="请输入考试总分值"
+                      precision={1}
+                      onChange={(value) => {
+                        if (value && value > 0) {
+                          // 获取当前题目数量
+                          const currentTotalQuestions = editBasicInfoForm.getFieldValue('totalQuestions') || 20;
+                          // 重新分配分数
+                          const questions = Array.from({ length: currentTotalQuestions }, (_, idx) => ({
+                            number: idx + 1,
+                            score: Math.round(value / currentTotalQuestions * 10) / 10
+                          }));
+                          setEditGeneratedQuestions(questions);
+                          editScoreSettingsForm.setFieldsValue({ questions });
+                        }
+                      }}
                     />
                   </Form.Item>
                 </Col>
