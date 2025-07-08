@@ -332,6 +332,7 @@ export class FileUploadService extends BaseAPI {
   ): Promise<ApiResponse<FileUploadResult>> {
     // 通过微服务路由器获取完整URL
     const url = microserviceRouter.buildApiUrl(uploadPath);
+    console.log('Generated URL for answer image upload:', url);
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();

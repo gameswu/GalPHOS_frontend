@@ -86,6 +86,7 @@ export const MICROSERVICE_CONFIG: Record<string, MicroserviceConfig> = {
       // 独立学生账号的自主提交
       '/api/student/exams/*/submit*',
       '/api/student/exams/*/submission*',
+      '/api/student/upload/answer-image',
       // 教练代理非独立学生提交（教练权限）
       '/api/coach/exams/*/submissions*',
       '/api/coach/exams/*/upload-answer*',
@@ -332,7 +333,7 @@ export class MicroserviceRouter {
     }
     
     // 4. 提交相关（优先处理特定的提交上传）
-    if (path.includes('/submit') || path.includes('/submission') || path.includes('/upload-answer')) {
+    if (path.includes('/submit') || path.includes('/submission') || path.includes('/upload-answer') || path.includes('/student/upload/answer-image')) {
       return MICROSERVICE_CONFIG.submission;
     }
     
@@ -376,7 +377,7 @@ export class MicroserviceRouter {
     // 根据角色前缀进行二级推断
     if (path.startsWith('/api/student/')) {
       // 独立学生账号相关请求优先级：自主提交 > 考试查看 > 成绩查看 > 地区变更 > 文件下载 > 个人资料管理
-      if (path.includes('submit') || path.includes('submission')) return MICROSERVICE_CONFIG.submission;
+      if (path.includes('submit') || path.includes('submission') || path.includes('upload/answer-image')) return MICROSERVICE_CONFIG.submission;
       if (path.includes('exam') && !path.includes('score') && !path.includes('ranking')) return MICROSERVICE_CONFIG.examManagement;
       if (path.includes('score') || path.includes('ranking') || path.includes('dashboard')) return MICROSERVICE_CONFIG.scoreStatistics;
       if (path.includes('region-change')) return MICROSERVICE_CONFIG.regionManagement;
@@ -475,6 +476,8 @@ export class MicroserviceRouter {
    * 优先级：精确匹配 > 路径参数匹配 > 前缀匹配 > 通配符匹配
    */
   private findBestMatch(requestPath: string): { service: MicroserviceConfig; serviceName: string } | null {
+    console.log('[DEBUG] findBestMatch called with path:', requestPath);
+    
     const matches: Array<{ 
       service: MicroserviceConfig; 
       serviceName: string; 
@@ -490,6 +493,12 @@ export class MicroserviceRouter {
         // 精确匹配 - 最高优先级
         if (servicePath === requestPath) {
           priority = 4;
+          console.log('[DEBUG] Exact match found:', serviceName, servicePath, 'priority:', priority);
+          // 为学生答案图片上传路径提供更高的优先级
+          if (servicePath === '/api/student/upload/answer-image') {
+            priority = 6; // 确保学生答案图片上传被正确路由到提交服务
+            console.log('[DEBUG] Priority boosted for answer image upload:', priority);
+          }
           // 为头像上传路径提供更高的优先级
           if (servicePath === '/api/upload/avatar') {
             priority = 5; // 确保头像上传被正确路由到文件服务
@@ -502,25 +511,30 @@ export class MicroserviceRouter {
           const regex = new RegExp(`^${pathPattern}$`);
           if (regex.test(requestPath)) {
             priority = 3;
+            console.log('[DEBUG] Path parameter match found:', serviceName, servicePath, 'priority:', priority);
             matchLength = servicePath.length;
           }
         }
         // 前缀匹配
         else if (requestPath.startsWith(servicePath) && !servicePath.includes('*')) {
           priority = 2;
+          console.log('[DEBUG] Prefix match found:', serviceName, servicePath, 'priority:', priority);
           matchLength = servicePath.length;
         }
+        // 通配符匹配
         // 通配符匹配
         else if (servicePath.includes('*')) {
           const pattern = servicePath.replace(/\*/g, '.*');
           const regex = new RegExp(`^${pattern}`);
           if (regex.test(requestPath)) {
             priority = 1;
+            console.log('[DEBUG] Wildcard match found:', serviceName, servicePath, 'pattern:', pattern, 'priority:', priority);
             matchLength = servicePath.replace('*', '').length;
           }
         }
 
         if (priority > 0) {
+          console.log('[DEBUG] Adding match:', serviceName, servicePath, 'priority:', priority, 'matchLength:', matchLength);
           matches.push({
             service: config,
             serviceName,
@@ -531,7 +545,14 @@ export class MicroserviceRouter {
       }
     }
 
+    console.log('[DEBUG] All matches found:', matches.map(m => ({
+      service: m.serviceName,
+      priority: m.priority,
+      matchLength: m.matchLength
+    })));
+
     if (matches.length === 0) {
+      console.log('[DEBUG] No matches found');
       return null;
     }
 
@@ -542,6 +563,8 @@ export class MicroserviceRouter {
       }
       return b.matchLength - a.matchLength; // 匹配长度长的在前
     });
+
+    console.log('[DEBUG] Best match selected:', matches[0].serviceName, 'priority:', matches[0].priority);
 
     return {
       service: matches[0].service,
@@ -576,7 +599,11 @@ export class MicroserviceRouter {
    */
   buildApiUrl(apiPath: string): string {
     const service = this.routeRequest(apiPath);
-    return `${service.baseUrl}${apiPath}`;
+    const fullUrl = `${service.baseUrl}${apiPath}`;
+    if (apiPath === '/api/student/upload/answer-image') {
+      console.log('Router decision for answer image upload:', service.name, 'port:', service.port, 'URL:', fullUrl);
+    }
+    return fullUrl;
   }
 
   /**
