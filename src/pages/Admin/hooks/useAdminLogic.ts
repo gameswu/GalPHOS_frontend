@@ -136,28 +136,9 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.getExams();
       if (response.success && response.data) {
-        const exams = response.data;
-        
-        // 并行获取每个考试的参与人数（通过阅卷进度API）
-        const examsWithParticipants = await Promise.all(
-          exams.map(async (exam: any) => {
-            try {
-              const progressResponse = await AdminAPI.getGradingProgress(exam.id);
-              if (progressResponse.success && progressResponse.data) {
-                return {
-                  ...exam,
-                  participants: new Array(progressResponse.data.totalSubmissions || 0).fill(0).map((_, i) => `participant_${i}`)
-                };
-              }
-              return { ...exam, participants: [] };
-            } catch (error) {
-              console.warn(`获取考试${exam.id}参与人数失败:`, error);
-              return { ...exam, participants: [] };
-            }
-          })
-        );
-        
-        setExams(examsWithParticipants);
+        // 直接使用API返回的数据，包括participants字段
+        // 后端API应该返回正确的participants信息
+        setExams(response.data);
       } else {
         notification.showError(response.message || '获取考试数据失败');
         setExams([]);

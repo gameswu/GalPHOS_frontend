@@ -509,7 +509,8 @@ interface ApiResponse<T> {
     totalQuestions?: number,
     duration?: number,
     createdAt: string,
-    createdBy: string
+    createdBy: string,
+    participants?: string[]  // 参与考试的用户ID数组
   }>
 }
 ```
