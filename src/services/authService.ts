@@ -115,6 +115,12 @@ class AuthService {
     localStorage.removeItem('token');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userInfo');
+    
+    // 清除所有角色token（向后兼容）
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('coachToken');
+    localStorage.removeItem('studentToken');
+    localStorage.removeItem('graderToken');
   }
 
   /**
@@ -138,6 +144,17 @@ class AuthService {
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('userInfo', JSON.stringify(userData));
     localStorage.setItem('token', token);
+    
+    // 根据用户角色设置对应的角色token（向后兼容）
+    if (userData.role === 'admin' || userData.type === 'admin') {
+      localStorage.setItem('adminToken', token);
+    } else if (userData.role === 'coach') {
+      localStorage.setItem('coachToken', token);
+    } else if (userData.role === 'student') {
+      localStorage.setItem('studentToken', token);
+    } else if (userData.role === 'grader') {
+      localStorage.setItem('graderToken', token);
+    }
   }
 
   /**

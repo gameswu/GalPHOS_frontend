@@ -364,14 +364,34 @@ export class FileUploadService extends BaseAPI {
       xhr.timeout = 5 * 60 * 1000; // 5分钟超时
 
       // 添加认证头
-      const token = localStorage.getItem('token');
+      const token = this.getAuthToken();
       if (token) {
         xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      } else {
+        console.warn('FileUploadService: 未找到有效的认证token，请确保用户已登录');
       }
 
       // 发送请求
       xhr.send(formData);
     });
+  }
+
+  /**
+   * 获取当前用户的认证token
+   * 支持多种角色的token存储方式
+   */
+  private static getAuthToken(): string | null {
+    // 按优先级检查不同角色的token
+    const tokens = [
+      localStorage.getItem('adminToken'),    // 管理员token
+      localStorage.getItem('coachToken'),    // 教练token
+      localStorage.getItem('studentToken'),  // 学生token
+      localStorage.getItem('graderToken'),   // 阅卷员token
+      localStorage.getItem('token')          // 通用token（兼容旧版本）
+    ];
+
+    // 返回第一个非空的token
+    return tokens.find(token => token !== null && token !== 'null' && token !== '') || null;
   }
 
   /**
