@@ -296,7 +296,8 @@ export class FileUploadService extends BaseAPI {
       formData.append('studentUsername', options.studentUsername);
     }
 
-    // 添加时间戳，避免缓存问题
+    // 添加时间戳，避免浏览器缓存问题（后端可忽略此字段）
+    // 注意：后端FileStorageService当前未处理此字段，前端用于确保上传请求唯一性
     formData.append('timestamp', Date.now().toString());
 
     return formData;

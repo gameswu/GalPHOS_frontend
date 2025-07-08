@@ -94,13 +94,13 @@
 /api/admin/coach-students/{relationId}  # 教练学生关系操作
 /api/admin/coach-students/stats     # 教练学生统计
 
-# 所有角色个人资料管理（包含头像上传 v1.3.4）
-/api/admin/profile                  # 管理员个人资料与头像管理 (GET, PUT)
-/api/student/profile               # 学生个人资料与头像管理 (GET, PUT)
+# 所有角色个人资料管理（头像上传通过profile API内部处理 v1.3.4）
+/api/admin/profile                  # 管理员个人资料与头像管理 (GET, PUT) - 头像以base64格式在请求体中
+/api/student/profile               # 学生个人资料与头像管理 (GET, PUT) - 头像以base64格式在请求体中
 /api/student/password              # 学生密码修改 (PUT)
-/api/coach/profile                 # 教练个人信息与头像管理 (GET, PUT)
+/api/coach/profile                 # 教练个人信息与头像管理 (GET, PUT) - 头像以base64格式在请求体中
 /api/coach/password                # 教练密码修改 (PUT) 
-/api/grader/profile                # 阅卷员个人信息与头像管理 (GET, PUT)
+/api/grader/profile                # 阅卷员个人信息与头像管理 (GET, PUT) - 头像以base64格式在请求体中
 /api/grader/password               # 阅卷员密码修改 (PUT)
 
 # 账号注销功能（新增 v1.3.0）

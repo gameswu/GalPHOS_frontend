@@ -446,26 +446,34 @@ interface ApiResponse<T> {
 ```
 
 ### 3.4 上传头像
-**接口**: `POST /api/upload/avatar`
 
-**描述**: 上传用户头像
+**说明：** 头像上传通过个人资料更新API处理，前端将头像文件转换为base64格式后通过 `PUT /api/student/profile` 接口提交。
 
-**请求类型**: `multipart/form-data`
+**前端处理流程：**
+1. 文件验证（格式：JPG/PNG，大小限制：5MB）
+2. 转换为base64格式
+3. 调用 `PUT /api/student/profile` 接口，在avatar字段中传递base64数据
 
-**请求参数**:
-- `avatar` (File): 头像文件（支持 jpg, jpeg, png 格式，大小限制2MB）
+**实际使用的接口：** `PUT /api/student/profile`
+
+**请求参数：**
+```typescript
+{
+  avatar: string  // base64格式的图片数据，格式：data:image/jpeg;base64,/9j/4AAQ...
+}
+```
 
 **响应**:
 ```typescript
 {
   success: true,
   data: {
-    avatarUrl: "https://example.com/avatars/student001_avatar.jpg",
-    fileName: "student001_avatar.jpg",
-    fileSize: 512000,
-    uploadTime: "2024-03-20T14:30:00Z"
+    id: string,
+    username: string,
+    avatar: string,  // 更新后的头像URL或base64数据
+    updatedAt: string
   },
-  message: "头像上传成功"
+  message: "头像更新成功"
 }
 ```
 

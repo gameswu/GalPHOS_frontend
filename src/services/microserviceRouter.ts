@@ -492,10 +492,6 @@ export class MicroserviceRouter {
         // 精确匹配 - 最高优先级
         if (servicePath === requestPath) {
           priority = 4;
-          // 为头像上传路径提供更高的优先级
-          if (servicePath === '/api/upload/avatar') {
-            priority = 5; // 确保头像上传被正确路由到文件服务
-          }
           matchLength = servicePath.length;
         }
         // 路径参数匹配
