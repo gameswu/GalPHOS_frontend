@@ -65,11 +65,29 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
   const [selectedProgress, setSelectedProgress] = useState<GradingProgress | null>(null);
   const [form] = Form.useForm();
 
-  // 阅卷状态映射
+  // 阅卷状态映射 - 支持后端大写状态
   const taskStatusMap = {
+    // 前端小写状态
     pending: { text: '待开始', color: 'default' },
+    assigned: { text: '已分配', color: 'processing' },
     in_progress: { text: '进行中', color: 'processing' },
-    completed: { text: '已完成', color: 'success' }
+    completed: { text: '已完成', color: 'success' },
+    // 后端大写状态映射
+    PENDING: { text: '待分配', color: 'default' },
+    ASSIGNED: { text: '已分配', color: 'processing' },
+    IN_PROGRESS: { text: '进行中', color: 'processing' },
+    COMPLETED: { text: '已完成', color: 'success' }
+  };
+
+  // 状态转换函数 - 将后端大写状态转换为前端小写状态
+  const normalizeStatus = (status: string): string => {
+    const statusMapping: { [key: string]: string } = {
+      'PENDING': 'pending',
+      'ASSIGNED': 'assigned',
+      'IN_PROGRESS': 'in_progress', 
+      'COMPLETED': 'completed'
+    };
+    return statusMapping[status] || status.toLowerCase();
   };
 
   const graderStatusMap = {
@@ -224,7 +242,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
               更新进度
             </Button>
           )}
-          {record.status === 'pending' && (
+          {normalizeStatus(record.status) === 'pending' && (
             <Button
               type="link"
               size="small"
@@ -272,15 +290,15 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
     }
   };
 
-  // 统计数据
+  // 统计数据 - 使用状态转换函数处理后端状态
   const stats = {
     totalGraders: graders.length,
     availableGraders: graders.filter(g => g.status === 'available').length,
     busyGraders: graders.filter(g => g.status === 'busy').length,
     totalTasks: gradingTasks.length,
-    pendingTasks: gradingTasks.filter(t => t.status === 'pending').length,
-    inProgressTasks: gradingTasks.filter(t => t.status === 'in_progress').length,
-    completedTasks: gradingTasks.filter(t => t.status === 'completed').length
+    pendingTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'pending').length,
+    inProgressTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'in_progress').length,
+    completedTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'completed').length
   };
 
   return (
@@ -344,8 +362,8 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
                 dataSource={gradingExams}
                 renderItem={(exam) => {
                   const examTasks = gradingTasks.filter(task => task.examId === exam.id);
-                  // 只计算那些状态不为pending的任务（即已分配的任务）
-                  const assignedTasks = examTasks.filter(task => task.status !== 'pending');
+                  // 只计算那些已分配的任务（状态不为PENDING）
+                  const assignedTasks = examTasks.filter(task => normalizeStatus(task.status) !== 'pending');
                   const assignedQuestions = Array.from(new Set(assignedTasks.map(task => task.questionNumber)));
 
                   return (

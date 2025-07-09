@@ -108,6 +108,17 @@ const DashboardPage: React.FC<{
   gradingTasks: AdminGradingTask[];
   graders: GraderInfo[];
 }> = ({ pendingCount, isOffline, regions, approvedUsers, exams, gradingTasks, graders }) => {
+  // 状态转换函数 - 将后端大写状态转换为前端小写状态
+  const normalizeStatus = (status: string): string => {
+    const statusMapping: { [key: string]: string } = {
+      'PENDING': 'pending',
+      'ASSIGNED': 'assigned',
+      'IN_PROGRESS': 'in_progress', 
+      'COMPLETED': 'completed'
+    };
+    return statusMapping[status] || status.toLowerCase();
+  };
+
   const totalSchools = regions.reduce((sum, region) => sum + region.schools.length, 0);
   const activeUsers = approvedUsers.filter(user => user.status === 'approved').length;
   
@@ -123,9 +134,9 @@ const DashboardPage: React.FC<{
   // 阅卷统计
   const gradingStats = {
     totalTasks: gradingTasks.length,
-    pendingTasks: gradingTasks.filter(t => t.status === 'pending').length,
-    inProgressTasks: gradingTasks.filter(t => t.status === 'in_progress').length,
-    completedTasks: gradingTasks.filter(t => t.status === 'completed').length,
+    pendingTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'pending').length,
+    inProgressTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'in_progress').length,
+    completedTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'completed').length,
     availableGraders: graders.filter(g => g.status === 'available').length,
     busyGraders: graders.filter(g => g.status === 'busy').length
   };
