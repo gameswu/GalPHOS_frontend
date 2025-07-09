@@ -40,24 +40,45 @@ const GraderDashboard: React.FC<GraderDashboardProps> = ({
     loadAllGradingTasks();
   }, [loadAllGradingTasks]);
 
+  // 状态转换函数 - 将后端大写状态转换为前端小写状态
+  const normalizeStatus = (status: string): string => {
+    const statusMapping: { [key: string]: string } = {
+      'PENDING': 'pending',
+      'ASSIGNED': 'assigned',
+      'IN_PROGRESS': 'in_progress', 
+      'COMPLETED': 'completed'
+    };
+    return statusMapping[status] || status.toLowerCase();
+  };
+
   // 优先使用API返回的统计数据，如果没有则计算本地数据
   const totalTasks = statistics?.totalTasks ?? gradingTasks.length;
-  const completedTasks = statistics?.completedTasks ?? gradingTasks.filter(task => task.status === 'completed').length;
-  const pendingTasks = statistics?.pendingTasks ?? gradingTasks.filter(task => task.status === 'pending').length;
-  const gradingTasks_ = statistics?.gradingTasks ?? gradingTasks.filter(task => task.status === 'grading').length;
+  const completedTasks = statistics?.completedTasks ?? gradingTasks.filter(task => normalizeStatus(task.status) === 'completed').length;
+  const pendingTasks = statistics?.pendingTasks ?? gradingTasks.filter(task => normalizeStatus(task.status) === 'pending').length;
+  const gradingTasks_ = statistics?.gradingTasks ?? gradingTasks.filter(task => normalizeStatus(task.status) === 'in_progress').length;
   const todayCompleted = statistics?.todayCompleted ?? 0;
   const efficiency = statistics?.efficiency;
   
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  // 考试统计
-  const gradingExams = exams.filter(exam => exam.status === 'grading');
-  const completedExams = exams.filter(exam => exam.status === 'completed');
+  // 考试统计 - 使用normalizeStatus函数处理状态
+  const gradingExams = exams.filter(exam => normalizeStatus(exam.status) === 'grading');
+  const completedExams = exams.filter(exam => normalizeStatus(exam.status) === 'completed');
 
-  // 最近的阅卷任务
-  const recentTasks = gradingTasks
-    .filter(task => task.submittedAt) // 过滤掉没有提交时间的任务
-    .sort((a, b) => new Date(b.submittedAt!).getTime() - new Date(a.submittedAt!).getTime())
+  // 最近的阅卷任务 - 安全地处理可能为空的数组和提交时间
+  const recentTasks = (gradingTasks || [])
+    .filter(task => task && task.submittedAt) // 过滤掉没有提交时间或无效的任务
+    .sort((a, b) => {
+      try {
+        // 安全处理日期转换，防止无效日期引起的崩溃
+        const dateA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+        const dateB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+        return dateB - dateA;
+      } catch (e) {
+        console.error('日期排序错误:', e);
+        return 0;
+      }
+    })
     .slice(0, 5);
 
   return (

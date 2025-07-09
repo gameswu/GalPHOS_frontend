@@ -38,13 +38,18 @@ export const useGraderLogic = () => {
       });
       
       if (response.success && response.data) {
-        setExams(response.data.items);
-        message.success('考试数据加载成功');
+        setExams(response.data.items || []); // 确保设置为空数组而不是 undefined
+        // 去掉成功提示，减少用户干扰
       } else {
+        // 即使失败也设置为空数组，避免UI挂起
+        setExams([]);
+        console.error('获取考试数据返回错误:', response.message);
         message.error(response.message || '加载考试数据失败');
       }
     } catch (error) {
-      message.error('加载考试数据失败');
+      // 确保发生异常时也设置状态为空数组
+      setExams([]);
+      message.error('加载考试数据失败，请稍后再试');
       console.error('加载考试数据失败:', error);
     } finally {
       setLoading(false);
@@ -60,32 +65,67 @@ export const useGraderLogic = () => {
         GraderAPI.getDashboardStats()
       ]);
       
+      // 确保即使API返回错误也设置默认值
       if (tasksResponse.success && tasksResponse.data) {
-        setGradingTasks(tasksResponse.data.items);
+        setGradingTasks(tasksResponse.data.items || []);
+      } else {
+        setGradingTasks([]);
+        console.error('获取阅卷任务返回错误:', tasksResponse.message);
       }
       
       if (statsResponse.success && statsResponse.data) {
         // 将 getDashboardStats 的返回数据映射到 GradingStatistics 格式
         const dashboardStats = statsResponse.data;
         const mappedStats: GradingStatistics = {
-          totalTasks: dashboardStats.totalTasks,
-          completedTasks: dashboardStats.completedTasks,
-          pendingTasks: dashboardStats.pendingTasks,
+          totalTasks: dashboardStats.totalTasks || 0,
+          completedTasks: dashboardStats.completedTasks || 0,
+          pendingTasks: dashboardStats.pendingTasks || 0,
           abandonedTasks: 0, // getDashboardStats 未提供，默认为 0
-          gradingTasks: dashboardStats.totalTasks - dashboardStats.completedTasks - dashboardStats.pendingTasks,
+          gradingTasks: (dashboardStats.totalTasks || 0) - (dashboardStats.completedTasks || 0) - (dashboardStats.pendingTasks || 0),
           totalGradingTime: 0, // getDashboardStats 未提供，默认为 0
           averageGradingTime: 0, // getDashboardStats 未提供，默认为 0
-          todayCompleted: 0, // getDashboardStats 未提供，默认为 0
+          todayCompleted: 0, // getDashboardStats 未提供，直接设置默认值
           weekCompleted: 0, // getDashboardStats 未提供，默认为 0
           monthCompleted: 0, // getDashboardStats 未提供，默认为 0
-          efficiency: undefined // getDashboardStats 未提供
+          efficiency: undefined // 不设置效率值
         };
         setStatistics(mappedStats);
+      } else {
+        // 设置默认统计数据
+        setStatistics({
+          totalTasks: 0,
+          completedTasks: 0,
+          pendingTasks: 0,
+          abandonedTasks: 0,
+          gradingTasks: 0,
+          totalGradingTime: 0,
+          averageGradingTime: 0,
+          todayCompleted: 0,
+          weekCompleted: 0,
+          monthCompleted: 0,
+          efficiency: undefined
+        });
+        console.error('获取统计数据返回错误:', statsResponse.message);
       }
       
-      message.success('阅卷任务统计加载成功');
+      // 移除成功提示，减少用户干扰
     } catch (error) {
-      message.error('加载阅卷任务统计失败');
+      // 确保即使出现异常也设置默认值
+      setGradingTasks([]);
+      setStatistics({
+        totalTasks: 0,
+        completedTasks: 0,
+        pendingTasks: 0,
+        abandonedTasks: 0,
+        gradingTasks: 0,
+        totalGradingTime: 0,
+        averageGradingTime: 0,
+        todayCompleted: 0,
+        weekCompleted: 0,
+        monthCompleted: 0,
+        efficiency: undefined
+      });
+      message.error('加载阅卷任务统计失败，请稍后再试');
       console.error('加载阅卷任务统计失败:', error);
     } finally {
       setLoading(false);
