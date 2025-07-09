@@ -344,7 +344,9 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
                 dataSource={gradingExams}
                 renderItem={(exam) => {
                   const examTasks = gradingTasks.filter(task => task.examId === exam.id);
-                  const assignedQuestions = Array.from(new Set(examTasks.map(task => task.questionNumber)));
+                  // 只计算那些状态不为pending的任务（即已分配的任务）
+                  const assignedTasks = examTasks.filter(task => task.status !== 'pending');
+                  const assignedQuestions = Array.from(new Set(assignedTasks.map(task => task.questionNumber)));
 
                   return (
                     <List.Item
