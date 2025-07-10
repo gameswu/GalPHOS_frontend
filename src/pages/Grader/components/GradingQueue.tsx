@@ -443,10 +443,25 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
               </Button>
               <Button onClick={() => {
                 if (selectedTaskId) {
+                  console.log('🟡 准备放弃阅卷', { taskId: selectedTaskId });
                   Modal.confirm({
                     title: '确认放弃阅卷？',
                     content: '放弃后该任务将重新分配给其他阅卷员',
-                    onOk: () => handleAbandonTask(selectedTaskId, '阅卷员主动放弃'),
+                    onOk: () => {
+                      console.log('✅ 用户确认放弃阅卷', { taskId: selectedTaskId });
+                      // 使用 Promise 方式处理异步操作，避免 Modal.confirm 的 async/await 兼容性问题
+                      return handleAbandonTask(selectedTaskId, '阅卷员主动放弃')
+                        .then((success) => {
+                          console.log('✅ handleAbandonTask 执行结果', { success });
+                        })
+                        .catch((error) => {
+                          console.error('❌ handleAbandonTask 异常', { error });
+                          throw error; // 重新抛出错误，让 Modal 知道操作失败
+                        });
+                    },
+                    onCancel: () => {
+                      console.log('🚫 用户取消放弃操作');
+                    }
                   });
                 }
               }}>
