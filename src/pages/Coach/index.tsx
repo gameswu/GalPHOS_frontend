@@ -267,6 +267,16 @@ const Coach: React.FC = () => {
           background: '#f0f2f5',
           minHeight: 'calc(100vh - 64px)'
         }}>
+          {/* 使用前先检查deleteStudent函数是否可用 */}
+          {(() => {
+            console.log('🔍 检查 deleteStudent 函数', { 
+              isDefined: !!deleteStudent,
+              type: typeof deleteStudent,
+              isFunction: typeof deleteStudent === 'function' 
+            });
+            return null;
+          })()}
+          
           <CoachContent
             selectedKey={selectedKey}
             userInfo={userInfo}

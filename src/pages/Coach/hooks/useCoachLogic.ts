@@ -146,7 +146,7 @@ export const useCoachLogic = () => {
     if (!studentId || studentId.trim() === '') {
       console.error('❌ studentId 为空或无效', { studentId });
       message.error('学生ID无效');
-      return;
+      return Promise.reject(new Error('学生ID无效'));
     }
     
     // 检查认证状态
@@ -161,7 +161,7 @@ export const useCoachLogic = () => {
     if (!currentUser || !token) {
       console.error('❌ 用户未登录或Token无效');
       message.error('请重新登录后再试');
-      return;
+      return Promise.reject(new Error('认证失败'));
     }
 
     try {
@@ -204,6 +204,7 @@ export const useCoachLogic = () => {
       }
       
       message.error('删除学生失败，请检查网络连接或联系管理员');
+      return Promise.reject(error);
     }
   }, []);
 
