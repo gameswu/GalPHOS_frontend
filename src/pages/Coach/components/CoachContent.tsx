@@ -433,62 +433,42 @@ const StudentManagementPage: React.FC<{
       return;
     }
 
-    console.log('🔍 准备创建确认对话框', { Modal: !!Modal, confirm: !!Modal?.confirm });
-      
-    // 确保Modal.confirm存在
-    if (!Modal || !Modal.confirm) {
-      console.error('❌ Modal.confirm 不可用', { Modal });
-      message.error('系统对话框组件加载失败');
-      return;
-    }
-    
-    const modal = Modal.confirm({
-      title: '确认删除',
-      content: '确定要删除这个学生吗？此操作不可恢复。',
-      okText: '确认删除',
-      cancelText: '取消',
-      okButtonProps: { danger: true },
-      centered: true,
-      maskClosable: false,
-      keyboard: true,
-      className: 'delete-student-modal',
-      closable: true,
-      autoFocusButton: 'cancel',
-      onOk: () => {
-        console.log('✅ 用户确认删除操作', { studentId });
-        console.log('🔄 调用 onDeleteStudent', { studentId, onDeleteStudent: typeof onDeleteStudent });
-        
-        // 使用 Promise 方式处理异步操作，避免 Modal.confirm 的 async/await 兼容性问题
-        return onDeleteStudent(studentId)
-          .then(() => {
-            console.log('✅ onDeleteStudent 执行成功');
-            // 不在这里显示成功消息，因为 deleteStudent 函数内部已经显示了
-          })
-          .catch((error: any) => {
-            console.error('❌ handleDeleteStudent 异常', { error, studentId });
-            // 不在这里显示错误消息，因为 deleteStudent 函数内部已经显示了
-            throw error; // 重新抛出错误，让 Modal 知道操作失败
-          });
-      },
-      onCancel: () => {
-        console.log('🚫 用户取消删除操作', { studentId });
-      }
-    });
-    
-    // 记录确认对话框创建后的状态
-    console.log('✅ 确认对话框已创建', { modal });
-    
-    // 确保在组件卸载时关闭模态框
-    return () => {
-      try {
-        // 检查模态框是否仍然存在并且可以关闭
-        if (modal && modal.destroy) {
-          modal.destroy();
+    console.log('🔍 准备创建确认对话框', { Modal });
+
+    // 直接使用导入的Modal组件
+    if (Modal && Modal.confirm) {
+      Modal.confirm({
+        title: '确认删除',
+        content: '确定要删除这个学生吗？此操作不可恢复。',
+        okText: '确认删除',
+        cancelText: '取消',
+        okButtonProps: { danger: true },
+        icon: <DeleteOutlined style={{ color: 'red' }} />,
+        centered: true,
+        maskClosable: false,
+        onOk() {
+          console.log('✅ 用户确认删除操作', { studentId });
+          
+          // 返回Promise以正确处理异步操作
+          return onDeleteStudent(studentId)
+            .then(() => {
+              console.log('✅ 删除学生成功');
+            })
+            .catch((error) => {
+              console.error('❌ 删除学生失败', error);
+              throw error; // 重新抛出错误，让Modal知道操作失败
+            });
+        },
+        onCancel() {
+          console.log('🚫 用户取消删除操作');
         }
-      } catch (err) {
-        console.error('关闭模态框失败', err);
-      }
-    };
+      });
+      
+      console.log('✅ 确认对话框已创建');
+    } else {
+      console.error('❌ Modal.confirm 不可用');
+      message.error('无法显示确认对话框，请刷新页面后重试');
+    }
   };
 
   // 打开编辑对话框
