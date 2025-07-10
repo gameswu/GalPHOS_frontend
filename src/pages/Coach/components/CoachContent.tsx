@@ -41,7 +41,7 @@ interface CoachContentProps {
   onAccountSettings: () => void;
   onAddStudent: (studentData: { username: string }) => void;
   onUpdateStudent: (studentId: string, studentData: Partial<Student>) => void;
-  onDeleteStudent: (studentId: string) => void;
+  onDeleteStudent: (studentId: string) => Promise<void>;
   updateProfile: (data: { name?: string; phone?: string; avatar?: string }) => Promise<void>;
   changePassword: (data: { oldPassword: string; newPassword: string }) => Promise<void>;
   requestRegionChange: (data: { province: string; school: string; reason: string }) => Promise<void>;
@@ -386,7 +386,7 @@ const StudentManagementPage: React.FC<{
   onProvinceChange: (provinceId: string) => void;
   onAddStudent: (studentData: { username: string }) => void;
   onUpdateStudent: (studentId: string, studentData: Partial<Student>) => void;
-  onDeleteStudent: (studentId: string) => void;
+  onDeleteStudent: (studentId: string) => Promise<void>;
 }> = ({ students, provinces, selectedProvince, availableSchools, onProvinceChange, onAddStudent, onUpdateStudent, onDeleteStudent }) => {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -436,17 +436,21 @@ const StudentManagementPage: React.FC<{
     Modal.confirm({
       title: '确认删除',
       content: '确定要删除这个学生吗？此操作不可恢复。',
-      onOk: async () => {
+      onOk: () => {
         console.log('✅ 用户确认删除操作', { studentId });
-        try {
-          console.log('🔄 调用 onDeleteStudent', { studentId, onDeleteStudent: typeof onDeleteStudent });
-          await onDeleteStudent(studentId);
-          console.log('✅ onDeleteStudent 执行成功');
-          message.success('学生删除成功');
-        } catch (error) {
-          console.error('❌ handleDeleteStudent 异常', { error, studentId });
-          message.error('删除失败');
-        }
+        console.log('🔄 调用 onDeleteStudent', { studentId, onDeleteStudent: typeof onDeleteStudent });
+        
+        // 使用 Promise 方式处理异步操作，避免 Modal.confirm 的 async/await 兼容性问题
+        return onDeleteStudent(studentId)
+          .then(() => {
+            console.log('✅ onDeleteStudent 执行成功');
+            // 不在这里显示成功消息，因为 deleteStudent 函数内部已经显示了
+          })
+          .catch((error: any) => {
+            console.error('❌ handleDeleteStudent 异常', { error, studentId });
+            // 不在这里显示错误消息，因为 deleteStudent 函数内部已经显示了
+            throw error; // 重新抛出错误，让 Modal 知道操作失败
+          });
       },
       onCancel: () => {
         console.log('🚫 用户取消删除操作', { studentId });
