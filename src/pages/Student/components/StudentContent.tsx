@@ -65,8 +65,17 @@ const DashboardPage: React.FC<{
 }> = ({ exams, getExamSubmission, dashboardData }) => {
   const currentTime = new Date();
   
-  // 使用传入的dashboardData或计算默认值
-  const stats = dashboardData || {
+  // 优先使用API返回的统计数据，如果没有则使用本地计算作为后备
+  const stats = dashboardData ? {
+    totalExams: dashboardData.totalExams || 0,
+    completedExams: dashboardData.completedExams || 0,
+    ongoingExams: dashboardData.ongoingExams || 0,
+    upcomingExams: dashboardData.upcomingExams || 0,
+    averageScore: dashboardData.averageScore || 0,
+    lastExamScore: dashboardData.lastExamScore || 0,
+    recentExams: dashboardData.recentExams || []
+  } : {
+    // 后备计算方案（当API调用失败时使用）
     totalExams: exams.length,
     completedExams: exams.filter(exam => 
       exam.status === 'completed' || new Date(exam.endTime) < currentTime

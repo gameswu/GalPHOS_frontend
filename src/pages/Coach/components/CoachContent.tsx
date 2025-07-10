@@ -209,10 +209,16 @@ const EnhancedDashboardPage: React.FC<{
     const loadStats = async () => {
       setLoading(true);
       try {
+        console.log('🔄 教练面板：开始调用统计API...');
         const stats = await getDashboardStats();
-        setStatsData(stats);
+        if (stats) {
+          console.log('✅ 教练面板：API调用成功，数据:', stats);
+          setStatsData(stats);
+        } else {
+          console.warn('⚠️ 教练面板：API调用返回空数据，将使用本地计算');
+        }
       } catch (error) {
-        console.error('加载统计数据失败:', error);
+        console.error('❌ 教练面板：统计API调用失败，将使用本地计算:', error);
       } finally {
         setLoading(false);
       }
@@ -221,7 +227,7 @@ const EnhancedDashboardPage: React.FC<{
     loadStats();
   }, [getDashboardStats]);
 
-  // 本地计算的统计数据作为后备
+  // 本地计算的统计数据作为后备（仅在API调用失败时使用）
   const currentTime = new Date();
   const activeStudents = students.filter(s => s.status === 'active').length;
   const currentExams = exams.filter(exam => 
@@ -231,15 +237,33 @@ const EnhancedDashboardPage: React.FC<{
     exam.status === 'completed' || new Date(exam.endTime) < currentTime
   );
 
-  // 使用API数据或本地计算数据
-  const displayStats = statsData || {
+  // 优先使用API返回的真实统计数据，只有在API失败时才使用本地计算
+  const displayStats = statsData ? {
+    // 使用API返回的真实数据
+    totalStudents: statsData.totalStudents ?? students.length,
+    activeStudents: statsData.activeStudents ?? activeStudents,
+    totalExams: statsData.totalExams ?? exams.length,
+    currentExams: statsData.currentExams ?? currentExams.length,
+    completedExams: statsData.completedExams ?? completedExams.length,
+    pendingGrading: statsData.pendingGrading ?? 0,
+    averageScore: statsData.averageScore ?? 0,
+    participationRate: statsData.participationRate ?? 0,
+    passRate: statsData.passRate ?? 0,
+    recentActivity: statsData.recentActivity ?? [],
+    topStudents: statsData.topStudents ?? []
+  } : {
+    // 后备方案：本地计算（仅在API调用失败时使用）
     totalStudents: students.length,
     activeStudents,
     totalExams: exams.length,
     currentExams: currentExams.length,
     completedExams: completedExams.length,
     pendingGrading: 0,
-    averageScore: 0
+    averageScore: 0,
+    participationRate: 0,
+    passRate: 0,
+    recentActivity: [],
+    topStudents: []
   };
 
   return (

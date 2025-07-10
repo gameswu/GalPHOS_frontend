@@ -37,12 +37,16 @@ export const useStudentLogic = () => {
   // 加载仪表板数据
   const loadDashboardData = useCallback(async () => {
     try {
+      console.log('🔄 学生面板：开始调用统计API...');
       const result = await StudentAPI.getDashboardStats();
       if (result.success && result.data) {
+        console.log('✅ 学生面板：API调用成功，数据:', result.data);
         setDashboardData(result.data);
+      } else {
+        console.warn('⚠️ 学生面板：API调用失败，消息:', result.message);
       }
     } catch (error) {
-      console.error('加载仪表板数据失败:', error);
+      console.error('❌ 学生面板：统计API调用异常:', error);
     }
   }, []);
 
