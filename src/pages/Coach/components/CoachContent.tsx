@@ -425,17 +425,32 @@ const StudentManagementPage: React.FC<{
 
   // 处理删除学生
   const handleDeleteStudent = (studentId: string) => {
+    console.log('🟡 handleDeleteStudent 被调用', { studentId });
+    
+    if (!studentId || studentId.trim() === '') {
+      console.error('❌ studentId 无效', { studentId });
+      message.error('学生ID无效');
+      return;
+    }
+    
     Modal.confirm({
       title: '确认删除',
       content: '确定要删除这个学生吗？此操作不可恢复。',
       onOk: async () => {
+        console.log('✅ 用户确认删除操作', { studentId });
         try {
+          console.log('🔄 调用 onDeleteStudent', { studentId, onDeleteStudent: typeof onDeleteStudent });
           await onDeleteStudent(studentId);
+          console.log('✅ onDeleteStudent 执行成功');
           message.success('学生删除成功');
         } catch (error) {
+          console.error('❌ handleDeleteStudent 异常', { error, studentId });
           message.error('删除失败');
         }
       },
+      onCancel: () => {
+        console.log('🚫 用户取消删除操作', { studentId });
+      }
     });
   };
 

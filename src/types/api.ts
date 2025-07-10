@@ -94,22 +94,73 @@ export class BaseAPI {
     options: RequestInit = {},
     operation: string
   ): Promise<ApiResponse<T>> {
+    const startTime = Date.now();
+    console.log('🌐 API 请求开始', { 
+      operation, 
+      path, 
+      method: options.method || 'GET',
+      timestamp: new Date().toISOString()
+    });
+    
     try {
       const url = this.getApiUrl(path);
-      const response = await fetch(url, {
+      const requestOptions = {
         ...options,
         headers: {
           ...this.getAuthHeaders(),
           ...options.headers,
         },
+      };
+      
+      console.log('🌐 请求配置', { 
+        url, 
+        method: requestOptions.method,
+        hasAuth: !!(requestOptions.headers as any)?.Authorization,
+        headers: {
+          ...(requestOptions.headers as any),
+          Authorization: (requestOptions.headers as any)?.Authorization ? '[REDACTED]' : undefined
+        }
+      });
+      
+      const response = await fetch(url, requestOptions);
+      const duration = Date.now() - startTime;
+      
+      console.log('🌐 HTTP 响应', { 
+        status: response.status, 
+        statusText: response.statusText,
+        ok: response.ok,
+        duration: `${duration}ms`,
+        operation
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🌐 HTTP 错误响应', { 
+          status: response.status, 
+          statusText: response.statusText,
+          errorText,
+          operation 
+        });
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json();
+      const responseData = await response.json();
+      console.log('🌐 API 响应成功', { 
+        operation, 
+        duration: `${duration}ms`,
+        success: responseData.success,
+        hasData: !!responseData.data
+      });
+      
+      return responseData;
     } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error('🌐 API 请求异常', { 
+        operation, 
+        path,
+        duration: `${duration}ms`,
+        error 
+      });
       this.handleApiError(error, operation);
       // 这行永远不会执行，因为handleApiError会抛出异常
       // 但为了满足TypeScript，我们需要返回一个值

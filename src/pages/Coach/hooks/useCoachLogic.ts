@@ -140,18 +140,70 @@ export const useCoachLogic = () => {
 
   // 删除学生
   const deleteStudent = useCallback(async (studentId: string) => {
+    console.log('🚀 deleteStudent 函数开始执行', { studentId });
+    
+    // 验证参数
+    if (!studentId || studentId.trim() === '') {
+      console.error('❌ studentId 为空或无效', { studentId });
+      message.error('学生ID无效');
+      return;
+    }
+    
+    // 检查认证状态
+    const currentUser = authService.getCurrentUser();
+    const token = authService.getToken();
+    console.log('🔐 认证状态检查', { 
+      hasUser: !!currentUser, 
+      hasToken: !!token,
+      userRole: currentUser?.role 
+    });
+    
+    if (!currentUser || !token) {
+      console.error('❌ 用户未登录或Token无效');
+      message.error('请重新登录后再试');
+      return;
+    }
+
     try {
+      console.log('📡 准备发送删除请求', { 
+        studentId, 
+        apiEndpoint: `/api/coach/students/${studentId}` 
+      });
+      
       const response = await CoachAPI.deleteStudent(studentId);
       
+      console.log('📡 API 响应结果', { response });
+      
       if (response.success) {
-        setStudents(prev => prev.filter(student => student.id !== studentId));
+        setStudents(prev => {
+          const newStudents = prev.filter(student => student.id !== studentId);
+          console.log('✅ 本地状态更新', { 
+            originalCount: prev.length, 
+            newCount: newStudents.length 
+          });
+          return newStudents;
+        });
         message.success('学生删除成功');
       } else {
+        console.error('❌ API 返回错误', { 
+          message: response.message, 
+          response 
+        });
         message.error(response.message || '删除学生失败');
       }
     } catch (error) {
-      message.error('删除学生失败');
-      console.error('删除学生失败:', error);
+      console.error('❌ 删除学生异常', { error, studentId });
+      
+      // 详细的错误信息
+      if (error instanceof Error) {
+        console.error('错误详情:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+      }
+      
+      message.error('删除学生失败，请检查网络连接或联系管理员');
     }
   }, []);
 
