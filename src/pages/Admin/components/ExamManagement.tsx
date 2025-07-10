@@ -387,8 +387,20 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
 
   // 辅助函数：从考试数据计算实际总分
   const getExamTotalScore = (exam: Exam): number => {
-    // 优先使用maxScore，如果没有则返回0（让用户手动输入）
-    return exam.maxScore || 0;
+    // 如果是ExamWithQuestions类型，优先使用questions计算的总分
+    if ('questions' in exam && Array.isArray((exam as any).questions) && (exam as any).questions.length > 0) {
+      return (exam as any).questions.reduce((sum: number, question: any) => sum + (question.score || 0), 0);
+    }
+    // 其次使用totalScore字段（如果存在）
+    if ('totalScore' in exam && typeof (exam as any).totalScore === 'number') {
+      return (exam as any).totalScore;
+    }
+    // 最后使用maxScore，如果没有则根据题目数量估算默认值
+    if (exam.maxScore && exam.maxScore > 0) {
+      return exam.maxScore;
+    }
+    // 如果都没有，根据题目数量估算（每题5分）
+    return (exam.totalQuestions || 1) * 5;
   };
 
   // 辅助函数：验证分数一致性
@@ -807,7 +819,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
           <Button
             size="small"
             icon={<EditOutlined />}
-            onClick={() => handleEditExam(record, true)}
+            onClick={async () => await handleEditExam(record, true)}
           >
             编辑
           </Button>
@@ -866,7 +878,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
   };
 
   // 处理编辑考试
-  const handleEditExam = (exam: Exam, showScoreSettings = false) => {
+  const handleEditExam = async (exam: Exam, showScoreSettings = false) => {
     setEditingExam(exam);
     setSelectedExam(exam);
     
@@ -898,15 +910,36 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
     
     // 加载或初始化分值设置
     if (exam.totalQuestions && exam.totalQuestions > 0) {
-      // 这里可以调用API获取实际的分值设置，现在先用平均分配
-      const totalQuestions = exam.totalQuestions;
-      const totalScore = examTotalScore || (exam.totalQuestions * 5); // 如果没有总分，默认每题5分
-      const questions = Array.from({ length: totalQuestions }, (_, idx) => ({
-        number: idx + 1,
-        score: Math.round(totalScore / totalQuestions * 10) / 10
-      }));
-      setEditGeneratedQuestions(questions);
-      editScoreSettingsForm.setFieldsValue({ questions });
+      try {
+        // 尝试从后端获取真实的题目分数设置
+        const questionScores = await onGetQuestionScores(exam.id);
+        if (questionScores && Array.isArray(questionScores) && questionScores.length > 0) {
+          // 使用后端返回的真实分数
+          setEditGeneratedQuestions(questionScores);
+          editScoreSettingsForm.setFieldsValue({ questions: questionScores });
+        } else {
+          // 如果后端没有分数设置，使用平均分配作为默认值
+          const totalQuestions = exam.totalQuestions;
+          const totalScore = examTotalScore || (exam.totalQuestions * 5); // 如果没有总分，默认每题5分
+          const questions = Array.from({ length: totalQuestions }, (_, idx) => ({
+            number: idx + 1,
+            score: Math.round(totalScore / totalQuestions * 10) / 10
+          }));
+          setEditGeneratedQuestions(questions);
+          editScoreSettingsForm.setFieldsValue({ questions });
+        }
+      } catch (error) {
+        console.error('获取题目分数失败，使用默认分配:', error);
+        // 如果API调用失败，使用平均分配作为后备方案
+        const totalQuestions = exam.totalQuestions;
+        const totalScore = examTotalScore || (exam.totalQuestions * 5);
+        const questions = Array.from({ length: totalQuestions }, (_, idx) => ({
+          number: idx + 1,
+          score: Math.round(totalScore / totalQuestions * 10) / 10
+        }));
+        setEditGeneratedQuestions(questions);
+        editScoreSettingsForm.setFieldsValue({ questions });
+      }
     }
     
     setExamModalVisible(true);
@@ -2500,7 +2533,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({
               icon={<EditOutlined />}
               onClick={async () => {
                 setExamDetailVisible(false);
-                selectedExam && handleEditExam(selectedExam);
+                selectedExam && await handleEditExam(selectedExam);
               }}
             >
               编辑考试
