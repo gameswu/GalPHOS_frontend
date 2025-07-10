@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Typography, Statistic, Row, Col, Button, Table, Modal, Form, Input, Select, Space, Tag, message, Tabs } from 'antd';
+import { Card, Typography, Statistic, Row, Col, Button, Table, Modal, Form, Input, Select, Space, Tag, message, Tabs, Popconfirm } from 'antd';
 import { 
   UserOutlined, 
   TeamOutlined,
@@ -423,48 +423,7 @@ const StudentManagementPage: React.FC<{
     }
   };
 
-  // 处理删除学生
-  const handleDeleteStudent = (studentId: string) => {
-    console.log('🟡 handleDeleteStudent 被调用', { studentId });
-    
-    if (!studentId || studentId.trim() === '') {
-      console.error('❌ studentId 无效', { studentId });
-      message.error('学生ID无效');
-      return;
-    }
-
-    console.log('🔍 准备创建确认对话框', { Modal });
-
-    // 确保使用正确的Modal.confirm方法
-    Modal.confirm({
-      title: '确认删除学生',
-      content: '确定要删除这个学生吗？此操作不可恢复，学生的所有相关数据将被永久删除。',
-      okText: '确认删除',
-      okType: 'danger',
-      cancelText: '取消',
-      icon: <DeleteOutlined style={{ color: 'red' }} />,
-      centered: true,
-      maskClosable: false,
-      onOk: async () => {
-        console.log('✅ 用户确认删除操作', { studentId });
-        try {
-          await onDeleteStudent(studentId);
-          console.log('✅ 删除学生成功');
-          message.success('学生删除成功');
-          return true;
-        } catch (error) {
-          console.error('❌ 删除学生失败', error);
-          message.error('删除学生失败，请重试');
-          return Promise.reject(error);
-        }
-      },
-      onCancel: () => {
-        console.log('🚫 用户取消删除操作');
-      }
-    });
-    
-    console.log('✅ 确认对话框已创建');
-  };
+  // 原有的handleDeleteStudent方法已删除，使用Popconfirm组件直接处理确认删除
 
   // 打开编辑对话框
   const openEditModal = (student: Student) => {
@@ -508,14 +467,32 @@ const StudentManagementPage: React.FC<{
           >
             编辑
           </Button>
-          <Button
-            type="link"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDeleteStudent(record.id)}
+          <Popconfirm
+            title="确定要删除这个学生吗？"
+            description="删除后将无法恢复，学生的所有相关数据将被永久删除"
+            onConfirm={() => {
+              return onDeleteStudent(record.id)
+                .then(() => {
+                  message.success('学生删除成功');
+                })
+                .catch(error => {
+                  message.error('删除学生失败，请重试');
+                  return Promise.reject(error);
+                });
+            }}
+            okText="确定"
+            cancelText="取消"
+            okType="danger"
+            icon={<DeleteOutlined style={{ color: 'red' }} />}
           >
-            删除
-          </Button>
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+            >
+              删除
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },

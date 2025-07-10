@@ -81,33 +81,19 @@ class CoachAPI extends BaseAPI {
 
   // 删除学生
   static async deleteStudent(studentId: string): Promise<ApiResponse<any>> {
-    console.log('🔵 CoachAPI.deleteStudent 开始执行', { studentId });
-    
     try {
       this.validateRequired(studentId, '学生ID');
       
-      const apiUrl = `/api/coach/students/${studentId}`;
-      const headers = this.getAuthHeaders();
-      
-      console.log('🔵 API 请求配置', { 
-        url: apiUrl, 
-        method: 'DELETE',
-        hasAuth: !!headers.Authorization,
-        headers: { ...headers, Authorization: headers.Authorization ? '[REDACTED]' : undefined }
-      });
-
       const result = await this.makeRequest<any>(
-        apiUrl,
+        `/api/coach/students/${studentId}`,
         {
           method: 'DELETE',
         },
         '删除学生'
       );
       
-      console.log('🔵 API 请求完成', { result });
       return result;
     } catch (error) {
-      console.error('🔴 CoachAPI.deleteStudent 异常', { error, studentId });
       return this.handleApiError(error, '删除学生');
     }
   }
