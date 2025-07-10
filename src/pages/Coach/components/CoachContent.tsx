@@ -435,40 +435,35 @@ const StudentManagementPage: React.FC<{
 
     console.log('🔍 准备创建确认对话框', { Modal });
 
-    // 直接使用导入的Modal组件
-    if (Modal && Modal.confirm) {
-      Modal.confirm({
-        title: '确认删除',
-        content: '确定要删除这个学生吗？此操作不可恢复。',
-        okText: '确认删除',
-        cancelText: '取消',
-        okButtonProps: { danger: true },
-        icon: <DeleteOutlined style={{ color: 'red' }} />,
-        centered: true,
-        maskClosable: false,
-        onOk() {
-          console.log('✅ 用户确认删除操作', { studentId });
-          
-          // 返回Promise以正确处理异步操作
-          return onDeleteStudent(studentId)
-            .then(() => {
-              console.log('✅ 删除学生成功');
-            })
-            .catch((error) => {
-              console.error('❌ 删除学生失败', error);
-              throw error; // 重新抛出错误，让Modal知道操作失败
-            });
-        },
-        onCancel() {
-          console.log('🚫 用户取消删除操作');
+    // 确保使用正确的Modal.confirm方法
+    Modal.confirm({
+      title: '确认删除学生',
+      content: '确定要删除这个学生吗？此操作不可恢复，学生的所有相关数据将被永久删除。',
+      okText: '确认删除',
+      okType: 'danger',
+      cancelText: '取消',
+      icon: <DeleteOutlined style={{ color: 'red' }} />,
+      centered: true,
+      maskClosable: false,
+      onOk: async () => {
+        console.log('✅ 用户确认删除操作', { studentId });
+        try {
+          await onDeleteStudent(studentId);
+          console.log('✅ 删除学生成功');
+          message.success('学生删除成功');
+          return true;
+        } catch (error) {
+          console.error('❌ 删除学生失败', error);
+          message.error('删除学生失败，请重试');
+          return Promise.reject(error);
         }
-      });
-      
-      console.log('✅ 确认对话框已创建');
-    } else {
-      console.error('❌ Modal.confirm 不可用');
-      message.error('无法显示确认对话框，请刷新页面后重试');
-    }
+      },
+      onCancel: () => {
+        console.log('🚫 用户取消删除操作');
+      }
+    });
+    
+    console.log('✅ 确认对话框已创建');
   };
 
   // 打开编辑对话框
