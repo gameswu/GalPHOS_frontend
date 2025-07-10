@@ -178,7 +178,11 @@ export const useAdminLogic = () => {
       setLoading(true);
       const response = await AdminAPI.getGradingTasks();
       if (response.success && response.data) {
-        setGradingTasks(Array.isArray(response.data) ? response.data : (response.data as any).tasks || []);
+        const tasks = Array.isArray(response.data) ? response.data : (response.data as any).tasks || [];
+        setGradingTasks(tasks);
+        if (tasks.length === 0) {
+          notification.showInfo('暂无阅卷任务');
+        }
       } else {
         notification.showError(response.message || '获取阅卷任务失败');
         setGradingTasks([]);

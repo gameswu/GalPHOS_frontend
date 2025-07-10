@@ -60,23 +60,28 @@ export const useGraderLogic = () => {
   const loadAllGradingTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const [tasksResponse, statsResponse] = await Promise.all([
+      const [tasksResponse, dashboardResponse] = await Promise.all([
         GraderAPI.getGradingTasks({ page: 1, limit: 100 }),
         GraderAPI.getDashboardStats()
       ]);
-      
-      // 确保即使API返回错误也设置默认值
+
       if (tasksResponse.success && tasksResponse.data) {
-        setGradingTasks(tasksResponse.data.items || []);
+        const tasks = Array.isArray(tasksResponse.data.items) ? tasksResponse.data.items : [];
+        setGradingTasks(tasks);
+        if (tasks.length === 0) {
+          message.info('暂无阅卷任务');
+        } else {
+          message.success(`加载了 ${tasks.length} 个阅卷任务`);
+        }
       } else {
         setGradingTasks([]);
-        console.error('获取阅卷任务返回错误:', tasksResponse.message);
+        message.error(tasksResponse.message || '加载阅卷任务失败');
       }
-      
-      if (statsResponse.success && statsResponse.data) {
-        // 将 getDashboardStats 的返回数据映射到 GradingStatistics 格式
-        const dashboardStats = statsResponse.data;
-        const mappedStats: GradingStatistics = {
+
+      // 处理仪表盘数据
+      if (dashboardResponse.success && dashboardResponse.data) {
+        const dashboardStats = dashboardResponse.data;
+        setStatistics({
           totalTasks: dashboardStats.totalTasks || 0,
           completedTasks: dashboardStats.completedTasks || 0,
           pendingTasks: dashboardStats.pendingTasks || 0,
@@ -88,8 +93,7 @@ export const useGraderLogic = () => {
           weekCompleted: 0, // getDashboardStats 未提供，默认为 0
           monthCompleted: 0, // getDashboardStats 未提供，默认为 0
           efficiency: undefined // 不设置效率值
-        };
-        setStatistics(mappedStats);
+        });
       } else {
         // 设置默认统计数据
         setStatistics({
@@ -105,12 +109,10 @@ export const useGraderLogic = () => {
           monthCompleted: 0,
           efficiency: undefined
         });
-        console.error('获取统计数据返回错误:', statsResponse.message);
+        console.warn('Failed to load dashboard stats:', dashboardResponse.message);
       }
-      
-      // 移除成功提示，减少用户干扰
     } catch (error) {
-      // 确保即使出现异常也设置默认值
+      console.error('加载阅卷数据失败:', error);
       setGradingTasks([]);
       setStatistics({
         totalTasks: 0,
@@ -125,8 +127,7 @@ export const useGraderLogic = () => {
         monthCompleted: 0,
         efficiency: undefined
       });
-      message.error('加载阅卷任务统计失败，请稍后再试');
-      console.error('加载阅卷任务统计失败:', error);
+      message.error('网络错误，无法加载阅卷数据');
     } finally {
       setLoading(false);
     }
@@ -143,14 +144,16 @@ export const useGraderLogic = () => {
       });
       
       if (response.success && response.data) {
-        setGradingTasks(response.data.items);
+        setGradingTasks(Array.isArray(response.data.items) ? response.data.items : []);
         message.success('阅卷任务加载成功');
       } else {
         message.error(response.message || '加载阅卷任务失败');
+        setGradingTasks([]);
       }
     } catch (error) {
       message.error('加载阅卷任务失败');
       console.error('加载阅卷任务失败:', error);
+      setGradingTasks([]);
     } finally {
       setLoading(false);
     }

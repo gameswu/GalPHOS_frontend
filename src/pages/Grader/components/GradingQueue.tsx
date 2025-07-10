@@ -98,7 +98,7 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
   };
 
   const handleNextTask = () => {
-    if (currentTaskIndex < gradingTasks.length - 1) {
+    if (gradingTasks && currentTaskIndex < gradingTasks.length - 1) {
       setCurrentTaskIndex(currentTaskIndex + 1);
     }
   };
@@ -217,7 +217,7 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
 
   // 缩略图视图
   const renderThumbnailView = () => {
-    if (gradingTasks.length === 0) {
+    if (!gradingTasks || gradingTasks.length === 0) {
       return (
         <div style={{ textAlign: 'center', padding: '50px' }}>
           <Text type="secondary">暂无阅卷任务</Text>
@@ -226,6 +226,13 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
     }
 
     const currentTask = gradingTasks[currentTaskIndex];
+    if (!currentTask) {
+      return (
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <Text type="secondary">任务加载中...</Text>
+        </div>
+      );
+    }
     
     return (
       <div>
@@ -260,12 +267,12 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
                   上一份
                 </Button>
                 <Text>
-                  {currentTaskIndex + 1} / {gradingTasks.length}
+                  {currentTaskIndex + 1} / {gradingTasks?.length || 0}
                 </Text>
                 <Button
                   icon={<RightOutlined />}
                   onClick={handleNextTask}
-                  disabled={currentTaskIndex === gradingTasks.length - 1}
+                  disabled={!gradingTasks || currentTaskIndex === gradingTasks.length - 1}
                 >
                   下一份
                 </Button>
@@ -368,7 +375,7 @@ const GradingQueue: React.FC<GradingQueueProps> = ({
           title={
             <Space>
               <Text>阅卷队列</Text>
-              <Tag color="blue">{gradingTasks.length} 份待阅卷</Tag>
+              <Tag color="blue">{gradingTasks?.length || 0} 份待阅卷</Tag>
             </Space>
           }
         >

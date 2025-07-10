@@ -292,13 +292,13 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
 
   // 统计数据 - 使用状态转换函数处理后端状态
   const stats = {
-    totalGraders: graders.length,
-    availableGraders: graders.filter(g => g.status === 'available').length,
-    busyGraders: graders.filter(g => g.status === 'busy').length,
-    totalTasks: gradingTasks.length,
-    pendingTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'pending').length,
-    inProgressTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'in_progress').length,
-    completedTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'completed').length
+    totalGraders: graders?.length || 0,
+    availableGraders: graders?.filter(g => g.status === 'available').length || 0,
+    busyGraders: graders?.filter(g => g.status === 'busy').length || 0,
+    totalTasks: gradingTasks?.length || 0,
+    pendingTasks: gradingTasks?.filter(t => normalizeStatus(t.status) === 'pending').length || 0,
+    inProgressTasks: gradingTasks?.filter(t => normalizeStatus(t.status) === 'in_progress').length || 0,
+    completedTasks: gradingTasks?.filter(t => normalizeStatus(t.status) === 'completed').length || 0
   };
 
   return (
@@ -361,7 +361,7 @@ const GradingManagement: React.FC<GradingManagementProps> = ({
               <List
                 dataSource={gradingExams}
                 renderItem={(exam) => {
-                  const examTasks = gradingTasks.filter(task => task.examId === exam.id);
+                  const examTasks = gradingTasks?.filter(task => task.examId === exam.id) || [];
                   // 只计算那些已分配的任务（状态不为PENDING）
                   const assignedTasks = examTasks.filter(task => normalizeStatus(task.status) !== 'pending');
                   const assignedQuestions = Array.from(new Set(assignedTasks.map(task => task.questionNumber)));

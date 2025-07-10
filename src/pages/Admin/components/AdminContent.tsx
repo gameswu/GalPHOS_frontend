@@ -133,12 +133,12 @@ const DashboardPage: React.FC<{
 
   // 阅卷统计
   const gradingStats = {
-    totalTasks: gradingTasks.length,
-    pendingTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'pending').length,
-    inProgressTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'in_progress').length,
-    completedTasks: gradingTasks.filter(t => normalizeStatus(t.status) === 'completed').length,
-    availableGraders: graders.filter(g => g.status === 'available').length,
-    busyGraders: graders.filter(g => g.status === 'busy').length
+    totalTasks: gradingTasks?.length || 0,
+    pendingTasks: gradingTasks?.filter(t => normalizeStatus(t.status) === 'pending').length || 0,
+    inProgressTasks: gradingTasks?.filter(t => normalizeStatus(t.status) === 'in_progress').length || 0,
+    completedTasks: gradingTasks?.filter(t => normalizeStatus(t.status) === 'completed').length || 0,
+    availableGraders: graders?.filter(g => g.status === 'available').length || 0,
+    busyGraders: graders?.filter(g => g.status === 'busy').length || 0
   };
 
   // 用户角色统计
